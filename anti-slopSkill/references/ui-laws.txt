@@ -1,0 +1,437 @@
+================================================================================
+ANTI-AI SLOP & UI/UX LAWS
+================================================================================
+
+--------------------------------------------------------------------------------
+PART 1: ANTI-AI SLOP (STRICT DESIGN & IMPLEMENTATION RULES)
+--------------------------------------------------------------------------------
+0. most important take out filler words, the most useless word, make the title bold big header, subheader. and contents inside a card. there must be a typographical hierarchy.every element has the same weight fix it important ones are bigger non important smaller and button color if not important some light grey color
+
+1. NO EMOJIS. EVER.
+   - Never use unicode emojis (🔥, ☀️, 🏆, etc.) in production UI.
+   - Use official vector icons (HugeIcons / Lucide / Tabler) or authentic 3D
+     clay-emoji assets only, and only when the UI truly requires one.
+
+2. COPY IS EARNED
+   - If a word doesn't change what the user does, cut it.
+   - Short labels over sentences.
+   - No filler headings (e.g. "Welcome to your personal learning dashboard").
+   - No helper text that merely restates the label (e.g. label "Deck Name", helper
+     "Enter the name of your deck here").
+
+3. NEVER INVENT YOUR OWN DESIGN OR CODE
+   - Do not recreate code from scratch when an asset, UI kit, or reference exists.
+   - Use the actual asset code, tokens, and components provided (e.g. preset JSON,
+     downloaded reference markup, ctrlspc_ui_kit_app.tsx, assets.html).
+   - Never add wrappers, pill enclosures, background containers, or decorative
+     boxes without explicit user permission.
+
+4. NO CARD DIVS UNLESS EARNED
+   - AI loves boxing every element inside a nested card div. Stop doing it.
+   - If it is not a button and does not need a boundary, do not put it in a card.
+     Text, stats, labels, and lists sit directly on the surface.
+   - When a button is already inside a container or is itself a button, DO NOT create
+     another card div around it.
+   - If it is text or non-interactive data (e.g. a user rank row like "(You)"), DO NOT
+     create a card div or fake button styling (`tactile-btn`, `cursor-pointer`, button shadow)
+     around it, especially when multiple cards repeat that pattern.
+   - A card is allowed only when the item is itself tappable/selectable as one unit
+     (e.g. a deck row), or must be visually separated from unrelated content.
+   - Never nest a card inside a card. Separate raw content with spacing or divider lines.
+   - Pick one of the 10 alternatives below instead (see PART 4).
+
+4b. BARE ICONS IN THE TOP HALF OF THE PAGE (TOP BUTTONS ARE ALWAYS NO CARD DIVS)
+   - Top buttons (header icons: menu, back, profile, options, close) sit directly on the page.
+     Top buttons are ALWAYS no card divs. No button box, pill, border, fill, or 3D extrusion
+     around them. Icon + hit area only.
+   - Boxed/3D buttons are for real primary/destructive page actions, not header chrome.
+
+4c. NO REDUNDANCY & NO CROSS-SCREEN DUPLICATE ACTIONS
+   - If the same button leads to the same action in different screens (e.g. Android APK
+     download in Settings when it is already a dedicated bottom tab / panel), DELETE IT
+     unless it is part of the persistent navigation menu.
+   - One screen, one way to do a thing. If two buttons reach the same place, keep one.
+   - If two texts say the same thing in different words, keep the shorter one.
+   - No filler text: subtitles, taglines, "Tap to select", "Select Mode", status echoes.
+
+4d. ANIMATED EXPANDING UNDERLINES FOR INLINE WORDS/LINKS
+   - For words or text links inside divs/containers, do not wrap them in chunky pill boxes
+     or mini-cards. Use clean inline text with an underline animation where the underline
+     starts short or empty and gets long on hover/focus (`after:w-0 hover:after:w-full transition-all duration-300`).
+
+4e. BOLDED CLICKABLE TEXT IN BUTTON-DENSE PANELS (NO FILL, NO OUTLINE)
+   - When a panel or screen already has enough buttons (e.g. a primary CTA like "Start Review"
+     and mode grid tiles), do NOT add more chunky button boxes with fills, borders, or outlines.
+   - Convert secondary/tertiary actions (like "Edit Cards", "Publish", or settings utilities)
+     into bolded clickable text with NO fill and NO outline.
+   - They sit directly on the surface with high contrast, crisp font-weight, an icon, and a
+     smooth hover color or expanding underline transition.
+
+4f. BOTTOM NAVBAR ACTIVE TAB CUTOUT (SNUG & NEVER TOUCH CREATE BUTTON)
+   - The cutout / eaten space for active bottom navigation tabs (e.g. Public Feed, Ranks) must
+     strictly encapsulate ONLY the word and the icon with a snug buffer.
+   - Middle tabs (Public Feed and Ranks) must have identical cutout width and be perfectly
+     dead-centered on the tab label (not shifted to the left).
+   - Do NOT blow up the eaten space across the whole grid column.
+   - The cutout must NEVER encroach on or touch the central Create button; maintain a clear,
+     dedicated buffer between the active tab's cutout rim and the central orb.
+5. NO UNREQUESTED GLASSMORPHISM & BLINKING CLUTTER
+   - No gratuitous blur filters, backdrop-filter glass, or flashing/blinking buttons
+     unless the reference specifically uses it.
+   - No arbitrary outlines on cards or elements. Preserve exact reference borders.
+
+6. DO NOT DUMP ALL INFORMATION AT ONCE
+   - Avoid overwhelming screens with too many buttons, competing metrics, and text walls.
+   - Maintain a strict visual hierarchy: what is most important stays at the top.
+   - Progressive disclosure: hide secondary and advanced options until needed.
+
+--------------------------------------------------------------------------------
+
+7. EMPTY, LOADING, ERROR & SEARCH STATES
+   - Empty State: Say WHY it is empty and provide exactly ONE next step.
+   - Loading State: Show the shape of what is coming (skeleton placeholders), NEVER a generic spinner.
+   - Error State: State what went wrong, whose fault it is, and how to fix it, WITHOUT
+     backend-related technical jargon (no HTTP 405, 500, or raw server traces).
+   - No Search Results: Fix typos in the query and suggest a next search or topic.
+
+8. NO HYPE ADJECTIVES (REAL ACCOMPLISHMENTS ONLY)
+   - Never use marketing buzzwords like "supercharge your day", "boost your productivity",
+     or "unlock your potential". State plainly and factually what the app actually accomplishes.
+
+9. BUTTON HIERARCHY: ONE BUTTON, ONE TEXT WITH ARROW
+   - Never place two buttons with the same visual strength, weight, or gradient side by side.
+   - The primary/important action gets the button.
+   - The secondary/alternative action gets a clickable text link with an arrow (e.g. "Skip →" or "Cancel").
+
+PART 2: THE 5 GOLDEN RULES OF REDUCING COGNITIVE LOAD (HICK'S LAW)
+--------------------------------------------------------------------------------
+
+1. If an option isn't relevant yet, don't show it.
+2. Don't put multiple buttons next to each other that look equally important.
+3. Hide advanced options until the user actually needs them.
+4. Your primary button should look significantly more important than everything
+   else around it.
+5. Every single screen must have ONE obvious primary action.
+
+--------------------------------------------------------------------------------
+PART 3: CORE UI & UX LAWS
+--------------------------------------------------------------------------------
+
+[INTERACTION & SPEED]
+- Fitts's Law: Target acquisition time depends on distance and size. Make primary
+  actions large and easily reachable.
+- Hick's Law: Decision time increases logarithmically with the number and complexity
+  of choices. Reduce options to minimize friction.
+- Jakob's Law: Users spend most of their time on other apps. Follow familiar,
+  established conventions instead of inventing non-standard navigation.
+- Doherty Threshold: Productivity and engagement peak when interaction response
+  times stay below 400ms.
+
+[MEMORY & ATTENTION]
+- Miller's Law: Working memory holds 7 (± 2) items. Chunk complex data into small,
+  digestible clusters.
+- Serial Position Effect: Users remember the first and last items in a series best.
+  Place critical navigation and callouts at the start or finish.
+- Zeigarnik Effect: Uncompleted tasks stick in memory. Use visual progress tracks
+  to maintain momentum and completion rates.
+- Peak-End Rule: Experiences are judged by their most intense moment and their ending.
+- Von Restorff (Isolation) Effect: When similar items are grouped, the visually
+  distinct item is remembered. Ensure the key CTA stands out.
+
+[PERCEPTION & GESTALT]
+- Law of Proximity: Elements placed close together are perceived as related.
+- Law of Common Region: Elements enclosed within the same boundary are grouped,
+  but boundaries should be purposeful, not nested endlessly.
+- Law of Uniform Connectedness: Visually linked elements (via lines, colors) are
+  perceived as stronger units than unlinked elements.
+- Law of Prägnanz: The eye simplifies complex visuals into clean, simple geometric
+  forms. Avoid visual noise.
+- Aesthetic-Usability Effect: Clean, polished visuals increase perceived usability
+  and user patience.
+
+[MOTIVATION & COMPLEXITY]
+- Goal-Gradient Effect: User effort accelerates as they get closer to completing a goal.
+- Tesler's Law (Conservation of Complexity): Every system has an irreducible minimum
+  of complexity. System architecture must absorb this complexity so the user doesn't.
+- Occam's Razor: The simplest solution with the fewest assumptions is usually the best.
+- Postel's Law: Be liberal in what you accept, conservative in what you send.
+
+===========================================================================
+
+--------------------------------------------------------------------------------
+PART 4: 10 ALTERNATIVES TO CARD DIVS (AND WHEN TO USE EACH)
+--------------------------------------------------------------------------------
+
+LAYOUT-LEVEL
+1. Bento Grid Blocks - asymmetrical interlocking blocks of varied size.
+   Use: dashboards where major features outrank minor ones; dense data, clean look.
+2. Split-Screen Panels - 50/50 or 70/30 split, workspace one side, controls other.
+   Use: generation/editing tasks needing a large permanent workspace + config panel.
+3. Timeline / Feed Threads - entries unfold along a central axis.
+   Use: history logs, multi-stage prompt chains, version audits where order matters.
+
+SLIDING & LAYERED
+4. Bottom / Side Sheets (the drawer-like design) - panel slides from a screen edge
+   (bottom on mobile, side on desktop), dims the page beneath.
+   Use: deep-dive tasks (settings, profiles, filters) without losing page context.
+5. Inline Accordion Stacks - header strips expanding downward in place.
+   Use: grouping large sets of optional settings; keeps the page clean until needed.
+6. Popovers / Flyouts - small bubble anchored to the trigger, closes on outside click.
+   Use: quick single-focus micro-actions (tone, font size, length).
+
+COMPACT & INTERACTIVE
+7. Segmented Control Toggles - adjacent options with a sliding active indicator.
+   Use: frequent, low-count choices (e.g. Creative / Balanced / Precise).
+8. Horizontal Swiper Carousels - single overflowing row, swipe or arrows.
+   Use: galleries/templates on mobile without endless vertical scroll.
+9. Command Palettes - Cmd+K modal, search and run actions by keyboard.
+   Use: power-user tools and text-heavy editors (Notion/Slack style).
+10. Dynamic Data Tables - borderless rows with inline sort, expand, hover actions.
+   Use: large dense quantitative sets that are filtered, exported, or edited.
+
+--------------------------------------------------------------------------------
+PART 5: 10 MODERN UI TRANSITIONS (AND WHEN TO USE EACH)
+--------------------------------------------------------------------------------
+
+1. Drill-Down Slide - parent slides left, child enters from right, back arrow appears.
+   Use: nested menus, file directories, settings sub-pages (horizontal depth axis).
+2. Container Transform - a small element morphs into the full detail view.
+   Use: list item to detail, FAB to menu, thumbnail to product page.
+3. Shared Element (Hero) - one element (avatar, cover, image) travels and scales
+   into the next screen while the rest fades in.
+   Use: media players, profiles, e-commerce.
+4. Sheet Push / Reveal - panel slides from an edge; background dims or scales back.
+   Use: temporary workflows, filters, sort options, comments.
+5. Z-Axis Scale - background recedes, new content scales up from center.
+   Use: alerts, search overlays, previews, immersive viewers.
+6. Staggered Entrance - items fade in sequentially with 20-50ms delays.
+   Use: dashboards, graphs, populated feeds; lowers perceived load time.
+7. Sticky Header Dock - prominent element shrinks and docks to the top on scroll.
+   Use: long-scroll feeds, message histories, long settings pages.
+8. Swipe-to-Dismiss - overlay tracks the finger, revealing the page beneath.
+   Use: mobile media viewers, stories, modal sheets; replaces Back buttons.
+9. Morphing Icon States - icon lines morph (menu to X, play to pause).
+   Use: menus, playback, favorites, expandable accordions.
+10. Parallax Slide Layering - foreground moves faster than background in transitions.
+   Use: onboarding carousels, landing pages, multi-step wizards.
+
+===========================================================================
+
+--------------------------------------------------------------------------------
+PART 6: FINAL AUDIT (RUN LAST, AFTER EVERYTHING ELSE IS BUILT)
+--------------------------------------------------------------------------------
+Re-read this whole file first, then for every screen:
+0. SEMANTIC DUPLICATE CHECK (use semantic software, not eyeballing):
+   - Extract every button label, heading, and text string per page.
+   - Embed them (sentence-transformers all-MiniLM-L6-v2, or Gemini embeddings) and
+     flag pairs with cosine similarity >= 0.70 on the SAME page.
+   - Also flag buttons that lead to the same route/handler even if worded differently.
+   - Ask: does the page have the same functionality semantically? If yes, it is a
+     redundancy candidate.
+   - DO NOT DELETE. Report each candidate to the user with a suggested better
+     alternative (merge, rename, move to a sheet/popover, or remove) and wait for approval.
+
+1. Does every button have a handler wired to real state or navigation?
+   Verify connections with graphify (query the graph: is this component/handler
+   referenced by anything?). Unconnected = delete, do not port.
+2. Is there a redundant button (same destination/action as another on that page)? Cut.
+3. Is there redundant or filler text (same meaning reworded, or no effect on what the
+   user does)? Cut it.
+4. Is any non-button content boxed in a card div for no reason? Unbox it.
+5. Are header icons bare on the page? Remove any box around them.
+6. Report what was cut and why.
+7. Empty states: does it explain WHY it is empty and give ONE concrete next step?
+8. Loading states: does it show the skeleton shape of incoming content rather than a spinner?
+9. Error states: does it explain what went wrong and how to fix it without backend tech jargon?
+10. Search: does empty search suggest next searches or handle typos?
+11. Copy audit: cut marketing hype adjectives ("supercharge", "boost"); keep only factual accomplishments.
+12. Button hierarchy: ensure paired actions don't have equal strength—one primary button, one text with arrow.
+13. Cross-screen duplicate check: does a button repeat an action available in a dedicated tab or screen (unless persistent nav)? Delete it.
+14. Fake button check: is an element that displays data (e.g. user rank row "(You)" or stat count) styled as a clickable button (`tactile-btn`, `cursor-pointer`, button shadow)? Strip the fake button interactions.
+15. Text links: ensure links or interactive words use smooth animated expanding underlines.
+16. Dense panel button audit: in panels with an existing primary CTA or button grid, ensure secondary actions (e.g. Edit Cards, Publish) are styled as bolded clickable text with no fill and no outline.
+
+================================================================================
+--------------------------------------------------------------------------------
+PART 7: LESSONS FROM REAL REDESIGNS (REVISED, ADD AFTER PART 6)
+--------------------------------------------------------------------------------
+Source: StudyUp library, Vesper Worship, Ulat form and newsletter, the Facebook,
+Google Keep and Windows Explorer comparisons. Real products feel authentic because
+every choice traces to how people use them, not to how the screen looks.
+
+Tags: [LAW] holds everywhere. [DEFAULT] is a starting number, may be exceeded with
+a stated reason. [PREFERENCE] is this project's taste, not a universal rule.
+
+FILE STRUCTURE (do this once)
+- Split the whole file into UNIVERSAL LAWS and a STUDYUP APPENDIX. Rules that only
+  make sense for one app (4f bottom-navbar cutout, tactile-btn, Create orb, rank
+  rows "(You)") go in the appendix.
+
+--------------------------------------------------------------------------------
+STEP 0: BEFORE YOU BUILD (REQUIRED CHECKLIST)
+--------------------------------------------------------------------------------
+0.1 Name the ONE primary action of the screen.
+0.2 Rank the content: what is most important, what is secondary, what is hidden.
+0.3 Name the closest established product and copy its conventions (Keep for notes,
+    Facebook for feeds, Explorer for files). No reference = say so and pick one.
+0.4 List the real content (longest and shortest strings, empty case). Use real
+    user content where given; bracketed placeholders for unknowns.
+0.5 List the screen states you will draw (see section J).
+
+A. COLOR
+1. [LAW] COLOR HAS A JOB. One accent plus status colors per screen. Color signals
+   state (active, live, connected, destructive, error) or identity. Never decoration.
+2. [LAW] ASSIGN ROLES AND KEEP THEM. Example: blue = anything tappable; red = brand
+   masthead, live, required, error; yellow = one label chip. A color never changes
+   role between screens.
+3. [LAW] COLOR NEVER CARRIES MEANING ALONE. Pair red with words ("Required",
+   "Error") or an icon. Do not pair red and green for status.
+4. [LAW] TEXT ON YELLOW IS NEAR-BLACK. White on yellow fails contrast. Red text
+   must be dark enough (about #C8102E on white); never lighten it.
+5. [DEFAULT] NEUTRAL GREYS FOR STRUCTURE. Surfaces differ by lightness only. No
+   tinted backgrounds behind forms.
+6. [LAW] NO COLORED BUTTONS EXCEPT THE ONE PRIMARY. Red and yellow are never buttons.
+
+B. EMPHASIS (ONE FOCAL POINT PER BLOCK)
+7. [LAW] TWO EMPHASES OF EQUAL WEIGHT COMPETE. If a label chip and a highlighted
+   word share a block, one loses. Use color for the label, ink (weight or a black
+   underline) for emphasis inside text.
+8. [PREFERENCE] NO HIGHLIGHTER-MARKER EFFECTS (yellow dashes or bars behind words).
+   Use a plain black underline, about 3px, offset 4-5px.
+9. [DEFAULT] AT MOST ONE COLORED EMPHASIS PER SCREEN.
+
+C. ELEVATION AND CONTAINERS
+10. [DEFAULT] ELEVATION BUDGET. At most one raised element per screen, usually the
+    main entry point. Everything else is flat with a divider or 1px border.
+11. [LAW] CARDS ONLY FOR SELECTABLE UNITS (slides, notes, deck rows). Lists are
+    borderless rows with dividers.
+12. [LAW] NESTED SETTINGS BECOME ONE LINE. A card in a card in a panel collapses
+    to a status line plus a text link with an arrow that opens a side sheet or
+    accordion.
+13. [LAW] CONTENT-SIZED CONTAINERS. Size by content. No equal-height filler.
+14. [DEFAULT] COLLAPSED ENTRY POINTS. Creators and inputs start as one line with
+    bare icons and expand on focus.
+
+D. DENSITY AND CRITICAL ACTIONS (NEW)
+15. [LAW] PROGRESSIVE DISCLOSURE APPLIES TO CONTROLS AND OPTIONS, NOT TO DATA.
+    Lists, tables and feeds that people scan (files, dates, sizes, rows) stay
+    dense and visible. Do not hide columns behind clicks to look clean.
+16. [LAW] URGENT AND TIME-SENSITIVE ACTIONS STAY VISIBLE. Panic and live actions
+    (Black screen, Stop, Undo send) are large, in a fixed place, never hover-only,
+    never inside a menu.
+17. [LAW] USE THE TABLE PATTERN FOR DENSE QUANTITATIVE DATA (borderless rows,
+    sortable columns, one selected row tint), not card grids.
+
+E. COPY AND HELP TEXT
+18. [LAW] SAY IT IN ONE PLACE. If a label, helper line and "?" sheet say the same
+    thing, keep one. Examples go in the placeholder. The sheet carries only what
+    the form does not: the rule, the source.
+19. [LAW] "?" ICONS ONLY ON AMBIGUOUS FIELDS.
+20. [LAW] HIDE INTERNAL NUMBERING (1.1.1, 21.1) from readers; show it only inside
+    the help sheet next to the source.
+21. [LAW] STATUS ECHOES GO. "Ready for Output", "Live" pills, "Port 8080" badges
+    nobody can act on become a dot plus a word, or move to settings.
+22. [LAW] FIX PLURAL HACKS AND DOUBLE COUNTS ("1 verse selected"; "Matches 4
+    reports", not "4 reports 4 reporters").
+23. [LAW] ERRORS SAY WHAT TO FIX IN PLAIN WORDS ("Add the date the event started"),
+    in red text.
+24. [LAW] NO INVENTED STATS. If a number does not change what the user does, cut
+    it ("62% used" with no action attached).
+
+F. ACTIONS
+25. [DEFAULT] MUTUALLY EXCLUSIVE STATES BECOME ONE SEGMENTED CONTROL (Live / Black /
+    Logo / Clear), not a row of boxed buttons.
+26. [LAW] RARELY USED ACTIONS LEAVE THE MAIN SCREEN (tab, settings, popover,
+    command palette).
+27. [LAW] THE MOST FREQUENT ACTION IS THE BIGGEST, IN A FIXED SPOT.
+28. [LAW] SECONDARY ACTION = BOLD TEXT, NO FILL, WITH AN ARROW OR PLAIN. Contextual
+    primaries appear only after a selection.
+29. [LAW] HOVER-ONLY ACTIONS NEED A FALLBACK: show on focus, and an always-visible
+    "..." menu on touch. (Not allowed for rule 16 actions.)
+30. [LAW] ICON-ONLY TOOLBARS: label the 2-3 most common actions or show a tooltip on
+    focus and hover. Unlabeled icons are a real cost for first-time users.
+31. [DEFAULT] FORMS: one section at a time (5-7 fields), a "2 of 8" progress line,
+    one sticky bottom primary, inputs 16px+ and 44px+ targets, required marked
+    with a red asterisk plus the word "Required".
+
+G. TYPE, ICONS, MOTION
+32. [DEFAULT] ONE TYPEFACE (optionally one display face for headings), three
+    weights, two text colors, five sizes, two radii (small and full pill). May be
+    exceeded with a stated reason.
+33. [DEFAULT] ONE ICON FAMILY, ONE STROKE WIDTH, ONE SIZE. Color only where it
+    carries meaning.
+34. [LAW] SMALLEST TEXT 12px, secondary text 4.5:1 contrast. For projected or
+    arm's-length use (church, kiosks) go larger.
+35. [LAW] MOTION: transitions under about 300ms; no idle or looping motion unless
+    the content is the motion (video, progress); respect reduced-motion settings.
+
+H. CONTENT IN MOCKUPS
+36. [LAW] USE REAL, VARIED CONTENT. Mixed lengths, truncation, mixed languages, an
+    empty state. No stock names (Alex Chen), round stats (1.2k), or tidy
+    five-of-a-kind rows.
+37. [LAW] USE REAL USER CONTENT WHERE GIVEN; bracketed placeholders ([Song title],
+    [Line 1]) for unknowns. Never reproduce copyrighted lyrics or text.
+38. [LAW] STATE ASSUMPTIONS when a screenshot is blurry or unclear; leave out what
+    cannot be read instead of guessing.
+
+I. AI TELLS BLOCKLIST
+39. [LAW] Gradient fills or gradient text, blurred glow blobs, frosted glass, sparkle
+    icons, "AI Assist" chips, "Unlock/Supercharge" upsell cards, left-border accent
+    cards, identical grey icon squares, hover-lift on everything, welcome headers
+    with a tagline, emoji in UI.
+
+J. STATES (NEW)
+40. [LAW] FOR ANY NEW COMPONENT DRAW: default, hover, focus (visible ring),
+    selected, disabled, error, empty, loading (skeleton). A resting-state-only
+    mockup is not finished.
+
+K. FIXES TO EARLIER RULES
+41. [LAW] NO-REFERENCE FALLBACK. Rule 3 says never invent your own design. When no
+    reference exists, copy the nearest established product and name it.
+42. [LAW] KEEP THE EXISTING LAYOUT. A redesign is subtraction, not a new structure.
+    If the layout follows convention (Jakob's Law), keep it.
+43. [LAW] MODULAR CODE ARCHITECTURE (MAX 700 LINES PER FILE).
+    Keep all code files strictly modular with a maximum of 700 lines each (or less)
+    for easier debugging, maintainability, and clean isolation of concerns. Split
+    monoliths into dedicated single-responsibility submodules.
+44. [LAW] HUMAN-PACED CRAWLER & ZERO-FRICTION STATIC RUNTIME.
+    Automated page scraping & DOM tree crawling must use smooth scrolling and smooth
+    button interactions with 1–3 random seconds delay between interactions to allow dynamic
+    SPA hydration, chunk imports, and intersection observers to settle. Exported site
+    packages must serve from root with relative asset paths to guarantee 100% 200-OK
+    asset resolution without hostname-folder 404s.
+
+--------------------------------------------------------------------------------
+ADDITIONS TO PART 6 (FINAL AUDIT)
+--------------------------------------------------------------------------------
+17. Greyscale and blur test: blur or desaturate the screen. More than one focal
+    point means one emphasis must go.
+18. Worst-case content test: render the longest and shortest real strings.
+19. Color role check: does each color have exactly one job? Is any color the only
+    signal for a state?
+20. Emphasis conflict check: do any two highlights share a block at equal weight?
+21. Help text check: does the same sentence appear in the label, helper and sheet?
+22. Hover-only check: does every hidden action have a focus and touch path? Is any
+    urgent action hidden? (rule 16)
+23. States check: are default, hover, focus, selected, disabled, error, empty and
+    loading drawn? (rule 40)
+24. Density check: did any data get hidden to look clean? (rule 15)
+25. CITE THE RULE. Every cut or change in the report names the rule number that
+    caused it, so unused and overused rules can be seen.
+26. REPORT, DO NOT DELETE: list each cut and its suggested replacement, then wait
+    for approval.
+
+--------------------------------------------------------------------------------
+LINT SCRIPT (automate what a script can count; extend semantic_audit.py)
+--------------------------------------------------------------------------------
+Flag per screen:
+- gradient fills, blur / backdrop-filter, box-shadow count (elevation budget)
+- distinct colors in use, and any color used for more than one role
+- filled buttons per screen (should be 1)
+- font sizes under 12px, tap targets under 44px, contrast below 4.5:1
+- emoji characters, nested card containers, borders on non-selectable boxes
+- the same sentence appearing more than once on a screen (semantic duplicates)
+- transitions over 300ms, infinite animations
+Anything the script cannot decide (taste, hierarchy, whether the screen is good)
+stays with the human eye and the reference-first process.
+================================================================================

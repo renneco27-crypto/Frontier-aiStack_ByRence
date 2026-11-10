@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Markers — Scroll Choreography Showcase</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Syne', 'Inter', 'sans-serif'],
+                        script: ['Caveat', 'cursive'],
+                    },
+                    colors: {
+                        neon: {
+                            green: '#b8ff01',
+                            orange: '#ff6b00',
+                            purple: '#9d4edd',
+                            red: '#ff2a54',
+                            blue: '#00bbf9'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --neon-green: #b8ff01;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: #141414;
+            color: #121212;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #141414;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3a3a3a;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b8ff01;
+        }
+
+        /* Subtle Studio Grain */
+        .bg-studio-noise {
+            background-image: radial-gradient(rgba(0,0,0,0.035) 1px, transparent 0);
+            background-size: 22px 22px;
+        }
+
+        /* Hardware Acceleration Hints for Scroll Choreography */
+        .gpu-layer {
+            will-change: transform, opacity, width, height, border-radius;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+        }
+
+        /* Outline Script Effect for Dark Marquee */
+        .script-outline {
+            color: transparent;
+            -webkit-text-stroke: 2px rgba(255, 255, 255, 0.88);
+        }
+
+        /* Marker 3D Drop Shadow */
+        .marker-shadow {
+            filter: drop-shadow(0 30px 35px rgba(0, 0, 0, 0.22));
+        }
+
+        /* Callout Line Transition */
+        .callout-item {
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- =====================================================================
+         VIRTUAL SCROLL TRACK (Drives Continuous 0:00 -> 0:25 Choreography)
+    ====================================================================== -->
+    <div id="scroll-track" class="relative w-full" style="height: 1150vh;"></div>
+
+    <!-- =====================================================================
+         FIXED TOP NAVBAR (Adapts theme automatically across dark/light panels)
+    ====================================================================== -->
+    <header id="main-navbar" class="fixed top-0 left-0 right-0 z-[80] transition-colors duration-300 pointer-events-auto">
+        <div class="max-w-[1440px] mx-auto px-6 sm:px-10 h-16 flex items-center justify-between text-xs font-medium">
+            <!-- Left: Brand + Search + Replay Signature -->
+            <div class="flex items-center gap-6">
+                <button onclick="jumpToProgress(0)" class="flex items-center gap-2 font-extrabold text-base tracking-tighter group">
+                    <span class="w-4 h-4 rounded-sm bg-current flex items-center justify-center">
+                        <span class="w-1.5 h-1.5 bg-[#b8ff01]"></span>
+                    </span>
+                    <span id="nav-brand-text">Urban</span>
+                </button>
+                <button onclick="replaySignatureIntro()" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/5 hover:bg-[#b8ff01] hover:text-black transition-all text-[11px] font-semibold uppercase tracking-wider">
+                    <i data-lucide="pen-tool" class="w-3 h-3"></i>
+                    <span>Replay Signature (0:00)</span>
+                </button>
+            </div>
+
+            <!-- Center: Direct Scene Jump Links -->
+            <nav class="hidden lg:flex items-center gap-7 text-[12px] font-medium">
+                <button onclick="jumpToProgress(0.0)" class="nav-link hover:opacity-100 transition-opacity">Home</button>
+                <button onclick="jumpToProgress(0.21)" class="nav-link opacity-70 hover:opacity-100 transition-opacity">Reading Buddy</button>
+                <button onclick="jumpToProgress(0.47)" class="nav-link opacity-70 hover:opacity-100 transition-opacity">15s Color Sort</button>
+                <button onclick="jumpToProgress(0.80)" class="nav-link opacity-70 hover:opacity-100 transition-opacity">Cap Opening</button>
+                <button onclick="jumpToProgress(0.98)" class="nav-link opacity-70 hover:opacity-100 transition-opacity">Philosophy</button>
+            </nav>
+
+            <!-- Right: Auto-Play Video Choreography & Cart -->
+            <div class="flex items-center gap-3">
+                <button id="autoplay-btn" onclick="toggleAutoplayTour()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#b8ff01] text-black hover:brightness-105 transition-all text-[11px] font-bold shadow-sm">
+                    <i id="autoplay-icon" data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                    <span id="autoplay-text">Play Full Motion</span>
+                </button>
+                <button onclick="triggerCartToast()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black text-white hover:bg-neutral-800 transition-all text-[11px] font-semibold border border-white/15">
+                    <span>CART</span>
+                    <span id="cart-badge" class="px-1.5 py-0.2 bg-[#b8ff01] text-black rounded-full text-[10px] font-black">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- =====================================================================
+         STAGE 0: AUTHENTIC HANDWRITTEN SIGNATURE PRELOADER (0:00 - 0:06)
+         Dark #141414 screen underneath the Hero Panel which slides UP over it
+    ====================================================================== -->
+    <div id="preloader-stage" class="fixed inset-0 z-[90] bg-[#141414] flex flex-col items-center justify-center overflow-hidden pointer-events-none">
+        <!-- Green Studio Monitor Wall Backlight Reflection (like top of video) -->
+        <div class="absolute -top-28 w-[520px] h-[260px] rounded-full bg-[#4dff00]/15 blur-[110px]"></div>
+
+        <div class="relative flex flex-col items-center justify-center">
+            <!-- Authentic Multi-Stroke Handwritten "Urban" Signature SVG -->
+            <div class="relative w-[320px] sm:w-[440px] h-[190px] flex items-center justify-center">
+                <svg id="signature-svg" viewBox="0 0 460 200" class="w-full h-full overflow-visible" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="sigGlow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3.5" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+
+                    <!-- Stroke 1: Tall looping "U" (Matches 0:00 & 0:04 frame) -->
+                    <path id="sig-stroke-1" filter="url(#sigGlow)"
+                        d="M155 36 C138 92, 130 156, 152 162 C174 168, 198 102, 206 44 C198 98, 196 146, 208 152"
+                        stroke="#ffffff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                    <!-- Stroke 2: Cursive "rb" loop (Matches 0:01 & 0:05 frame) -->
+                    <path id="sig-stroke-2" filter="url(#sigGlow)"
+                        d="M208 134 C216 108, 228 96, 238 104 C244 112, 236 136, 248 138 C264 140, 286 84, 294 34 C282 82, 274 142, 292 146 C308 148, 316 122, 302 114 C290 108, 284 124, 298 134"
+                        stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+                    <!-- Stroke 3: Expressive "an" tail flourish (Matches 0:02 & 0:06 frame) -->
+                    <path id="sig-stroke-3" filter="url(#sigGlow)"
+                        d="M312 126 C324 106, 342 104, 338 124 C334 140, 320 144, 324 126 C328 112, 342 108, 344 128 C346 142, 356 142, 364 124 C372 108, 380 112, 378 134 C376 144, 392 110, 404 126 C412 138, 424 134, 438 122"
+                        stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                    <!-- Stroke 4: Neon Green Swish Accent under "Urban" -->
+                    <path id="sig-stroke-4"
+                        d="M195 168 C255 154, 330 148, 408 152"
+                        stroke="#b8ff01" stroke-width="3.5" stroke-linecap="round" />
+
+                    <!-- Live Glowing Brush Tip Dot -->
+                    <circle id="sig-brush-tip" cx="155" cy="36" r="6" fill="#b8ff01" opacity="0" filter="url(#sigGlow)" />
+                </svg>
+
+                <!-- Stacked "MARKERS / MARKERS" Label (Matches 0:02 & 0:06 bottom right of signature) -->
+                <div id="sig-markers-stack" class="absolute bottom-3 right-8 sm:right-14 flex flex-col items-start opacity-0 translate-y-3 transition-all duration-500">
+                    <span class="font-sans font-black text-sm sm:text-base tracking-[0.22em] text-[#b8ff01] uppercase leading-none drop-shadow-[0_0_12px_rgba(184,255,1,0.75)]">
+                        MARKERS
+                    </span>
+                    <span class="font-sans font-extrabold text-xs sm:text-sm tracking-[0.22em] text-white uppercase leading-none mt-1">
+                        MARKERS
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subtle Progress Counter -->
+        <div class="absolute bottom-10 flex flex-col items-center gap-2">
+            <span id="sig-status-label" class="text-[10px] font-mono uppercase tracking-[0.3em] text-neutral-500">Drawing Signature...</span>
+            <div class="w-40 h-[2px] bg-white/10 rounded-full overflow-hidden">
+                <div id="sig-progress-bar" class="h-full bg-[#b8ff01] w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         MAIN PINNED VIEWPORT STAGE (All Scroll-Choreographed Layers Live Here)
+    ====================================================================== -->
+    <main id="viewport-stage" class="fixed inset-0 w-screen h-screen overflow-hidden bg-[#141414]">
+
+        <!-- =================================================================
+             LAYER 1: DARK READING BUDDY STAGE & SCROLL-LINKED MARQUEE (0:09 - 0:12)
+             Lives behind the shrinking Hero Window!
+        ================================================================== -->
+        <div id="dark-marquee-layer" class="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
+            
+            <!-- Top Center Title ("THE READING BUDDY" - appears at 0:10) -->
+            <div id="buddy-header" class="absolute top-20 sm:top-24 text-center opacity-0 translate-y-4 transition-none">
+                <span class="block text-[10px] uppercase tracking-[0.28em] text-neutral-400 font-semibold">THE READING</span>
+                <span class="block text-sm sm:text-base uppercase tracking-[0.22em] text-white font-black mt-0.5">BUDDY</span>
+            </div>
+
+            <!-- Scroll-Linked Dual Horizontal Typography Rows (Row 1 -> Right, Row 2 -> Left) -->
+            <div id="marquee-rows-container" class="w-full flex flex-col gap-3 select-none opacity-0">
+                <!-- TOP ROW: Moves Left-to-Right as you scroll -->
+                <div id="scroll-row-top" class="flex items-center gap-10 whitespace-nowrap will-change-transform">
+                    <span class="font-sans font-black text-[95px] sm:text-[140px] lg:text-[170px] leading-none tracking-tight text-white">Urban</span>
+                    <span class="font-script font-bold text-[95px] sm:text-[140px] lg:text-[170px] leading-none script-outline">Markers</span>
+                    <span class="font-sans font-black text-[95px] sm:text-[140px] lg:text-[170px] leading-none tracking-tight text-white">Urban</span>
+                    <span class="font-script font-bold text-[95px] sm:text-[140px] lg:text-[170px] leading-none script-outline">Markers</span>
+                    <span class="font-sans font-black text-[95px] sm:text-[140px] lg:text-[170px] leading-none tracking-tight text-white">Urban</span>
+                    <span class="font-script font-bold text-[95px] sm:text-[140px] lg:text-[170px] leading-none script-outline">Markers</span>
+                    <span class="font-sans font-black text-[95px] sm:text-[140px] lg:text-[170px] leading-none tracking-tight text-white">Urban</span>
+                    <span class="font-script font-bold text-[95px] sm:text-[140px] lg:text-[170px] leading-none script-outline">Markers</span>
+                </div>
+
+                <!-- BOTTOM ROW: Moves Right-to-Left as you scroll -->
+                <div id="scroll-row-bottom" class="flex items-center gap-10 whitespace-nowrap -mt-6 will-change-transform">
+                    <span class="font-script font-bold text-[95px] sm:text-[140px] lg:text-[170px] leading-none script-outline">Markers</span>
+                    <span class="font-sans font-black text-[95px] sm:text-[140px] lg:text-[170px] leading-none tracking-tight text-white">Urban</span>
+                    <span class="font-script font-bold text-[95px] sm:text-[140px] lg:text-[170px] leading-none script-outline">Markers</span>
+                    <span class="font-sans font-black text-[95px] sm:text-[140px] lg:text-[170px] leading-none tracking-tight text-white">Urban</span>
+                    <span class="font-script font-bold text-[95px] sm:text-[140px] lg:text-[170px] leading-none script-outline">Markers</span>
+                    <span class="font-sans font-black text-[95px] sm:text-[140px] lg:text-[170px] leading-none tracking-tight text-white">Urban</span>
+                    <span class="font-script font-bold text-[95px] sm:text-[140px] lg:text-[170px] leading-none script-outline">Markers</span>
+                    <span class="font-sans font-black text-[95px] sm:text-[140px] lg:text-[170px] leading-none tracking-tight text-white">Urban</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================================================================
+             LAYER 2: SHRINKING HERO CONTAINER (0:07 - 0:12)
+             Starts at 100vw x 100vh (#f4f4f4) and shrinks into the 430x270
+             center framed window while words slide downwards and marker shrinks!
+        ================================================================== -->
+        <div id="hero-shrink-layer" class="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
+            
+            <!-- The Morphing Window Box (100vw x 100vh -> 430px x 270px) -->
+            <div id="hero-morph-box" class="gpu-layer relative w-screen h-screen bg-[#f4f4f4] bg-studio-noise overflow-hidden flex items-center justify-center shadow-[0_30px_90px_rgba(0,0,0,0.75)]">
+                
+                <!-- Studio Backdrop Gradient that fades in as box shrinks at 0:10 -->
+                <div id="box-studio-vignette" class="absolute inset-0 bg-gradient-to-b from-[#b8b8b8] via-[#d8d8d8] to-[#efefef] opacity-0 pointer-events-none"></div>
+
+                <!-- HERO TYPOGRAPHY & UI (Slides downwards & disappears as box shrinks: 0:08 -> 0:10) -->
+                <div id="hero-ui-content" class="absolute inset-0 max-w-[1440px] mx-auto px-6 sm:px-12 flex flex-col justify-between py-20 pointer-events-auto">
+                    
+                    <div class="my-auto grid grid-cols-1 lg:grid-cols-12 items-center w-full">
+                        <!-- Left: "Urban" + neon cursive "essentials" + Buy now button -->
+                        <div id="hero-left-words" class="lg:col-span-5 flex flex-col items-start gpu-layer">
+                            <div class="relative inline-block">
+                                <h1 class="font-sans font-extrabold text-[16vw] sm:text-[135px] xl:text-[172px] leading-[0.83] tracking-[-0.055em] text-[#171717]">
+                                    Urban
+                                </h1>
+                                <span class="font-script font-bold text-[11vw] sm:text-[82px] xl:text-[102px] text-[#8fd900] drop-shadow-[0_4px_16px_rgba(184,255,1,0.5)] absolute -bottom-7 sm:-bottom-10 left-16 sm:left-28 -rotate-3 pointer-events-none">
+                                    essentials
+                                </span>
+                            </div>
+
+                            <!-- Buy Now Pill Button -->
+                            <div class="mt-14 sm:mt-16">
+                                <button onclick="triggerCartToast('Urban Neon Starter Pack')" class="group inline-flex items-center gap-3 px-8 py-3 rounded-full border border-neutral-400 bg-white/85 hover:bg-black hover:text-white hover:border-black transition-all duration-300 text-xs font-semibold shadow-sm">
+                                    <span>Buy now</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Center Spacer for Marker -->
+                        <div class="lg:col-span-3"></div>
+
+                        <!-- Right: "Markers" + neon cursive "reading" -->
+                        <div id="hero-right-words" class="lg:col-span-4 flex flex-col items-start lg:items-end mt-8 lg:mt-36 gpu-layer">
+                            <div class="relative inline-block">
+                                <h2 class="font-sans font-extrabold text-[16vw] sm:text-[135px] xl:text-[172px] leading-[0.83] tracking-[-0.055em] text-[#171717]">
+                                    Markers
+                                </h2>
+                                <span class="font-script font-bold text-[11vw] sm:text-[82px] xl:text-[102px] text-[#8fd900] drop-shadow-[0_4px_16px_rgba(184,255,1,0.5)] absolute -bottom-7 sm:-bottom-11 right-4 sm:right-10 -rotate-3 pointer-events-none">
+                                    reading
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Left: "Top-rated for reading" Avatars -->
+                    <div id="hero-bottom-avatars" class="flex items-end justify-between gpu-layer">
+                        <div class="flex flex-col gap-2">
+                            <p class="text-xs font-semibold text-neutral-700 leading-tight">
+                                Top-rated<br><span class="font-bold text-black">for reading</span>
+                            </p>
+                            <div class="flex items-center -space-x-2">
+                                <img src="https://placehold.co/64x64/111111/b8ff01?text=AK" alt="User" class="w-8 h-8 rounded-full border-2 border-[#f4f4f4]" />
+                                <img src="https://placehold.co/64x64/ff6b00/ffffff?text=MR" alt="User" class="w-8 h-8 rounded-full border-2 border-[#f4f4f4]" />
+                                <img src="https://placehold.co/64x64/9d4edd/ffffff?text=JL" alt="User" class="w-8 h-8 rounded-full border-2 border-[#f4f4f4]" />
+                                <img src="https://placehold.co/64x64/00bbf9/111111?text=SO" alt="User" class="w-8 h-8 rounded-full border-2 border-[#f4f4f4]" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =========================================================
+                     CENTERPIECE INSIDE SHRINKING BOX:
+                     1) 0:07-0:10: Giant 3D Open Chisel Marker (scales down in box)
+                     2) 0:11: Cute 3D Neon Reading Buddy Mascot with Eyes
+                     3) 0:12: Glossy 3D Neon Signature Ribbon Loop
+                ========================================================== -->
+                <div class="relative z-20 flex items-center justify-center w-full h-full pointer-events-none">
+                    
+                    <!-- Sub-Stage A: Hero 3D Open Chisel Marker (0:07 - 0:10) -->
+                    <div id="hero-chisel-marker" class="gpu-layer absolute flex items-center justify-center w-[280px] sm:w-[340px] h-[480px] sm:h-[550px]">
+                        <div class="absolute bottom-10 w-52 h-52 rounded-full bg-[#b8ff01]/35 blur-[60px]"></div>
+                        <svg viewBox="0 0 340 520" class="w-full h-full overflow-visible marker-shadow" fill="none">
+                            <defs>
+                                <linearGradient id="hNeonBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#ecff99" />
+                                    <stop offset="25%" stop-color="#c8ff00" />
+                                    <stop offset="65%" stop-color="#9ee300" />
+                                    <stop offset="100%" stop-color="#537a00" />
+                                </linearGradient>
+                                <linearGradient id="hChiselTip" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#dcff4d" />
+                                    <stop offset="55%" stop-color="#b0f500" />
+                                    <stop offset="100%" stop-color="#73ab00" />
+                                </linearGradient>
+                                <linearGradient id="hBlackBarrel" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#3a3a3a" />
+                                    <stop offset="20%" stop-color="#575757" />
+                                    <stop offset="40%" stop-color="#222222" />
+                                    <stop offset="85%" stop-color="#0d0d0d" />
+                                    <stop offset="100%" stop-color="#050505" />
+                                </linearGradient>
+                            </defs>
+                            <g id="hero-marker-inner-group" transform="rotate(-14 170 240) translate(0, 15)">
+                                <!-- Chisel Nib -->
+                                <path d="M135 58 L198 30 L205 112 L130 112 Z" fill="url(#hChiselTip)" />
+                                <path d="M135 58 L198 30 L203 38 L138 66 Z" fill="#f4ffbf" />
+                                <!-- Two ink feed slits on nozzle (visible at 0:10 closeup) -->
+                                <rect x="154" y="102" width="3.5" height="12" rx="1.5" fill="#1a1a1a" />
+                                <rect x="174" y="102" width="3.5" height="12" rx="1.5" fill="#1a1a1a" />
+                                <!-- Dark Nib Holder Ring -->
+                                <rect x="126" y="110" width="84" height="8" rx="3" fill="#1c1c1c" />
+                                <!-- Sculpted Neon Green Upper Body -->
+                                <path d="M116 116 C116 110, 220 110, 220 116 L244 265 C246 285, 90 285, 92 265 Z" fill="url(#hNeonBody)" />
+                                <path d="M130 122 L148 122 L138 260 L114 260 Z" fill="white" opacity="0.34" filter="blur(2px)" />
+                                <ellipse cx="172" cy="195" rx="36" ry="52" fill="#9cd900" stroke="#d9ff66" stroke-width="1.5" opacity="0.75" />
+                                <!-- Side Clip on Left -->
+                                <path d="M95 245 L72 265 C65 272, 63 282, 66 295 L82 425 C84 432, 92 430, 93 422 L84 290 C83 280, 88 274, 98 268 Z" fill="#1e1e1e" />
+                                <!-- Matte Black Lower Barrel -->
+                                <path d="M91 264 C91 278, 245 278, 245 264 L268 495 C268 515, 70 515, 70 495 Z" fill="url(#hBlackBarrel)" />
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Sub-Stage B: Cute 3D Reading Buddy Mascot (0:11 Frame) -->
+                    <div id="buddy-mascot-stage" class="gpu-layer absolute inset-0 flex items-center justify-center opacity-0 scale-90">
+                        <svg viewBox="0 0 320 240" class="w-full h-full max-w-[340px]" fill="none">
+                            <defs>
+                                <linearGradient id="mascotBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#ecff99" />
+                                    <stop offset="40%" stop-color="#b8ff01" />
+                                    <stop offset="85%" stop-color="#7cb800" />
+                                    <stop offset="100%" stop-color="#4d7300" />
+                                </linearGradient>
+                            </defs>
+                            <!-- 3D Glossy Periscope / Buddy Character (Matches 0:11 frame) -->
+                            <g filter="drop-shadow(0 18px 20px rgba(0,0,0,0.28))">
+                                <!-- Lower curved neck & torso -->
+                                <path d="M128 240 C125 180, 130 140, 142 110 C150 90, 178 90, 182 115 C186 140, 180 165, 205 168 C225 170, 238 158, 242 172 C246 188, 215 202, 182 195 L178 240 Z" fill="url(#mascotBodyGrad)" />
+                                <!-- 3D Head Capsule -->
+                                <ellipse cx="164" cy="86" rx="38" ry="30" transform="rotate(-12 164 86)" fill="url(#mascotBodyGrad)" />
+                                <!-- Specular Highlight on Head -->
+                                <ellipse cx="152" cy="72" rx="18" ry="8" transform="rotate(-18 152 72)" fill="white" opacity="0.45" />
+                                <!-- Big Cute Left Eye -->
+                                <circle cx="156" cy="82" r="10" fill="white" />
+                                <circle cx="159" cy="82" r="5" fill="#111111" />
+                                <circle cx="161" cy="79.5" r="1.8" fill="white" />
+                                <!-- Big Cute Right Eye -->
+                                <circle cx="182" cy="86" r="9.5" fill="white" />
+                                <circle cx="184" cy="86" r="4.8" fill="#111111" />
+                                <circle cx="186" cy="83.5" r="1.6" fill="white" />
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Sub-Stage C: 3D Neon Ribbon Signature Swirl (0:12 Frame) -->
+                    <div id="buddy-ribbon-stage" class="gpu-layer absolute inset-0 flex items-center justify-center opacity-0">
+                        <svg viewBox="0 0 360 250" class="w-full h-full max-w-[380px]" fill="none">
+                            <defs>
+                                <linearGradient id="ribbon3DGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#f2ffbf" />
+                                    <stop offset="35%" stop-color="#b8ff01" />
+                                    <stop offset="80%" stop-color="#7cb800" />
+                                    <stop offset="100%" stop-color="#4d7300" />
+                                </linearGradient>
+                            </defs>
+                            <path id="buddy-ribbon-path"
+                                d="M55 225 C105 165, 165 110, 220 58 C248 32, 145 14, 122 58 C98 102, 185 132, 238 134 C275 135, 192 172, 204 202 C215 228, 285 204, 325 170"
+                                stroke="url(#ribbon3DGrad)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"
+                                stroke-dasharray="950" stroke-dashoffset="950"
+                                filter="drop-shadow(0 12px 14px rgba(80,125,0,0.45))" />
+                        </svg>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- =================================================================
+             LAYER 3: SLIDING LIGHT SHOWCASE PANEL (0:13 - 0:21)
+             Slides UP over the dark Reading Buddy stage!
+             Contains BOTH:
+             - Phase 3: The 15s Frame Multi-Marker Sort Carousel (0:13 - 0:18)
+             - Phase 4: What Makes Urban Stand Out + Closed-to-Open Cap Animation (0:19 - 0:21)
+        ================================================================== -->
+        <div id="showcase-slide-panel" class="gpu-layer absolute inset-0 z-30 bg-[#f5f5f5] bg-studio-noise overflow-hidden translate-y-full">
+            
+            <div class="max-w-[1440px] w-full h-full mx-auto px-6 sm:px-12 relative flex items-center">
+
+                <!-- =========================================================
+                     LEFT EDITORIAL COLUMN:
+                     Crossfades between:
+                     A) "Urban's Solution for clear highlights" + 5 Color Swatches (0:13-0:18)
+                     B) "What makes Urban stand out" + Left 3 Callouts (0:19-0:21)
+                ========================================================== -->
+                <div class="relative z-30 w-full h-full flex items-center pointer-events-none">
+                    
+                    <!-- PANEL A UI: Color Selector Left Column (0:13 - 0:18) -->
+                    <div id="color-selector-ui" class="gpu-layer absolute left-0 top-20 sm:top-24 bottom-12 flex flex-col justify-between w-full max-w-md pointer-events-auto">
+                        <div>
+                            <h2 class="font-sans font-bold text-3xl sm:text-[44px] tracking-tight text-neutral-900 leading-[1.08]">
+                                Urban's Solution<br>
+                                for clear
+                                <span id="color-script-word" class="font-script font-bold text-5xl sm:text-[64px] text-[#ff6b00] ml-1 inline-block -rotate-2 transition-colors duration-300">
+                                    highlights
+                                </span>
+                            </h2>
+                        </div>
+
+                        <!-- Vertical Interactive Color Swatch Stack (Matches 0:14-0:18 left side) -->
+                        <div class="flex flex-col gap-3.5 my-auto">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Sort Colors (Click or Scroll)</span>
+                            </div>
+
+                            <!-- 0: Orange -->
+                            <button onclick="selectCarouselColor(0)" class="color-swatch-btn group flex items-center gap-3.5 py-1.5 px-2.5 rounded-full transition-all text-left w-fit" data-index="0">
+                                <span class="swatch-ring w-7 h-7 rounded-full bg-[#ff6b00] flex items-center justify-center ring-2 ring-offset-2 ring-[#ff6b00] transition-transform group-hover:scale-110 shadow-sm">
+                                    <span class="w-2 h-2 rounded-full bg-white"></span>
+                                </span>
+                                <span class="swatch-label text-xs font-bold text-neutral-900">Deep</span>
+                            </button>
+
+                            <!-- 1: Purple -->
+                            <button onclick="selectCarouselColor(1)" class="color-swatch-btn group flex items-center gap-3.5 py-1.5 px-2.5 rounded-full transition-all text-left w-fit" data-index="1">
+                                <span class="swatch-ring w-7 h-7 rounded-full bg-[#8b2fc9] flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+                                    <span class="w-2 h-2 rounded-full bg-white opacity-0"></span>
+                                </span>
+                                <span class="swatch-label text-xs font-semibold text-neutral-500">Pure</span>
+                            </button>
+
+                            <!-- 2: Red -->
+                            <button onclick="selectCarouselColor(2)" class="color-swatch-btn group flex items-center gap-3.5 py-1.5 px-2.5 rounded-full transition-all text-left w-fit" data-index="2">
+                                <span class="swatch-ring w-7 h-7 rounded-full bg-[#e61938] flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+                                    <span class="w-2 h-2 rounded-full bg-white opacity-0"></span>
+                                </span>
+                                <span class="swatch-label text-xs font-semibold text-neutral-500">Vivid</span>
+                            </button>
+
+                            <!-- 3: Green -->
+                            <button onclick="selectCarouselColor(3)" class="color-swatch-btn group flex items-center gap-3.5 py-1.5 px-2.5 rounded-full transition-all text-left w-fit" data-index="3">
+                                <span class="swatch-ring w-7 h-7 rounded-full bg-[#a5f000] flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+                                    <span class="w-2 h-2 rounded-full bg-black opacity-0"></span>
+                                </span>
+                                <span class="swatch-label text-xs font-semibold text-neutral-500">Neon</span>
+                            </button>
+
+                            <!-- 4: Blue -->
+                            <button onclick="selectCarouselColor(4)" class="color-swatch-btn group flex items-center gap-3.5 py-1.5 px-2.5 rounded-full transition-all text-left w-fit" data-index="4">
+                                <span class="swatch-ring w-7 h-7 rounded-full bg-[#00a8e8] flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+                                    <span class="w-2 h-2 rounded-full bg-white opacity-0"></span>
+                                </span>
+                                <span class="swatch-label text-xs font-semibold text-neutral-500">Fresh</span>
+                            </button>
+                        </div>
+
+                        <div class="text-[11px] text-neutral-400 font-medium">
+                            Watch the previous marker shrink left while the next grows center stage.
+                        </div>
+                    </div>
+
+                    <!-- PANEL B UI: Anatomy Header & 6 Feature Callouts (0:19 - 0:21) -->
+                    <div id="anatomy-ui" class="gpu-layer absolute inset-0 pt-20 sm:pt-24 pb-12 flex flex-col justify-between opacity-0 pointer-events-none">
+                        
+                        <!-- Top Left Header ("What makes Urban stand out") -->
+                        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                            <div>
+                                <h2 class="font-sans font-bold text-3xl sm:text-[42px] tracking-tight text-neutral-900 leading-[1.08]">
+                                    What makes<br>Urban stand out
+                                </h2>
+                                <p class="text-xs text-neutral-400 mt-1.5">Engineered for effortless reading flow.</p>
+                            </div>
+
+                            <!-- Interactive Manual Cap Toggle Button -->
+                            <button id="manual-cap-btn" onclick="toggleManualCapOpen()" class="pointer-events-auto self-start sm:self-auto px-4 py-2 rounded-full bg-black text-white hover:bg-[#b8ff01] hover:text-black transition-all text-xs font-bold flex items-center gap-2 shadow-md">
+                                <i data-lucide="arrow-up-from-line" class="w-3.5 h-3.5"></i>
+                                <span id="manual-cap-btn-text">Open / Close Cap</span>
+                            </button>
+                        </div>
+
+                        <!-- 6 Callout Points with Horizontal Leader Lines (Matches 0:21 frame) -->
+                        <div class="my-auto grid grid-cols-1 lg:grid-cols-12 items-center w-full gap-6">
+                            
+                            <!-- Left 3 Callouts -->
+                            <div class="lg:col-span-4 flex flex-col justify-between space-y-12 sm:space-y-20">
+                                <div class="anatomy-callout flex items-center justify-between lg:justify-end gap-4">
+                                    <div class="text-left lg:text-right">
+                                        <h4 class="text-sm sm:text-base font-bold text-neutral-900">Flexible<br>Design</h4>
+                                    </div>
+                                    <div class="callout-line h-[1px] bg-neutral-300 w-16 sm:w-28 relative">
+                                        <span class="absolute right-0 -top-1 w-2 h-2 rounded-full bg-neutral-400"></span>
+                                    </div>
+                                </div>
+
+                                <div class="anatomy-callout flex items-center justify-between lg:justify-end gap-4">
+                                    <div class="text-left lg:text-right">
+                                        <h4 class="text-sm sm:text-base font-bold text-neutral-900">Lab-Tested<br>Purity</h4>
+                                    </div>
+                                    <div class="callout-line h-[1px] bg-neutral-300 w-20 sm:w-32 relative">
+                                        <span class="absolute right-0 -top-1 w-2 h-2 rounded-full bg-neutral-400"></span>
+                                    </div>
+                                </div>
+
+                                <div class="anatomy-callout flex items-center justify-between lg:justify-end gap-4">
+                                    <div class="text-left lg:text-right">
+                                        <h4 class="text-sm sm:text-base font-bold text-neutral-900">Unmatched<br>Efficiency</h4>
+                                    </div>
+                                    <div class="callout-line h-[1px] bg-neutral-300 w-16 sm:w-28 relative">
+                                        <span class="absolute right-0 -top-1 w-2 h-2 rounded-full bg-neutral-400"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Center Spacer for Vertical Green Marker -->
+                            <div class="lg:col-span-4"></div>
+
+                            <!-- Right 3 Callouts -->
+                            <div class="lg:col-span-4 flex flex-col justify-between space-y-12 sm:space-y-20">
+                                <div class="anatomy-callout flex items-center justify-between lg:justify-start gap-4">
+                                    <div class="callout-line h-[1px] bg-neutral-300 w-16 sm:w-28 relative">
+                                        <span class="absolute left-0 -top-1 w-2 h-2 rounded-full bg-neutral-400"></span>
+                                    </div>
+                                    <div class="text-right lg:text-left">
+                                        <h4 class="text-sm sm:text-base font-bold text-neutral-900">Precise<br>Tipping</h4>
+                                    </div>
+                                </div>
+
+                                <div class="anatomy-callout flex items-center justify-between lg:justify-start gap-4">
+                                    <div class="callout-line h-[1px] bg-neutral-300 w-20 sm:w-32 relative">
+                                        <span class="absolute left-0 -top-1 w-2 h-2 rounded-full bg-neutral-400"></span>
+                                    </div>
+                                    <div class="text-right lg:text-left">
+                                        <h4 class="text-sm sm:text-base font-bold text-neutral-900">Enhanced<br>Breathability</h4>
+                                    </div>
+                                </div>
+
+                                <div class="anatomy-callout flex items-center justify-between lg:justify-start gap-4">
+                                    <div class="callout-line h-[1px] bg-neutral-300 w-16 sm:w-28 relative">
+                                        <span class="absolute left-0 -top-1 w-2 h-2 rounded-full bg-neutral-400"></span>
+                                    </div>
+                                    <div class="text-right lg:text-left">
+                                        <h4 class="text-sm sm:text-base font-bold text-neutral-900">Anti-Bleed<br>Care</h4>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="h-4"></div>
+                    </div>
+
+                </div>
+
+                <!-- =========================================================
+                     CENTER/RIGHT MULTI-MARKER CAROUSEL & CAP-OPENING STAGE
+                     Replicates:
+                     - 0:14: Large Tilted Marker with Radial Glow
+                     - 0:15: Previous Marker Shrinking Small on Left while Next Marker Grows Big on Right!
+                     - 0:19: Green Marker Straightens to 0deg Vertical (Cap Closed)
+                     - 0:20-0:21: Cap Opens Smoothly Upward Revealing Chisel Tip!
+                ========================================================== -->
+                <div id="markers-carousel-stage" class="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                    <!-- Dynamic Marker Items Injected & Animated by JS Choreography Engine -->
+                </div>
+
+            </div>
+        </div>
+
+        <!-- =================================================================
+             LAYER 4: SLIDING DARK FOOTER PANEL (0:22 - 0:24)
+             Slides UP from the bottom over the Anatomy stage!
+        ================================================================== -->
+        <footer id="footer-slide-panel" class="gpu-layer absolute inset-0 z-40 bg-[#121212] text-white flex flex-col justify-between pt-20 pb-10 px-6 sm:px-12 translate-y-full overflow-y-auto">
+            <div class="max-w-[1440px] w-full mx-auto my-auto">
+                
+                <!-- Top Giant "URBAN" + Animated Neon Green "Markers" Signature (Matches 0:23-0:24) -->
+                <div class="relative flex items-center justify-center sm:justify-start py-6 sm:py-10 border-b border-white/10">
+                    <h2 class="font-sans font-extrabold text-[20vw] sm:text-[175px] lg:text-[235px] leading-[0.82] tracking-[-0.045em] text-white uppercase">
+                        URBAN
+                    </h2>
+
+                    <!-- Animated Handwritten Neon Green "Markers" Script Overlay -->
+                    <span id="footer-script-markers" class="font-script font-bold text-[15vw] sm:text-[125px] lg:text-[175px] text-[#b8ff01] drop-shadow-[0_6px_28px_rgba(184,255,1,0.5)] absolute right-2 sm:right-10 lg:right-20 -bottom-4 sm:-bottom-2 -rotate-6 pointer-events-none transition-all duration-700">
+                        Markers
+                    </span>
+                </div>
+
+                <!-- 4-Column Footer Links Grid (Matches 0:23 frame) -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-8 py-12 text-xs">
+                    <div class="flex flex-col gap-2.5">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1">Explore</span>
+                        <button onclick="jumpToProgress(0)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Shop</button>
+                        <button onclick="jumpToProgress(0.21)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Philosophy</button>
+                        <button onclick="jumpToProgress(0.47)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Lookbook</button>
+                        <button onclick="jumpToProgress(0.80)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Bestsellers</button>
+                        <button onclick="jumpToProgress(0.47)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Custom</button>
+                    </div>
+
+                    <div class="flex flex-col gap-2.5">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1">Studio</span>
+                        <button onclick="jumpToProgress(0)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Start Here</button>
+                        <button onclick="jumpToProgress(0.21)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">New Here</button>
+                        <button onclick="jumpToProgress(0.47)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Media Kit</button>
+                        <button onclick="jumpToProgress(0.80)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Our Values</button>
+                        <button onclick="jumpToProgress(0.98)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Reach Out</button>
+                    </div>
+
+                    <div class="flex flex-col gap-2.5">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1">Community</span>
+                        <button onclick="jumpToProgress(0)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Start</button>
+                        <button onclick="jumpToProgress(0.47)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Products</button>
+                        <button onclick="jumpToProgress(0.21)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Mission</button>
+                        <button onclick="jumpToProgress(0.80)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Reviews</button>
+                        <button onclick="jumpToProgress(0.98)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Connect</button>
+                    </div>
+
+                    <div class="flex flex-col gap-2.5">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1">Navigation</span>
+                        <button onclick="jumpToProgress(0)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Home</button>
+                        <button onclick="jumpToProgress(0.80)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">How It's Made</button>
+                        <button onclick="jumpToProgress(0.21)" class="text-left text-neutral-300 hover:text-[#b8ff01] transition-colors">Philosophy</button>
+                    </div>
+                </div>
+
+                <!-- Bottom Copyright -->
+                <div class="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-neutral-500">
+                    <p>© 2025 Urban Markers. Scroll Up or Use Timeline Scrubber to Inspect Every Frame.</p>
+                    <div class="flex items-center gap-6">
+                        <span>Privacy Policy</span>
+                        <span>Terms of Use</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- =====================================================================
+         INTERACTIVE TIMELINE SCRUBBER HUD (Bottom Center/Right)
+         Allows instant scrubbing to 0:08, 0:10, 0:15 (Dual Marker Sort), 0:20 (Cap Opening)
+    ====================================================================== -->
+    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[85] bg-black/85 backdrop-blur-md text-white px-4 py-2.5 rounded-full border border-white/15 shadow-2xl flex items-center gap-3 max-w-[95vw] overflow-x-auto">
+        <span id="hud-timecode" class="text-[11px] font-mono font-bold text-[#b8ff01] shrink-0">0:07</span>
+        <input id="timeline-scrubber" type="range" min="0" max="1000" value="0" class="w-28 sm:w-44 accent-[#b8ff01] cursor-pointer shrink-0" />
+        <div class="hidden md:flex items-center gap-1.5 text-[10px] font-semibold shrink-0">
+            <button onclick="jumpToProgress(0.0)" class="px-2 py-1 rounded-full bg-white/10 hover:bg-[#b8ff01] hover:text-black transition-colors">0:07 Hero</button>
+            <button onclick="jumpToProgress(0.16)" class="px-2 py-1 rounded-full bg-white/10 hover:bg-[#b8ff01] hover:text-black transition-colors">0:10 Shrink</button>
+            <button onclick="jumpToProgress(0.24)" class="px-2 py-1 rounded-full bg-white/10 hover:bg-[#b8ff01] hover:text-black transition-colors">0:12 Ribbon</button>
+            <button onclick="jumpToProgress(0.45)" class="px-2 py-1 rounded-full bg-white/10 hover:bg-[#b8ff01] hover:text-black transition-colors">0:15 Sort</button>
+            <button onclick="jumpToProgress(0.81)" class="px-2 py-1 rounded-full bg-white/10 hover:bg-[#b8ff01] hover:text-black transition-colors">0:20 Cap Open</button>
+            <button onclick="jumpToProgress(0.98)" class="px-2 py-1 rounded-full bg-white/10 hover:bg-[#b8ff01] hover:text-black transition-colors">0:23 Footer</button>
+        </div>
+    </div>
+
+    <!-- Custom Toast Notification -->
+    <div id="toast-box" class="fixed top-20 right-6 z-[95] translate-x-96 opacity-0 pointer-events-none transition-all duration-300 bg-black text-white px-4 py-3 rounded-2xl shadow-2xl border border-white/15 flex items-center gap-2.5 text-xs font-semibold">
+        <span class="w-2 h-2 rounded-full bg-[#b8ff01]"></span>
+        <span id="toast-text">Added to Cart</span>
+    </div>
+
+    <!-- =====================================================================
+         MASTER CHOREOGRAPHY & MOTION ENGINE
+    ====================================================================== -->
+    <script>
+        lucide.createIcons();
+
+        /* -------------------------------------------------------------------
+           UTILITY MATH FUNCTIONS FOR SCROLL CHOREOGRAPHY
+        ------------------------------------------------------------------- */
+        const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+        const lerp = (start, end, t) => start + (end - start) * t;
+        const mapRange = (val, inMin, inMax, outMin, outMax) => {
+            const t = clamp((val - inMin) / (inMax - inMin), 0, 1);
+            return lerp(outMin, outMax, t);
+        };
+        const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+        /* -------------------------------------------------------------------
+           1. AUTHENTIC MULTI-STROKE SIGNATURE PRELOADER (0:00 - 0:06)
+              Draws "U" -> "rb" -> "an" -> swish -> stacked "MARKERS"
+              Then slides the Hero white screen UP from the bottom!
+        ------------------------------------------------------------------- */
+        const preloaderStage = document.getElementById('preloader-stage');
+        const sigStrokes = [
+            document.getElementById('sig-stroke-1'),
+            document.getElementById('sig-stroke-2'),
+            document.getElementById('sig-stroke-3'),
+            document.getElementById('sig-stroke-4')
+        ];
+        const sigBrushTip = document.getElementById('sig-brush-tip');
+        const sigMarkersStack = document.getElementById('sig-markers-stack');
+        const sigProgressBar = document.getElementById('sig-progress-bar');
+        const sigStatusLabel = document.getElementById('sig-status-label');
+        const heroShrinkLayer = document.getElementById('hero-shrink-layer');
+
+        let introAnimFrame = null;
+
+        function replaySignatureIntro() {
+            if (introAnimFrame) cancelAnimationFrame(introAnimFrame);
+            stopAutoplayTour();
+            window.scrollTo({ top: 0, behavior: 'instant' });
+            targetProgress = 0;
+            smoothProgress = 0;
+
+            // Reset Preloader visibility and push Hero layer down offscreen (translateY(100%))
+            preloaderStage.style.opacity = '1';
+            preloaderStage.style.pointerEvents = 'auto';
+            heroShrinkLayer.style.transition = 'none';
+            heroShrinkLayer.style.transform = 'translateY(100vh)';
+
+            sigMarkersStack.classList.remove('opacity-100', 'translate-y-0');
+            sigMarkersStack.classList.add('opacity-0', 'translate-y-3');
+            sigStatusLabel.textContent = 'Drawing Signature...';
+
+            // Prepare stroke lengths
+            const lengths = sigStrokes.map(path => {
+                const len = path.getTotalLength();
+                path.style.strokeDasharray = len;
+                path.style.strokeDashoffset = len;
+                return len;
+            });
+
+            const startTime = performance.now();
+            const drawDuration = 1850; // ms for handwriting
+
+            function stepSignature(now) {
+                const elapsed = now - startTime;
+                const t = clamp(elapsed / drawDuration, 0, 1);
+                sigProgressBar.style.width = `${(t * 100).toFixed(1)}%`;
+
+                // Sequential stroke windows:
+                // Stroke 1 ("U"): 0.0 -> 0.35
+                // Stroke 2 ("rb"): 0.32 -> 0.68
+                // Stroke 3 ("an"): 0.65 -> 0.92
+                // Stroke 4 (neon underline): 0.88 -> 1.0
+                const windows = [
+                    [0.0, 0.35],
+                    [0.32, 0.68],
+                    [0.65, 0.92],
+                    [0.88, 1.0]
+                ];
+
+                let activeStrokeIdx = -1;
+                let activeStrokeT = 0;
+
+                windows.forEach(([wStart, wEnd], idx) => {
+                    const localT = easeInOutCubic(clamp((t - wStart) / (wEnd - wStart), 0, 1));
+                    sigStrokes[idx].style.strokeDashoffset = lengths[idx] * (1 - localT);
+                    if (t >= wStart && t <= wEnd) {
+                        activeStrokeIdx = idx;
+                        activeStrokeT = localT;
+                    }
+                });
+
+                // Move live glowing brush tip along current active path
+                if (activeStrokeIdx !== -1 && t < 0.99) {
+                    const activePath = sigStrokes[activeStrokeIdx];
+                    const pt = activePath.getPointAtLength(lengths[activeStrokeIdx] * activeStrokeT);
+                    sigBrushTip.setAttribute('cx', pt.x);
+                    sigBrushTip.setAttribute('cy', pt.y);
+                    sigBrushTip.style.opacity = '1';
+                } else {
+                    sigBrushTip.style.opacity = '0';
+                }
+
+                // Pop in "MARKERS / MARKERS" stack at 78%
+                if (t > 0.78) {
+                    sigMarkersStack.classList.remove('opacity-0', 'translate-y-3');
+                    sigMarkersStack.classList.add('opacity-100', 'translate-y-0');
+                    sigStatusLabel.textContent = 'Urban Markers Ready';
+                }
+
+                if (t < 1) {
+                    introAnimFrame = requestAnimationFrame(stepSignature);
+                } else {
+                    // Hold signature briefly, then slide Hero white panel UP from bottom overlaying the dark preloader (0:06 -> 0:07)
+                    setTimeout(() => {
+                        heroShrinkLayer.style.transition = 'transform 0.95s cubic-bezier(0.76, 0, 0.24, 1)';
+                        heroShrinkLayer.style.transform = 'translateY(0vh)';
+                        setTimeout(() => {
+                            preloaderStage.style.opacity = '0';
+                            preloaderStage.style.pointerEvents = 'none';
+                            heroShrinkLayer.style.transition = 'none';
+                        }, 960);
+                    }, 380);
+                }
+            }
+
+            introAnimFrame = requestAnimationFrame(stepSignature);
+        }
+
+        /* -------------------------------------------------------------------
+           2. BUILD THE 5 HIGH-DETAIL 3D CLOSED/OPENING MARKERS FOR LAYER 3
+              Supports:
+              - 15s Frame Multi-Marker Sort Carousel (Orange, Purple, Red, Green, Blue)
+              - Closed-to-Open Cap Animation on the Green Marker (0:19 - 0:21)
+        ------------------------------------------------------------------- */
+        const markerSpecs = [
+            {
+                id: 'orange',
+                name: 'Deep Orange',
+                scriptWord: 'highlights',
+                aura: '#ff6b00',
+                bodyStops: ['#ffbe73', '#ff6b00', '#c74300', '#702400'],
+                capStops: ['#ffbe73', '#ea5800', '#6e2200'],
+                capDark: false
+            },
+            {
+                id: 'purple',
+                name: 'Pure Purple',
+                scriptWord: 'creativity',
+                aura: '#9d4edd',
+                bodyStops: ['#e0aaff', '#9d4edd', '#5a189a', '#310857'],
+                capStops: ['#d896ff', '#7b2cbf', '#2d064f'],
+                capDark: false
+            },
+            {
+                id: 'red',
+                name: 'Vivid Red',
+                scriptWord: 'notes',
+                aura: '#ff2a54',
+                bodyStops: ['#ff8fa3', '#ff1e42', '#b80d2a', '#660414'],
+                capStops: ['#ff758f', '#d90429', '#590310'],
+                capDark: false
+            },
+            {
+                id: 'green',
+                name: 'Neon Green',
+                scriptWord: 'reading',
+                aura: '#a8f000',
+                bodyStops: ['#ecff99', '#b8ff01', '#7cb800', '#446600'],
+                capStops: ['#4f4f4f', '#292929', '#121212'], // Dark smoky translucent cap like 0:18-0:21
+                capDark: true
+            },
+            {
+                id: 'blue',
+                name: 'Fresh Blue',
+                scriptWord: 'vision',
+                aura: '#00bbf9',
+                bodyStops: ['#90e0ef', '#00bbf9', '#0077b6', '#022b47'],
+                capStops: ['#72ddf7', '#0096c7', '#022b47'],
+                capDark: false
+            }
+        ];
+
+        const carouselStage = document.getElementById('markers-carousel-stage');
+
+        function createCarouselMarkersDOM() {
+            carouselStage.innerHTML = markerSpecs.map((m, idx) => `
+                <div id="carousel-marker-${idx}" class="gpu-layer absolute flex items-center justify-center w-[260px] sm:w-[310px] h-[520px] sm:h-[580px] pointer-events-auto cursor-pointer" onclick="selectCarouselColor(${idx})">
+                    
+                    <!-- Soft Radial Color Bloom Behind Each Marker (Visible on BOTH shrunk & main marker like 0:15!) -->
+                    <div id="marker-aura-${idx}" class="absolute w-[340px] sm:w-[460px] h-[340px] sm:h-[460px] rounded-full blur-[75px] pointer-events-none transition-opacity duration-300"
+                         style="background: radial-gradient(circle, ${m.aura} 0%, rgba(255,255,255,0) 70%); opacity: 0.78;">
+                    </div>
+
+                    <!-- 3D Studio Highlighter SVG (Has Separately Animatable Cap, Inner Chisel Tip, Barrel & Base) -->
+                    <svg viewBox="0 0 240 560" class="w-full h-full overflow-visible marker-shadow" fill="none">
+                        <defs>
+                            <linearGradient id="bodyGrad-${idx}" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="${m.bodyStops[0]}" />
+                                <stop offset="28%" stop-color="${m.bodyStops[1]}" />
+                                <stop offset="76%" stop-color="${m.bodyStops[2]}" />
+                                <stop offset="100%" stop-color="${m.bodyStops[3]}" />
+                            </linearGradient>
+                            <linearGradient id="capGrad-${idx}" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="${m.capStops[0]}" stop-opacity="0.9" />
+                                <stop offset="45%" stop-color="${m.capStops[1]}" stop-opacity="0.94" />
+                                <stop offset="100%" stop-color="${m.capStops[2]}" stop-opacity="0.97" />
+                            </linearGradient>
+                            <linearGradient id="baseBlack-${idx}" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#383838" />
+                                <stop offset="25%" stop-color="#525252" />
+                                <stop offset="65%" stop-color="#1a1a1a" />
+                                <stop offset="100%" stop-color="#080808" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Dashed Technical Axis Line (Fades in during Cap Opening at 0:20) -->
+                        <line id="tech-axis-${idx}" x1="120" y1="10" x2="120" y2="540" stroke="#111" stroke-width="1" stroke-dasharray="4 4" opacity="0" />
+
+                        <!-- 1. INNER CHISEL NIB & NOZZLE (Revealed when Cap slides UP and OFF at 0:20!) -->
+                        <g id="inner-nib-${idx}">
+                            <!-- Angled Chisel Tip -->
+                            <path d="M100 105 L142 86 L146 150 L96 150 Z" fill="${m.bodyStops[1]}" />
+                            <path d="M100 105 L142 86 L145 92 L102 111 Z" fill="${m.bodyStops[0]}" />
+                            <!-- Stepped Black Inner Collar with Air Channels -->
+                            <rect x="86" y="146" width="68" height="26" rx="3" fill="url(#baseBlack-${idx})" />
+                            <rect x="78" y="168" width="84" height="10" rx="2" fill="#161616" />
+                        </g>
+
+                        <!-- 2. ANIMATABLE OUTER CAP (Closed at 0:14-0:19; Slides UP -142px at 0:20-0:21!) -->
+                        <g id="outer-cap-${idx}" class="gpu-layer">
+                            <!-- Cap Cylinder -->
+                            <path d="M76 68 C76 56, 164 56, 164 68 L168 176 L72 176 Z" fill="url(#capGrad-${idx})" />
+                            <!-- Top Bevel Gloss -->
+                            <ellipse cx="120" cy="62" rx="44" ry="5.5" fill="white" opacity="0.32" />
+                            <!-- Side Pocket Clip -->
+                            <path d="M75 78 L58 86 C53 89, 52 95, 52 104 L54 186 C54 191, 61 191, 62 185 L62 102 C62 96, 66 93, 74 90 Z" fill="url(#capGrad-${idx})" />
+                            <!-- Cap Vertical Specular Highlight -->
+                            <rect x="86" y="66" width="12" height="106" fill="white" opacity="0.24" filter="blur(2px)" />
+                        </g>
+
+                        <!-- 3. MAIN COLORED BARREL WITH VERTICAL BRANDING -->
+                        <g id="main-barrel-${idx}">
+                            <rect x="72" y="176" width="96" height="4" fill="#111111" opacity="0.45" />
+                            <path d="M72 180 L168 180 L164 402 L76 402 Z" fill="url(#bodyGrad-${idx})" />
+                            <!-- 3D Cylindrical Gloss Reflection -->
+                            <rect x="86" y="182" width="14" height="216" fill="white" opacity="0.28" filter="blur(2.5px)" />
+                            <!-- Vertical "URBAN MARKERS" Print (Matches 0:14-0:21 in video) -->
+                            <g transform="translate(128, 292) rotate(-90)">
+                                <text x="0" y="0" text-anchor="middle" fill="#141414" font-family="Inter, sans-serif" font-weight="900" font-size="14.5" letter-spacing="1.4">
+                                    URBAN MARKERS
+                                </text>
+                                <text x="0" y="14" text-anchor="middle" fill="#141414" opacity="0.75" font-family="Inter, sans-serif" font-weight="700" font-size="7" letter-spacing="2.2">
+                                    HIGHLIGHTER PEN
+                                </text>
+                            </g>
+                        </g>
+
+                        <!-- 4. BOTTOM MATTE BLACK END PLUG (Separates slightly during 0:21 anatomy view) -->
+                        <g id="bottom-plug-${idx}" class="gpu-layer">
+                            <!-- Inner Ink Reservoir Fiber Core (Revealed when bottom plug drops) -->
+                            <rect x="94" y="382" width="52" height="34" rx="3" fill="${m.bodyStops[0]}" opacity="0.85" />
+                            <rect x="75" y="402" width="90" height="14" fill="#111111" />
+                            <path d="M78 416 L162 416 L158 492 C158 502, 82 502, 82 492 Z" fill="url(#baseBlack-${idx})" />
+                            <text x="120" y="458" text-anchor="middle" fill="#ffffff" opacity="0.55" font-family="Inter, sans-serif" font-weight="800" font-size="8" letter-spacing="2">
+                                URBAN
+                            </text>
+                            <rect x="105" y="464" width="30" height="1.5" fill="#b8ff01" opacity="0.75" />
+                        </g>
+                    </svg>
+                </div>
+            `).join('');
+        }
+
+        createCarouselMarkersDOM();
+
+        /* -------------------------------------------------------------------
+           3. CONTINUOUS SCROLL & INTERACTIVE CHOREOGRAPHY ENGINE
+              Maps scroll progress (0.0 -> 1.0) to exact video timestamps:
+              - 0.00 - 0.16 (0:07 - 0:10): Hero words slide down & fade; Hero box shrinks to 430x270; Marquee rows scrub L/R & R/L
+              - 0.16 - 0.30 (0:10 - 0:12): Green marker inside shrunk box morphs to Cute Mascot (0:11) -> 3D Neon Ribbon (0:12)
+              - 0.30 - 0.38 (0:12 - 0:13): Light Showcase Panel slides UP over Dark Marquee stage
+              - 0.38 - 0.64 (0:14 - 0:18): 15s Frame Multi-Marker Scale/Sort Carousel (Previous shrinks left, Active grows center)
+              - 0.64 - 0.72 (0:18 - 0:19): Green Marker centers & straightens from 10deg to 0deg vertical; Anatomy UI fades in
+              - 0.72 - 0.86 (0:19 - 0:21): Closed Cap opens upward (-142px) revealing chisel tip; 6 Callouts expand
+              - 0.86 - 1.00 (0:22 - 0:24): Dark Footer slides UP from bottom overlaying Anatomy stage
+        ------------------------------------------------------------------- */
+        let targetProgress = 0;
+        let smoothProgress = 0;
+        let manualCarouselTarget = null; // Allows clicking color swatches to sort smoothly
+        let currentCarouselIndex = 0;    // Smoothly interpolated float 0..4
+        let manualCapOverride = null;    // Allows clicking "Open / Close Cap" button directly
+        let isAutoplay = false;
+
+        // DOM References
+        const heroMorphBox = document.getElementById('hero-morph-box');
+        const boxStudioVignette = document.getElementById('box-studio-vignette');
+        const heroLeftWords = document.getElementById('hero-left-words');
+        const heroRightWords = document.getElementById('hero-right-words');
+        const heroBottomAvatars = document.getElementById('hero-bottom-avatars');
+        const heroChiselMarker = document.getElementById('hero-chisel-marker');
+        const heroMarkerInnerGroup = document.getElementById('hero-marker-inner-group');
+        const buddyMascotStage = document.getElementById('buddy-mascot-stage');
+        const buddyRibbonStage = document.getElementById('buddy-ribbon-stage');
+        const buddyRibbonPath = document.getElementById('buddy-ribbon-path');
+        const buddyHeader = document.getElementById('buddy-header');
+        const marqueeRowsContainer = document.getElementById('marquee-rows-container');
+        const scrollRowTop = document.getElementById('scroll-row-top');
+        const scrollRowBottom = document.getElementById('scroll-row-bottom');
+
+        const showcaseSlidePanel = document.getElementById('showcase-slide-panel');
+        const colorSelectorUI = document.getElementById('color-selector-ui');
+        const colorScriptWord = document.getElementById('color-script-word');
+        const anatomyUI = document.getElementById('anatomy-ui');
+        const footerSlidePanel = document.getElementById('footer-slide-panel');
+        const footerScriptMarkers = document.getElementById('footer-script-markers');
+        const mainNavbar = document.getElementById('main-navbar');
+        const timelineScrubber = document.getElementById('timeline-scrubber');
+        const hudTimecode = document.getElementById('hud-timecode');
+
+        // Sync window scroll with targetProgress
+        window.addEventListener('scroll', () => {
+            if (isAutoplay) return;
+            const maxScroll = document.getElementById('scroll-track').offsetHeight - window.innerHeight;
+            targetProgress = clamp(window.scrollY / maxScroll, 0, 1);
+            // Release manual overrides when scrolling into different zones
+            if (targetProgress < 0.36 || targetProgress > 0.65) {
+                manualCarouselTarget = null;
+            }
+            if (targetProgress < 0.65) {
+                manualCapOverride = null;
+            }
+        }, { passive: true });
+
+        // Timeline Scrubber Input
+        timelineScrubber.addEventListener('input', (e) => {
+            stopAutoplayTour();
+            const p = parseFloat(e.target.value) / 1000;
+            jumpToProgress(p, true);
+        });
+
+        function jumpToProgress(p, instant = false) {
+            const maxScroll = document.getElementById('scroll-track').offsetHeight - window.innerHeight;
+            targetProgress = clamp(p, 0, 1);
+            window.scrollTo({
+                top: targetProgress * maxScroll,
+                behavior: instant ? 'instant' : 'smooth'
+            });
+        }
+
+        // Interactive Color Swatch Click (15s Frame Multi-Marker Sort)
+        function selectCarouselColor(index) {
+            stopAutoplayTour();
+            // If user isn't currently on the Color Showcase panel, scroll them there smoothly
+            if (smoothProgress < 0.36 || smoothProgress > 0.66) {
+                const targetP = 0.40 + (index / 4) * 0.22;
+                jumpToProgress(targetP);
+            }
+            manualCarouselTarget = index;
+        }
+
+        // Interactive Manual Cap Open/Close Toggle
+        function toggleManualCapOpen() {
+            if (manualCapOverride === null) {
+                const currentScrollCap = mapRange(smoothProgress, 0.72, 0.84, 0, 1);
+                manualCapOverride = currentScrollCap > 0.5 ? 0 : 1;
+            } else {
+                manualCapOverride = manualCapOverride > 0.5 ? 0 : 1;
+            }
+        }
+
+        // Auto-Play Full Motion Tour
+        function toggleAutoplayTour() {
+            isAutoplay = !isAutoplay;
+            const btnText = document.getElementById('autoplay-text');
+            if (isAutoplay) {
+                btnText.textContent = 'Pause Motion';
+                if (smoothProgress >= 0.98) {
+                    targetProgress = 0;
+                    smoothProgress = 0;
+                }
+            } else {
+                btnText.textContent = 'Play Full Motion';
+            }
+        }
+
+        function stopAutoplayTour() {
+            if (!isAutoplay) return;
+            isAutoplay = false;
+            document.getElementById('autoplay-text').textContent = 'Play Full Motion';
+        }
+
+        // Update Active Swatch Styling on Left
+        let lastActiveSwatchInt = -1;
+        function updateSwatchHighlight(activeIdxInt) {
+            if (activeIdxInt === lastActiveSwatchInt) return;
+            lastActiveSwatchInt = activeIdxInt;
+
+            const spec = markerSpecs[activeIdxInt] || markerSpecs[0];
+            colorScriptWord.textContent = spec.scriptWord;
+            colorScriptWord.style.color = spec.aura;
+
+            document.querySelectorAll('.color-swatch-btn').forEach((btn, idx) => {
+                const ring = btn.querySelector('.swatch-ring');
+                const dot = ring.querySelector('span');
+                const label = btn.querySelector('.swatch-label');
+
+                if (idx === activeIdxInt) {
+                    ring.classList.add('ring-2', 'ring-offset-2', 'scale-110');
+                    ring.style.setProperty('--tw-ring-color', spec.aura);
+                    dot.classList.remove('opacity-0');
+                    label.classList.remove('text-neutral-500', 'font-semibold');
+                    label.classList.add('text-neutral-900', 'font-bold');
+                } else {
+                    ring.classList.remove('ring-2', 'ring-offset-2', 'scale-110');
+                    dot.classList.add('opacity-0');
+                    label.classList.add('text-neutral-500', 'font-semibold');
+                    label.classList.remove('text-neutral-900', 'font-bold');
+                }
+            });
+        }
+
+        /* -------------------------------------------------------------------
+           MAIN 60FPS RENDER LOOP
+        ------------------------------------------------------------------- */
+        function renderChoreographyLoop() {
+            if (isAutoplay) {
+                targetProgress += 0.00115; // Smoothly plays 0:07 -> 0:24 in ~14 seconds
+                if (targetProgress >= 1) {
+                    targetProgress = 1;
+                    stopAutoplayTour();
+                }
+                const maxScroll = document.getElementById('scroll-track').offsetHeight - window.innerHeight;
+                window.scrollTo({ top: targetProgress * maxScroll, behavior: 'instant' });
+            }
+
+            // Smooth interpolation
+            smoothProgress = lerp(smoothProgress, targetProgress, 0.11);
+            const p = smoothProgress;
+
+            // Update Scrubber HUD & Simulated Video Timestamp (0:07 -> 0:24)
+            timelineScrubber.value = Math.round(p * 1000);
+            const videoSec = Math.round(lerp(7, 24, p));
+            hudTimecode.textContent = `0:${videoSec < 10 ? '0' + videoSec : videoSec}`;
+
+            // Adapt Navbar Colors (Dark text on light panels, White text on dark panels)
+            const isDarkNavbar = (p > 0.09 && p < 0.34) || (p > 0.90);
+            mainNavbar.style.color = isDarkNavbar ? '#ffffff' : '#141414';
+
+            /* ===============================================================
+               PHASE 1 & 2 (p: 0.00 -> 0.32):
+               - Hero Words Slide Downwards & Disappear (0:08 -> 0:10)
+               - White Hero Viewport Shrinks into Center 430x270 Framed Window
+               - Green Marker Shrinks Proportionally Inside the Box
+               - Background "Urban Markers" Rows Scrub Left-to-Right & Right-to-Left
+               - Marker Crossfades to Cute Buddy Mascot (0:11) -> 3D Ribbon (0:12)
+            =============================================================== */
+            const shrinkT = easeInOutCubic(mapRange(p, 0.01, 0.14, 0, 1));
+            const wordsDropT = easeOutCubic(mapRange(p, 0.005, 0.10, 0, 1));
+
+            // 1A. Words sliding downwards and disappearing (like 0:08 - 0:09 in video)
+            const wordsY = lerp(0, 240, wordsDropT);
+            const wordsOpacity = clamp(1 - wordsDropT * 1.35, 0, 1);
+            heroLeftWords.style.transform = `translate3d(0, ${wordsY}px, 0)`;
+            heroLeftWords.style.opacity = wordsOpacity;
+            heroRightWords.style.transform = `translate3d(0, ${wordsY * 1.15}px, 0)`;
+            heroRightWords.style.opacity = wordsOpacity;
+            heroBottomAvatars.style.transform = `translate3d(0, ${wordsY * 0.8}px, 0)`;
+            heroBottomAvatars.style.opacity = wordsOpacity;
+
+            // 1B. Shrinking Center Frame (100vw x 100vh -> 420px x 265px)
+            const targetW = Math.min(window.innerWidth * 0.88, 430);
+            const targetH = Math.min(window.innerHeight * 0.46, 270);
+            const currentW = lerp(window.innerWidth, targetW, shrinkT);
+            const currentH = lerp(window.innerHeight, targetH, shrinkT);
+            const borderW = lerp(0, 5, shrinkT);
+            const radius = lerp(0, 14, shrinkT);
+
+            heroMorphBox.style.width = `${currentW}px`;
+            heroMorphBox.style.height = `${currentH}px`;
+            heroMorphBox.style.borderRadius = `${radius}px`;
+            heroMorphBox.style.border = `${borderW}px solid rgba(255,255,255,0.95)`;
+            boxStudioVignette.style.opacity = shrinkT * 0.95;
+
+            // 1C. Scroll-Linked Background Typography (Row 1 -> Left-to-Right, Row 2 -> Right-to-Left)
+            const marqueeVisibility = mapRange(p, 0.04, 0.12, 0, 1);
+            marqueeRowsContainer.style.opacity = marqueeVisibility;
+            buddyHeader.style.opacity = marqueeVisibility;
+            buddyHeader.style.transform = `translate3d(0, ${lerp(18, 0, marqueeVisibility)}px, 0)`;
+
+            // Continuous horizontal translation strictly driven by scroll progress p
+            const rowTopX = lerp(-620, 120, mapRange(p, 0.02, 0.36, 0, 1));
+            const rowBottomX = lerp(80, -680, mapRange(p, 0.02, 0.36, 0, 1));
+            scrollRowTop.style.transform = `translate3d(${rowTopX}px, 0, 0)`;
+            scrollRowBottom.style.transform = `translate3d(${rowBottomX}px, 0, 0)`;
+
+            // 1D. Inside the Shrinking Box:
+            // - 0.00 -> 0.15: Hero Green Chisel Marker shrinks & straightens slightly inside the frame (0:09 - 0:10)
+            // - 0.15 -> 0.22: Morphs into Cute 3D Reading Buddy Mascot with Eyes (0:11)
+            // - 0.22 -> 0.31: Morphs into 3D Neon Ribbon Loop drawing itself (0:12)
+            const markerShrinkScale = lerp(1.0, 0.62, shrinkT);
+            const markerShrinkY = lerp(0, 95, shrinkT); // Keeps chisel tip & collar centered in the small box
+            const markerFadeOut = mapRange(p, 0.145, 0.18, 1, 0);
+            heroChiselMarker.style.transform = `translate3d(0, ${markerShrinkY}px, 0) scale(${markerShrinkScale})`;
+            heroChiselMarker.style.opacity = markerFadeOut;
+
+            // Cute Mascot (0:11)
+            const mascotIn = mapRange(p, 0.15, 0.185, 0, 1);
+            const mascotOut = mapRange(p, 0.22, 0.245, 1, 0);
+            const mascotAlpha = Math.min(mascotIn, mascotOut);
+            buddyMascotStage.style.opacity = mascotAlpha;
+            buddyMascotStage.style.transform = `scale(${lerp(0.82, 1.0, mascotAlpha)}) translate3d(0, ${lerp(20, 0, mascotAlpha)}px, 0)`;
+
+            // 3D Neon Ribbon Swirl (0:12)
+            const ribbonIn = mapRange(p, 0.225, 0.25, 0, 1);
+            const ribbonDrawT = easeOutCubic(mapRange(p, 0.225, 0.30, 0, 1));
+            buddyRibbonStage.style.opacity = ribbonIn;
+            buddyRibbonPath.style.strokeDashoffset = 950 * (1 - ribbonDrawT);
+
+            /* ===============================================================
+               PHASE 3 (p: 0.30 -> 0.64):
+               - Light Showcase Panel Slides UP from Bottom Overlaying Dark Stage (0:13)
+               - 15s Frame Multi-Marker Scale & Sort Carousel (0:14 - 0:18):
+                 Previous marker shrinks small on the left while active marker
+                 grows large in the center!
+            =============================================================== */
+            const slideUpShowcaseT = easeInOutCubic(mapRange(p, 0.29, 0.37, 0, 1));
+            showcaseSlidePanel.style.transform = `translate3d(0, ${(1 - slideUpShowcaseT) * 100}%, 0)`;
+
+            // Determine active float index across the 5 markers (0: Orange -> 1: Purple -> 2: Red -> 3: Green -> 4: Blue)
+            const scrollCarouselIndex = mapRange(p, 0.37, 0.62, 0, 3.0); // Scrolls naturally from Orange (0) to Green (3) ready for Phase 4 handoff!
+            const desiredCarouselTarget = manualCarouselTarget !== null ? manualCarouselTarget : scrollCarouselIndex;
+            currentCarouselIndex = lerp(currentCarouselIndex, desiredCarouselTarget, 0.12);
+
+            updateSwatchHighlight(Math.round(currentCarouselIndex));
+
+            /* ===============================================================
+               PHASE 4 (p: 0.63 -> 0.86):
+               - Seamless Handoff to Green Marker (index 3) in Center
+               - Left UI transitions from "Urban's Solution" to "What makes Urban stand out"
+               - Green Marker Straightens from 10deg tilt to 0deg Vertical (0:19)
+               - Closed Cap Slides UP and OFF (-142px) Revealing Chisel Tip (0:20 - 0:21)
+               - 6 Feature Callouts Expand In
+            =============================================================== */
+            const anatomyTransitionT = easeInOutCubic(mapRange(p, 0.63, 0.70, 0, 1));
+
+            // Crossfade Left UI between Color Swatches and Anatomy Callouts
+            colorSelectorUI.style.opacity = clamp(1 - anatomyTransitionT * 1.4, 0, 1);
+            colorSelectorUI.style.transform = `translate3d(0, ${lerp(0, -60, anatomyTransitionT)}px, 0)`;
+            colorSelectorUI.style.pointerEvents = anatomyTransitionT > 0.5 ? 'none' : 'auto';
+
+            anatomyUI.style.opacity = clamp((anatomyTransitionT - 0.25) * 1.4, 0, 1);
+            anatomyUI.style.transform = `translate3d(0, ${lerp(50, 0, anatomyTransitionT)}px, 0)`;
+
+            // Cap Opening Progress (0:19 Closed -> 0:21 Open!)
+            const scrollCapOpenT = easeInOutCubic(mapRange(p, 0.71, 0.83, 0, 1));
+            const effectiveCapOpenT = manualCapOverride !== null
+                ? lerp(scrollCapOpenT, manualCapOverride, 0.85)
+                : scrollCapOpenT;
+
+            // Animate each of the 5 3D Markers in the Horizontal Depth Carousel
+            markerSpecs.forEach((m, idx) => {
+                const el = document.getElementById(`carousel-marker-${idx}`);
+                const auraEl = document.getElementById(`marker-aura-${idx}`);
+                const outerCapEl = document.getElementById(`outer-cap-${idx}`);
+                const bottomPlugEl = document.getElementById(`bottom-plug-${idx}`);
+                const techAxisEl = document.getElementById(`tech-axis-${idx}`);
+
+                // Relative offset in carousel:
+                // diff = 0 -> Active Center Marker (Large)
+                // diff = -1 -> Previous Marker Shrinking Small on the Left (Exact 0:15 two-marker frame!)
+                // diff = +1 -> Incoming Marker from Right
+                const diff = idx - currentCarouselIndex;
+
+                // Carousel coordinates (Phase 3)
+                let xPos = 65 + diff * 235;
+                let yPos = 0;
+                // When diff is around -1 (previous marker on the left), it shrinks to ~0.52 scale while staying visible just like the 15s frame!
+                let scale = diff < 0
+                    ? mapRange(diff, -1.3, 0, 0.46, 1.04)
+                    : mapRange(diff, 0, 1.3, 1.04, 0.52);
+                let rot = 10; // Signature 10deg tilt in Color Selector (0:14 - 0:18)
+                let opacity = clamp(1 - Math.abs(diff - (-0.25)) * 0.72, 0, 1);
+
+                // During Phase 4 (Anatomy / Cap Opening), lock Green Marker (idx === 3) to dead-center vertical (0deg) and fade out other markers
+                if (idx === 3) {
+                    xPos = lerp(xPos, 0, anatomyTransitionT);
+                    scale = lerp(scale, 1.08, anatomyTransitionT);
+                    rot = lerp(10, 0, anatomyTransitionT);
+                    opacity = lerp(opacity, 1, anatomyTransitionT);
+
+                    // Closed-to-Open Cap Animation on the Green Marker (0:19 Closed -> 0:21 Cap Slides Up & Off!)
+                    const capLiftY = lerp(0, -142, effectiveCapOpenT);
+                    const plugDropY = lerp(0, 42, effectiveCapOpenT);
+                    outerCapEl.style.transform = `translate3d(0, ${capLiftY}px, 0)`;
+                    bottomPlugEl.style.transform = `translate3d(0, ${plugDropY}px, 0)`;
+                    techAxisEl.setAttribute('opacity', (effectiveCapOpenT * 0.35).toFixed(2));
+                } else {
+                    opacity = opacity * (1 - anatomyTransitionT);
+                    outerCapEl.style.transform = 'translate3d(0, 0, 0)';
+                    bottomPlugEl.style.transform = 'translate3d(0, 0, 0)';
+                }
+
+                el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0) scale(${scale.toFixed(3)}) rotate(${rot.toFixed(2)}deg)`;
+                el.style.opacity = opacity.toFixed(3);
+                el.style.zIndex = Math.round(100 - Math.abs(diff) * 20);
+                el.style.pointerEvents = opacity > 0.25 ? 'auto' : 'none';
+                auraEl.style.opacity = clamp(opacity * 0.85, 0, 0.85).toFixed(2);
+            });
+
+            // Animate the 6 Callout Items in Phase 4 as the Cap Opens
+            const callouts = document.querySelectorAll('.anatomy-callout');
+            callouts.forEach((c, i) => {
+                const delayT = clamp(( anatomyTransitionT - i * 0.06 ) * 1.5, 0, 1);
+                c.style.opacity = delayT;
+                const dir = i < 3 ? -25 : 25;
+                c.style.transform = `translate3d(${lerp(dir, 0, delayT)}px, 0, 0)`;
+            });
+
+            /* ===============================================================
+               PHASE 5 (p: 0.86 -> 1.00):
+               - Dark Footer Slides UP from Bottom Overlaying Anatomy Stage (0:22 - 0:24)
+            =============================================================== */
+            const footerSlideT = easeInOutCubic(mapRange(p, 0.85, 0.96, 0, 1));
+            footerSlidePanel.style.transform = `translate3d(0, ${(1 - footerSlideT) * 100}%, 0)`;
+            footerScriptMarkers.style.transform = `rotate(-6deg) scale(${lerp(0.85, 1, footerSlideT)})`;
+            footerScriptMarkers.style.opacity = footerSlideT;
+
+            requestAnimationFrame(renderChoreographyLoop);
+        }
+
+        /* -------------------------------------------------------------------
+           4. CART & TOAST FEEDBACK
+        ------------------------------------------------------------------- */
+        let cartTotal = 0;
+        let toastTimeout = null;
+
+        function triggerCartToast(itemLabel = 'Urban Marker Set') {
+            cartTotal++;
+            document.getElementById('cart-badge').textContent = cartTotal;
+            const box = document.getElementById('toast-box');
+            document.getElementById('toast-text').textContent = `Added ${itemLabel} (${cartTotal})`;
+            box.classList.remove('translate-x-96', 'opacity-0');
+            box.classList.add('translate-x-0', 'opacity-100');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                box.classList.remove('translate-x-0', 'opacity-100');
+                box.classList.add('translate-x-96', 'opacity-0');
+            }, 2600);
+        }
+
+        // Start Signature Preloader and Continuous 60fps Choreography Engine on Load
+        window.addEventListener('load', () => {
+            replaySignatureIntro();
+            requestAnimationFrame(renderChoreographyLoop);
+        });
+    </script>
+</body>
+</html>

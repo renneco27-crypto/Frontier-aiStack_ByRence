@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opus 5.5 — 3D Tilted Scrolling Showcase</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Instrument Serif & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --font-serif: 'Instrument Serif', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --page-bg: #faf8f5;
+      --z-pop-multiplier: 1;
+      --dof-opacity: 0.92;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 35%, #ffffff 0%, #f5f2eb 58%, #ebe5da 100%);
+      font-family: var(--font-sans);
+      color: #141413;
+    }
+
+    .font-serif-editorial {
+      font-family: var(--font-serif);
+    }
+
+    /* ==========================================
+       3D CAMERA STAGE & DEPTH OF FIELD RIG
+       ========================================== */
+    .viewport-stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      perspective: 1250px;
+      perspective-origin: 50% 48%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+    }
+
+    .viewport-stage:active {
+      cursor: grabbing;
+    }
+
+    /* Top & Bottom Tilt-Shift Depth-of-Field Blur Overlays */
+    .dof-overlay-top {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 24vh;
+      pointer-events: none;
+      z-index: 35;
+      backdrop-filter: blur(9px);
+      -webkit-backdrop-filter: blur(9px);
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.65) 45%, rgba(0,0,0,0) 100%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.65) 45%, rgba(0,0,0,0) 100%);
+      background: linear-gradient(to bottom, rgba(250, 248, 245, 0.55), rgba(250, 248, 245, 0));
+      opacity: var(--dof-opacity);
+      transition: opacity 0.35s ease;
+    }
+
+    .dof-overlay-bottom {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 28vh;
+      pointer-events: none;
+      z-index: 35;
+      backdrop-filter: blur(11px);
+      -webkit-backdrop-filter: blur(11px);
+      mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.72) 48%, rgba(0,0,0,0) 100%);
+      -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.72) 48%, rgba(0,0,0,0) 100%);
+      background: linear-gradient(to top, rgba(246, 243, 238, 0.68), rgba(246, 243, 238, 0));
+      opacity: var(--dof-opacity);
+      transition: opacity 0.35s ease;
+    }
+
+    /* Warm foreground bokeh glows seen during Finale (00:10 - 00:14) */
+    .finale-bokeh {
+      position: fixed;
+      pointer-events: none;
+      z-index: 32;
+      border-radius: 9999px;
+      filter: blur(48px);
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .finale-bokeh-left {
+      width: 340px;
+      height: 260px;
+      left: 4vw;
+      bottom: -5vh;
+      background: radial-gradient(circle, rgba(249, 115, 22, 0.55) 0%, rgba(251, 146, 60, 0.25) 55%, transparent 75%);
+    }
+
+    .finale-bokeh-right {
+      width: 320px;
+      height: 240px;
+      right: 6vw;
+      bottom: -4vh;
+      background: radial-gradient(circle, rgba(234, 88, 12, 0.45) 0%, rgba(253, 186, 116, 0.2) 55%, transparent 75%);
+    }
+
+    /* ==========================================
+       3D TILTABLE CAMERA RIG & LONG PAGE SLAB
+       ========================================== */
+    .camera-rig {
+      position: relative;
+      width: 960px;
+      height: 100vh;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    /* The Long Website Slab that lies back and translates along its Y axis */
+    .page-slab {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 960px;
+      background: var(--page-bg);
+      border-radius: 36px;
+      transform-style: preserve-3d;
+      will-change: transform;
+      box-shadow:
+        0 40px 90px -20px rgba(20, 18, 14, 0.22),
+        0 18px 36px -10px rgba(20, 18, 14, 0.12),
+        0 0 0 1px rgba(20, 18, 14, 0.07),
+        0 10px 0 #e6e1d8; /* 3D slab thickness edge */
+      padding: 20px 24px 0 24px;
+    }
+
+    /* Finale Header above the slab ("You'll need Opus 5.5, for this level of quality") */
+    .finale-header {
+      position: absolute;
+      top: -175px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      transform-style: preserve-3d;
+      transform: translateZ(25px);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    /* Floating 3D Squircle Asterisk Badges around the Hero Card */
+    .squircle-badge {
+      position: absolute;
+      width: 82px;
+      height: 82px;
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-style: preserve-3d;
+      box-shadow:
+        0 26px 45px -12px rgba(0, 0, 0, 0.32),
+        0 10px 20px -6px rgba(0, 0, 0, 0.18),
+        inset 0 2px 3px rgba(255, 255, 255, 0.35),
+        inset 0 -3px 6px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+
+    .squircle-orange {
+      background: linear-gradient(145deg, #ea7342 0%, #c85223 100%);
+      top: 18px;
+      left: -58px;
+    }
+
+    .squircle-dark {
+      background: linear-gradient(145deg, #2d2d2b 0%, #141413 100%);
+      top: 8px;
+      right: -52px;
+    }
+
+    .squircle-blue {
+      background: linear-gradient(145deg, #8ec5fc 0%, #5b9bd5 100%);
+      top: 390px;
+      right: -72px;
+    }
+
+    /* ==========================================
+       3D ELEVATED CARDS & MULTI-LAYER SHADOWS
+       ========================================== */
+    .card-3d {
+      transform-style: preserve-3d;
+      will-change: transform, box-shadow;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .shadow-elevated {
+      box-shadow:
+        0 28px 50px -12px rgba(18, 22, 33, 0.22),
+        0 12px 22px -8px rgba(18, 22, 33, 0.12),
+        0 0 0 1px rgba(255, 255, 255, 0.65) inset;
+    }
+
+    .shadow-elevated-strong {
+      box-shadow:
+        0 42px 75px -15px rgba(15, 18, 28, 0.34),
+        0 18px 32px -10px rgba(15, 18, 28, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+    }
+
+    /* Marquee animation for Section 2 pills */
+    @keyframes marqueeLeft {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes marqueeRight {
+      0% { transform: translateX(-50%); }
+      100% { transform: translateX(0%); }
+    }
+
+    .marquee-track-left {
+      display: flex;
+      width: max-content;
+      animation: marqueeLeft 26s linear infinite;
+    }
+
+    .marquee-track-right {
+      display: flex;
+      width: max-content;
+      animation: marqueeRight 28s linear infinite;
+    }
+
+    /* Subtle Hero Sky Cloud Drift */
+    .hero-sky-bg {
+      background:
+        radial-gradient(circle at 82% 24%, rgba(255, 252, 235, 0.92) 0%, rgba(255, 244, 214, 0.45) 22%, transparent 48%),
+        radial-gradient(circle at 18% 72%, rgba(255, 255, 255, 0.85) 0%, rgba(226, 240, 255, 0.4) 32%, transparent 60%),
+        linear-gradient(180deg, #4b83c8 0%, #6ba1df 34%, #9bc3ef 68%, #dbe9f8 92%, #f5f3ef 100%);
+    }
+
+    /* Custom Range Slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(20, 20, 19, 0.12);
+      height: 5px;
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #141413;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top & Bottom Depth-of-Field Blur Lenses -->
+  <div id="dofTop" class="dof-overlay-top"></div>
+  <div id="dofBottom" class="dof-overlay-bottom"></div>
+
+  <!-- Warm Foreground Bokeh Orbs (visible in Finale frame) -->
+  <div id="bokehLeft" class="finale-bokeh finale-bokeh-left"></div>
+  <div id="bokehRight" class="finale-bokeh finale-bokeh-right"></div>
+
+  <!-- Top-Left Status & Phase Indicator Pill -->
+  <div class="fixed top-4 left-4 z-50 flex items-center gap-2.5 bg-white/85 backdrop-blur-md border border-black/10 px-3.5 py-2 rounded-full shadow-lg text-xs font-medium text-neutral-800">
+    <span id="phaseDot" class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+    <span class="font-semibold tracking-tight">Opus 5.5 Rig</span>
+    <span class="text-neutral-300">|</span>
+    <span id="phaseLabel" class="text-neutral-600">Phase 1: 3D Tilted Scroll Down</span>
+  </div>
+
+  <!-- ==========================================
+       MAIN 3D PERSPECTIVE VIEWPORT STAGE
+       ========================================== -->
+  <div id="viewportStage" class="viewport-stage">
+    <div id="cameraRig" class="camera-rig">
+
+      <!-- THE 3D PAGE SLAB -->
+      <div id="pageSlab" class="page-slab">
+
+        <!-- FINALE HEADER (Revealed above Hero Card at 00:10 - 00:14) -->
+        <div id="finaleHeader" class="finale-header">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 border border-black/10 shadow-sm text-xs font-semibold text-neutral-800 mb-2">
+            <span class="inline-flex items-center justify-center w-4 h-4 rounded bg-orange-500 text-white text-[10px]">✱</span>
+            <span>Opus 5.5</span>
+          </div>
+          <h1 class="text-5xl font-bold tracking-tight text-neutral-900 leading-none">
+            You’ll need Opus 5.5,
+          </h1>
+          <p class="font-serif-editorial italic text-5xl text-neutral-500 mt-1 leading-none">
+            for this level of quality
+          </p>
+        </div>
+
+        <!-- FLOATING 3D SQUIRCLE ASTERISK ICONS (Hero & Finale) -->
+        <div id="squircleOrange" class="squircle-badge squircle-orange">
+          <svg class="w-11 h-11 text-white" viewBox="0 0 40 40" fill="none">
+            <path d="M20 5V35M5 20H35M9.4 9.4L30.6 30.6M30.6 9.4L9.4 30.6" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <div id="squircleDark" class="squircle-badge squircle-dark">
+          <svg class="w-11 h-11 text-white" viewBox="0 0 40 40" fill="none">
+            <path d="M20 5V35M5 20H35M9.4 9.4L30.6 30.6M30.6 9.4L9.4 30.6" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <div id="squircleBlue" class="squircle-badge squircle-blue">
+          <svg class="w-10 h-10 text-white" viewBox="0 0 40 40" fill="none">
+            <path d="M20 5V35M5 20H35M9.4 9.4L30.6 30.6M30.6 9.4L9.4 30.6" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <!-- ==========================================
+             SECTION 1: HERO SHOWCASE CARD (00:00)
+             ========================================== -->
+        <section class="relative w-full rounded-[28px] hero-sky-bg p-7 pb-12 overflow-visible border border-white/60 shadow-inner" style="transform-style: preserve-3d;">
+          <!-- Soft SVG Cloud Formations in Background -->
+          <svg class="absolute inset-0 w-full h-full object-cover rounded-[28px] pointer-events-none opacity-80" viewBox="0 0 900 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="sunGlow" cx="80%" cy="22%" r="35%">
+                <stop offset="0%" stop-color="#FFFBEB" stop-opacity="0.95"/>
+                <stop offset="50%" stop-color="#FEF3C7" stop-opacity="0.45"/>
+                <stop offset="100%" stop-color="#93C5FD" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="cloudGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.92"/>
+                <stop offset="100%" stop-color="#E2E8F0" stop-opacity="0.35"/>
+              </linearGradient>
+            </defs>
+            <rect width="900" height="620" fill="url(#sunGlow)"/>
+            <!-- Fluffy Clouds Left & Right -->
+            <g fill="url(#cloudGrad)">
+              <circle cx="95" cy="370" r="85"/>
+              <circle cx="170" cy="390" r="70"/>
+              <circle cx="40" cy="410" r="65"/>
+              <circle cx="790" cy="330" r="95"/>
+              <circle cx="705" cy="365" r="75"/>
+              <circle cx="850" cy="380" r="80"/>
+              <circle cx="450" cy="480" r="140" opacity="0.5"/>
+            </g>
+          </svg>
+
+          <!-- Top Glass Pill Navbar -->
+          <div class="relative z-10 flex items-center justify-between max-w-2xl mx-auto px-4 py-2 rounded-full bg-white/25 backdrop-blur-md border border-white/40 text-white text-xs font-medium shadow-sm" data-z="18">
+            <div class="flex items-center gap-1.5 font-bold">
+              <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-white/25 text-white text-xs">✱</span>
+            </div>
+            <div class="flex items-center gap-6 text-white/95">
+              <span>Our model</span>
+              <span>Our mission</span>
+              <span>Built for you</span>
+              <span>FAQs</span>
+            </div>
+            <button class="px-3.5 py-1.5 rounded-full bg-white text-neutral-900 font-semibold text-[11px] shadow-sm">
+              Get Started
+            </button>
+          </div>
+
+          <!-- Hero Title with Hand-Drawn Oval around Italic "Opus 5.5" -->
+          <div class="relative z-10 text-center mt-8 mb-6 card-3d" data-z="32">
+            <h2 class="text-[44px] leading-[1.08] font-bold text-white tracking-tight drop-shadow-sm">
+              Design with
+              <span class="relative inline-block font-serif-editorial italic font-normal px-3 mx-0.5">
+                Opus 5.5
+                <svg class="absolute -inset-1 w-[108%] h-[116%] -left-[4%] -top-[8%] pointer-events-none" viewBox="0 0 180 64" fill="none">
+                  <ellipse cx="90" cy="32" rx="84" ry="25" stroke="rgba(255,255,255,0.85)" stroke-width="2" transform="rotate(-3 90 32)"/>
+                </svg>
+              </span>
+              &amp; more<br/>
+              <span>Opus 5.5</span>
+            </h2>
+
+            <div class="mt-5">
+              <span class="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-neutral-900 text-white text-xs font-semibold shadow-xl border border-white/15">
+                Start prompting for free
+              </span>
+            </div>
+          </div>
+
+          <!-- 3 Elevated Floating Cards / Phone Mockup Row -->
+          <div class="relative z-20 grid grid-cols-12 gap-4 items-end mt-6 px-2" style="transform-style: preserve-3d;">
+
+            <!-- Left Card: "What is your prompt?" -->
+            <div class="col-span-4 relative card-3d" data-z="48" data-tilt="-4">
+              <!-- Floating Callout Badge 1 -->
+              <div class=" -top-10 left-2 mb-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/95 text-neutral-900 text-[11px] font-semibold shadow-lg border border-black/5">
+                <span class="w-4 h-4 rounded bg-amber-400 text-white flex items-center justify-center text-[10px]">★</span>
+                <span>Designs confidently</span>
+              </div>
+              <!-- Floating Callout Badge 2 -->
+              <div class="mb-2.5 ml-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/90 text-neutral-800 text-[10px] font-medium shadow-md border border-black/5">
+                <span class="w-4 h-4 rounded bg-sky-500 text-white flex items-center justify-center text-[9px]">✱</span>
+                <span>Post code to inspect by...</span>
+              </div>
+
+              <!-- Glass Card Body -->
+              <div class="rounded-3xl bg-gradient-to-b from-sky-200/75 via-sky-100/70 to-white/85 backdrop-blur-md border border-white/80 p-5 h-60 flex flex-col justify-between shadow-elevated">
+                <div class="flex justify-center">
+                  <span class="w-6 h-6 rounded-full bg-sky-500/20 text-sky-800 flex items-center justify-center text-xs font-bold">+</span>
+                </div>
+                <div class="my-auto text-center">
+                  <p class="text-xl font-bold text-slate-800 tracking-tight leading-snug">
+                    What is<br/>your prompt?
+                  </p>
+                  <p class="text-[10px] text-slate-500 mt-1">Start a new creation in seconds</p>
+                </div>
+                <div class="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">
+                  OPUS 5.5 • OPUS 5.5
+                </div>
+              </div>
+            </div>
+
+            <!-- Center Card: iPhone 16 Pro Mockup ("Which model do you want to use?") -->
+            <div class="col-span-4 relative card-3d" data-z="76">
+              <div class="rounded-[36px] bg-neutral-950 p-2.5 shadow-elevated-strong border-2 border-neutral-700/80">
+                <div class="rounded-[29px] bg-gradient-to-b from-sky-200 via-sky-100 to-amber-50/90 p-4 pt-3 h-72 flex flex-col justify-between relative overflow-hidden">
+                  <!-- Status Bar & Dynamic Island -->
+                  <div class="flex items-center justify-between text-[10px] font-bold text-slate-800 px-1">
+                    <span>9:41</span>
+                    <div class="w-14 h-3.5 rounded-full bg-neutral-950"></div>
+                    <span>5G 100%</span>
+                  </div>
+
+                  <!-- Pill Counter -->
+                  <div class="flex justify-end mt-1">
+                    <span class="px-2 py-0.5 rounded-full bg-sky-600/20 text-sky-900 text-[9px] font-bold">
+                      ★ ★ ★ 4.9 RATED
+                    </span>
+                  </div>
+
+                  <!-- Phone Screen Title -->
+                  <div class="text-center my-1">
+                    <p class="text-base font-bold text-slate-900 leading-tight">
+                      Which <span class="font-serif-editorial italic font-normal text-lg">model</span> do you<br/>want to use?
+                    </p>
+                    <p class="text-[9px] text-slate-500 mt-0.5">Choose your state-of-the-art Opus 5.5 model</p>
+                  </div>
+
+                  <!-- Model Radio Buttons -->
+                  <div class="space-y-1.5">
+                    <div class="grid grid-cols-2 gap-1.5">
+                      <div class="flex items-center justify-between px-2.5 py-2 rounded-xl bg-white/90 border border-sky-300 shadow-sm text-[10px] font-bold text-slate-900">
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full border-2 border-sky-600 bg-sky-500"></span>Opus 5.5</span>
+                        <span class="text-amber-500">★</span>
+                      </div>
+                      <div class="flex items-center justify-between px-2.5 py-2 rounded-xl bg-white/75 border border-white text-[10px] font-semibold text-slate-800">
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full border border-slate-400"></span>Opus 5.5</span>
+                        <span class="text-amber-500">★</span>
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                      <div class="flex items-center justify-between px-2.5 py-2 rounded-xl bg-white/75 border border-white text-[10px] font-semibold text-slate-800">
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full border border-slate-400"></span>Opus 5.5</span>
+                        <span class="text-amber-500">★</span>
+                      </div>
+                      <div class="flex items-center justify-between px-2.5 py-2 rounded-xl bg-white/75 border border-white text-[10px] font-semibold text-slate-800">
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full border border-slate-400"></span>Opus 5.5</span>
+                        <span class="text-amber-500">★</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-white/85 border border-white text-[10px] font-semibold text-slate-800">
+                      <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full border border-slate-400"></span>Opus 5.5 (yes, again)</span>
+                      <span class="text-amber-500">★</span>
+                    </div>
+                  </div>
+
+                  <!-- Home Indicator -->
+                  <div class="w-20 h-1 bg-slate-900/25 rounded-full mx-auto mt-1"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Card: "SHIP in the chat!" -->
+            <div class="col-span-4 relative card-3d" data-z="50" data-tilt="4">
+              <!-- Floating Callout Badge 1 -->
+              <div class="mb-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/95 text-neutral-900 text-[10px] font-semibold shadow-lg border border-black/5">
+                <span class="w-4 h-4 rounded bg-sky-500 text-white flex items-center justify-center text-[9px]">★</span>
+                <span>Add a hero and login to <b>ship from one real prompt</b></span>
+              </div>
+              <!-- Floating Callout Badge 2 -->
+              <div class="mb-2.5 ml-6 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/90 text-neutral-800 text-[10px] font-medium shadow-md border border-black/5">
+                <span>Prompt, refine, ship!</span>
+              </div>
+
+              <!-- Green/Amber Glass Card -->
+              <div class="rounded-3xl bg-gradient-to-br from-lime-200/80 via-amber-100/80 to-emerald-100/85 backdrop-blur-md border border-white/80 p-5 h-60 flex flex-col justify-between shadow-elevated">
+                <div class="flex justify-between items-center">
+                  <span class="px-2 py-0.5 rounded-md bg-lime-900/10 text-lime-900 text-[9px] font-bold uppercase">Live Preview</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                </div>
+                <div class="my-auto">
+                  <p class="text-3xl font-extrabold text-lime-950/80 tracking-tight leading-none">
+                    SHIP<br/>
+                    <span class="text-xl font-bold text-lime-900/70">in the<br/>chat!</span>
+                  </p>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-slate-600 pt-2 border-t border-black/5">
+                  <div class="flex -space-x-1.5">
+                    <span class="w-4 h-4 rounded-full bg-amber-500 border border-white"></span>
+                    <span class="w-4 h-4 rounded-full bg-sky-500 border border-white"></span>
+                    <span class="w-4 h-4 rounded-full bg-emerald-500 border border-white"></span>
+                  </div>
+                  <span class="text-amber-500 font-bold">★★★★★ <span class="text-slate-600 font-medium">5.0 rating</span></span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: "1 Prompt. One big flex." (00:01 - 00:02)
+             ========================================== -->
+        <section class="relative py-20 text-center" style="transform-style: preserve-3d;">
+          <p class="text-[10px] font-bold tracking-[0.2em] uppercase text-neutral-400 mb-2">
+            ONE PROMPT
+          </p>
+          <h2 class="text-5xl font-bold tracking-tight text-neutral-900 leading-tight card-3d" data-z="24">
+            1 Prompt.<br/>
+            <span class="font-serif-editorial italic font-normal text-neutral-500 text-5xl">One big flex.</span>
+          </h2>
+
+          <!-- 3 Overlapping Fanned 3D Cards + Background Side Text -->
+          <div class="relative mt-12 mb-12 h-64 flex items-center justify-center" style="transform-style: preserve-3d;">
+            <!-- Left Floating Label -->
+            <div class="absolute left-6 top-1/2 -translate-y-1/2 -rotate-6 text-2xl font-bold text-neutral-800 tracking-tight flex items-center gap-1.5">
+              <span>Opus 5.5 (again)</span>
+              <span class="text-orange-500">★</span>
+            </div>
+
+            <!-- Right Floating Label -->
+            <div class="absolute right-4 top-1/2 -translate-y-1/2 rotate-6 text-2xl font-bold text-neutral-800 tracking-tight flex items-center gap-1.5">
+              <span>Opus 5.5, obviously</span>
+              <span class="text-sky-500">★</span>
+            </div>
+
+            <!-- Left Fanned Card: Golden Hour Portrait -->
+            <div class="w-48 h-52 rounded-3xl overflow-hidden shadow-elevated-strong border-2 border-white card-3d -mr-8" data-z="56" data-tilt="-10">
+              <svg class="w-full h-full object-cover" viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="portraitBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#d97706"/>
+                    <stop offset="50%" stop-color="#92400e"/>
+                    <stop offset="100%" stop-color="#451a03"/>
+                  </linearGradient>
+                </defs>
+                <rect width="200" height="220" fill="url(#portraitBg)"/>
+                <circle cx="155" cy="45" r="50" fill="#fbbf24" opacity="0.35"/>
+                <!-- Stylized Editorial Portrait Silhouette & Glasses -->
+                <circle cx="95" cy="95" r="46" fill="#78350f"/>
+                <circle cx="65" cy="70" r="28" fill="#451a03"/>
+                <circle cx="122" cy="65" r="30" fill="#451a03"/>
+                <ellipse cx="102" cy="112" rx="34" ry="40" fill="#b45309"/>
+                <!-- Aviator Glasses Rim -->
+                <circle cx="92" cy="106" r="13" stroke="#fef3c7" stroke-width="2.5" fill="rgba(254,243,199,0.2)"/>
+                <circle cx="122" cy="106" r="13" stroke="#fef3c7" stroke-width="2.5" fill="rgba(254,243,199,0.2)"/>
+                <line x1="105" y1="105" x2="109" y2="105" stroke="#fef3c7" stroke-width="2.5"/>
+                <path d="M50 220 C55 165, 145 165, 155 220 Z" fill="#f59e0b"/>
+              </svg>
+            </div>
+
+            <!-- Right Fanned Card: Mountain Sunset Landscape -->
+            <div class="w-48 h-52 rounded-3xl overflow-hidden shadow-elevated-strong border-2 border-white card-3d -ml-8" data-z="52" data-tilt="10">
+              <svg class="w-full h-full object-cover" viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="sunsetSky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#1e1b4b"/>
+                    <stop offset="45%" stop-color="#4338ca"/>
+                    <stop offset="75%" stop-color="#f59e0b"/>
+                    <stop offset="100%" stop-color="#fef3c7"/>
+                  </linearGradient>
+                </defs>
+                <rect width="200" height="220" fill="url(#sunsetSky)"/>
+                <circle cx="72" cy="148" r="26" fill="#fffbeb"/>
+                <polygon points="0,220 0,155 65,125 130,175 200,130 200,220" fill="#31102f" opacity="0.7"/>
+                <polygon points="0,220 45,160 115,190 175,145 200,165 200,220" fill="#1c0a1a"/>
+              </svg>
+            </div>
+
+            <!-- Center Frosted Glass Square Card (Popped Highest in Z-Space) -->
+            <div class="absolute w-40 h-44 rounded-3xl bg-white/45 backdrop-blur-xl border border-white/80 shadow-elevated-strong flex flex-col items-center justify-center card-3d" data-z="92">
+              <svg class="w-12 h-12 text-white drop-shadow" viewBox="0 0 40 40" fill="none">
+                <path d="M20 5V35M5 20H35M9.4 9.4L30.6 30.6M30.6 9.4L9.4 30.6" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>
+              </svg>
+              <span class="font-serif-editorial italic text-2xl text-white drop-shadow mt-2">Opus 5.5</span>
+            </div>
+          </div>
+
+          <!-- Two-Row Marquee Ticker of Use-Case Pills -->
+          <div class="relative overflow-hidden py-3 space-y-2.5 my-4">
+            <div class="marquee-track-left gap-2.5">
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>launch files</b> 🚀</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>apps</b> 📱</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>decks</b> 📊</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>dashboards</b> ⚡</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>portfolios</b> ✨</span>
+              <!-- Duplicate for seamless loop -->
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>launch files</b> 🚀</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>apps</b> 📱</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>decks</b> 📊</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>dashboards</b> ⚡</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>portfolios</b> ✨</span>
+            </div>
+
+            <div class="marquee-track-right gap-2.5">
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>waitlists</b> 🔥</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>3D showcases</b> 💎</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>SaaS tools</b> 🛠️</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>prototypes</b> 🎨</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>storefronts</b> 🛍️</span>
+              <!-- Duplicate -->
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>waitlists</b> 🔥</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>3D showcases</b> 💎</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>SaaS tools</b> 🛠️</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>prototypes</b> 🎨</span>
+              <span class="px-4 py-1.5 rounded-full bg-white border border-black/5 shadow-sm text-xs font-semibold text-neutral-700 mx-1">Opus 5.5 for <b>storefronts</b> 🛍️</span>
+            </div>
+          </div>
+
+          <div class="mt-5">
+            <span class="inline-flex items-center px-6 py-2.5 rounded-full bg-neutral-900 text-white text-xs font-semibold shadow-lg">
+              Choose your Opus 5.5
+            </span>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: "Why we built with Opus 5.5" BENTO GRID (00:03)
+             ========================================== -->
+        <section class="relative py-12 px-4" style="transform-style: preserve-3d;">
+          <!-- Header Row -->
+          <div class="flex items-end justify-between mb-8">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">OUR MISSION</p>
+              <h2 class="text-4xl font-bold tracking-tight text-neutral-900">
+                Why we <span class="font-serif-editorial italic font-normal text-4xl text-neutral-600">built with Opus 5.5</span>
+              </h2>
+            </div>
+            <div class="max-w-xs text-right">
+              <!-- Floating Avatar Pill -->
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white shadow-md border border-black/5 text-[11px] font-semibold mb-2 card-3d" data-z="40">
+                <span class="w-5 h-5 rounded-full bg-amber-700 text-white flex items-center justify-center text-[9px]">👩🏽</span>
+                <span class="text-neutral-500">Which model?</span>
+                <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold">Opus 5.5 ★</span>
+              </div>
+              <p class="text-[11px] text-neutral-500 leading-relaxed">
+                Millions of builders have high taste and zero patience for boilerplate. Opus 5.5 turns one real prompt into shipping craft.
+              </p>
+            </div>
+          </div>
+
+          <!-- 3D Bento Grid -->
+          <div class="grid grid-cols-12 gap-5" style="transform-style: preserve-3d;">
+
+            <!-- Left Tall Card: "Preserve your taste" (Desert Arch Sunset) -->
+            <div class="col-span-5 rounded-3xl bg-white p-5 shadow-elevated border border-black/5 flex flex-col justify-between card-3d" data-z="52">
+              <div>
+                <h3 class="text-lg font-bold text-neutral-900">
+                  Preserve <span class="font-serif-editorial italic font-normal text-xl text-neutral-500">your taste</span>
+                </h3>
+                <p class="text-[11px] text-neutral-500 mt-1 leading-relaxed">
+                  Skip generic templates. Opus 5.5 keeps art direction, typography, and motion nuanced from your very first prompt.
+                </p>
+              </div>
+              <div class="mt-4 rounded-2xl overflow-hidden h-52 relative">
+                <svg class="w-full h-full object-cover" viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="desertSky" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#fde68a"/>
+                      <stop offset="55%" stop-color="#f59e0b"/>
+                      <stop offset="100%" stop-color="#78350f"/>
+                    </linearGradient>
+                  </defs>
+                  <rect width="360" height="220" fill="url(#desertSky)"/>
+                  <circle cx="180" cy="145" r="38" fill="#fffbeb"/>
+                  <!-- Desert Rock Arch Silhouette -->
+                  <path d="M0 220 L0 120 Q90 60 180 75 Q270 90 360 130 L360 220 L235 220 C235 135 125 135 125 220 Z" fill="#451a03"/>
+                  <rect y="202" width="360" height="18" fill="#270e02"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Right 7 Columns Stacked Bento -->
+            <div class="col-span-7 flex flex-col gap-5" style="transform-style: preserve-3d;">
+
+              <!-- Top Row: 2 Cards -->
+              <div class="grid grid-cols-12 gap-5" style="transform-style: preserve-3d;">
+                <!-- Card: "Stay consistent in detail" (Spotlight Beam) -->
+                <div class="col-span-7 rounded-3xl overflow-hidden relative h-44 shadow-elevated border border-black/10 p-5 flex flex-col justify-end card-3d" data-z="64">
+                  <svg class="absolute inset-0 w-full h-full object-cover" viewBox="0 0 300 180" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="300" height="180" fill="#091410"/>
+                    <polygon points="110,0 190,0 260,180 40,180" fill="url(#beamGrad)" opacity="0.55"/>
+                    <defs>
+                      <linearGradient id="beamGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#a7f3d0"/>
+                        <stop offset="100%" stop-color="#064e3b" stop-opacity="0"/>
+                      </linearGradient>
+                    </defs>
+                    <circle cx="150" cy="85" r="9" fill="#ecfdf5"/>
+                    <path d="M138 140 C138 110 162 110 162 140 Z" fill="#042f2e"/>
+                  </svg>
+                  <div class="relative z-10 text-white">
+                    <h4 class="text-base font-bold leading-snug">
+                      Stay consistent <span class="font-serif-editorial italic font-normal text-emerald-200">in detail</span>
+                    </h4>
+                    <p class="text-[10px] text-white/75 mt-0.5">
+                      Every card, shadow, and interaction stays cohesive across the entire page.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Card: "Learn the real lesson" -->
+                <div class="col-span-5 rounded-3xl bg-white p-4 shadow-elevated border border-black/5 flex flex-col justify-between card-3d" data-z="46">
+                  <div class="flex flex-wrap gap-1.5">
+                    <span class="px-2.5 py-1 rounded-lg bg-neutral-100 text-[10px] font-semibold text-neutral-700">Opus 5.5 ★</span>
+                    <span class="px-2.5 py-1 rounded-lg bg-neutral-100 text-[10px] font-semibold text-neutral-700">One prompt</span>
+                    <span class="px-2.5 py-1 rounded-lg bg-orange-100 text-orange-800 text-[10px] font-bold">Shipped! 🔥</span>
+                  </div>
+                  <div>
+                    <h4 class="text-base font-bold text-neutral-900">
+                      Learn the <span class="font-serif-editorial italic font-normal text-lg text-neutral-500">real lesson</span>
+                    </h4>
+                    <p class="text-[10px] text-neutral-500 mt-1">
+                      Great products happen when you iterate on vision, not syntax errors.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bottom Wide Card: Glowing Blue Horizon -->
+              <div class="rounded-3xl bg-white p-3.5 shadow-elevated border border-black/5 card-3d" data-z="58">
+                <div class="rounded-2xl overflow-hidden h-28 relative">
+                  <svg class="w-full h-full object-cover" viewBox="0 0 500 130" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="500" height="130" fill="#020617"/>
+                    <ellipse cx="250" cy="135" rx="240" ry="75" fill="#1d4ed8" opacity="0.65"/>
+                    <ellipse cx="250" cy="140" rx="190" ry="50" fill="#93c5fd"/>
+                    <ellipse cx="250" cy="145" rx="140" ry="30" fill="#ffffff"/>
+                  </svg>
+                </div>
+                <div class="pt-2.5 px-1 flex items-center justify-between">
+                  <p class="text-xs font-bold text-neutral-900">
+                    An underserved skill. <span class="font-serif-editorial italic font-normal text-sm text-neutral-500">Finally yours.</span>
+                  </p>
+                  <span class="text-[10px] text-neutral-400">Built for builders who care about craft →</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: "Your simplest path to a new website." (00:04)
+             ========================================== -->
+        <section class="relative py-16 px-4 text-center" style="transform-style: preserve-3d;">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">HOW IT WORKS</p>
+          <h2 class="text-4xl font-bold tracking-tight text-neutral-900">
+            Your simplest path to<br/>
+            <span class="font-serif-editorial italic font-normal text-4xl text-neutral-500">a new website.</span>
+          </h2>
+          <p class="text-xs text-neutral-500 mt-2">
+            Type what you want, let Opus 5.5 build it, and ship it with the confidence to scale it.
+          </p>
+
+          <div class="grid grid-cols-3 gap-5 mt-10 text-left" style="transform-style: preserve-3d;">
+            <!-- Step 1 Card -->
+            <div class="rounded-3xl bg-white p-4 shadow-elevated border border-black/5 card-3d" data-z="56">
+              <div class="rounded-2xl bg-gradient-to-b from-sky-200/70 to-sky-50 h-48 p-4 flex items-center justify-center relative overflow-hidden">
+                <div class="w-36 h-40 rounded-t-2xl bg-white/90 border-2 border-slate-800/80 p-3 shadow-md mt-6 text-center">
+                  <p class="text-[9px] font-bold text-slate-400 uppercase">Step 01</p>
+                  <p class="text-sm font-bold text-slate-800 mt-2">Opus 5.5</p>
+                  <div class="mt-3 space-y-1.5">
+                    <div class="h-4 rounded bg-sky-100 text-[8px] font-bold text-sky-800 flex items-center justify-center">Opus 5.5 ★</div>
+                    <div class="h-4 rounded bg-slate-100 text-[8px] text-slate-600 flex items-center justify-center">Opus 5.5</div>
+                  </div>
+                </div>
+              </div>
+              <h3 class="text-sm font-bold text-neutral-900 mt-4">
+                Choose <span class="font-serif-editorial italic font-normal text-base text-neutral-500">your Opus 5.5</span>
+              </h3>
+              <p class="text-[11px] text-neutral-500 mt-1">
+                Pick the model that already knows visual hierarchy, spacing, and polish.
+              </p>
+            </div>
+
+            <!-- Step 2 Card -->
+            <div class="rounded-3xl bg-white p-4 shadow-elevated border border-black/5 card-3d" data-z="68">
+              <div class="rounded-2xl bg-gradient-to-b from-stone-100 to-amber-50/50 h-48 p-4 flex flex-col justify-center gap-2.5 relative overflow-hidden">
+                <div class="bg-white rounded-xl p-2.5 shadow-sm border border-black/5 text-[10px] font-medium text-neutral-700">
+                  “Create a 3D tilted showcase landing page with warm editorial type...”
+                </div>
+                <div class="self-end bg-lime-200/90 text-lime-950 rounded-xl px-3 py-1.5 shadow-sm text-[10px] font-bold">
+                  ✓ Generating 8 sections in 3D
+                </div>
+                <div class="bg-white/90 rounded-xl p-2 shadow-sm border border-black/5 text-[9px] text-neutral-500 flex items-center justify-between">
+                  <span>Refining depth-of-field rig...</span>
+                  <span class="text-amber-500 font-bold">★ 100%</span>
+                </div>
+              </div>
+              <h3 class="text-sm font-bold text-neutral-900 mt-4">
+                Prompt a little <span class="font-serif-editorial italic font-normal text-base text-neutral-500">every day</span>
+              </h3>
+              <p class="text-[11px] text-neutral-500 mt-1">
+                Iterate naturally in plain English and watch your layout elevate in real time.
+              </p>
+            </div>
+
+            <!-- Step 3 Card -->
+            <div class="rounded-3xl bg-white p-4 shadow-elevated border border-black/5 card-3d" data-z="56">
+              <div class="rounded-2xl overflow-hidden h-48 relative bg-slate-900 flex items-end p-4">
+                <svg class="absolute inset-0 w-full h-full object-cover" viewBox="0 0 260 190" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="step3Bg" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#1e293b"/>
+                      <stop offset="60%" stop-color="#475569"/>
+                      <stop offset="100%" stop-color="#94a3b8"/>
+                    </linearGradient>
+                  </defs>
+                  <rect width="260" height="190" fill="url(#step3Bg)"/>
+                  <circle cx="135" cy="70" r="26" fill="#0f172a" opacity="0.7"/>
+                  <path d="M85 190 C90 125 180 125 185 190 Z" fill="#1e293b"/>
+                </svg>
+                <div class="relative z-10 w-full flex items-center justify-between bg-white/90 backdrop-blur-md px-3 py-2 rounded-xl shadow-md">
+                  <span class="text-[10px] font-bold text-neutral-900">Shipped with Opus 5.5</span>
+                  <span class="text-amber-500 text-xs">★</span>
+                </div>
+              </div>
+              <h3 class="text-sm font-bold text-neutral-900 mt-4">
+                Ship with <span class="font-serif-editorial italic font-normal text-base text-neutral-500">confidence</span>
+              </h3>
+              <p class="text-[11px] text-neutral-500 mt-1">
+                Go live with production-ready responsive HTML, CSS, and interactive motion.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: "Who is Opus 5.5 for?" 2x3 PERSONA GRID (00:05)
+             ========================================== -->
+        <section class="relative py-14 px-4" style="transform-style: preserve-3d;">
+          <div class="flex items-end justify-between mb-8">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">BUILT FOR YOU</p>
+              <h2 class="text-4xl font-bold tracking-tight text-neutral-900">
+                Who is <span class="font-serif-editorial italic font-normal text-4xl text-neutral-500">Opus 5.5 for?</span>
+              </h2>
+            </div>
+            <p class="text-[11px] text-neutral-500 max-w-xs text-right">
+              Choose your lane, test a real prompt, and get the exact aesthetic you pictured.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-3 gap-5" style="transform-style: preserve-3d;">
+            <!-- Persona 1: Founders -->
+            <div class="rounded-3xl bg-white overflow-hidden shadow-elevated border border-black/5 card-3d" data-z="48">
+              <div class="h-24 bg-gradient-to-r from-emerald-800 via-teal-600 to-lime-200 relative"></div>
+              <div class="p-4">
+                <h4 class="text-sm font-bold text-neutral-900">Founders <span class="font-serif-editorial italic font-normal text-neutral-500">looking for speed</span></h4>
+                <p class="text-[10px] text-neutral-500 mt-1">Turn pitch narratives into interactive product showcases before breakfast.</p>
+              </div>
+            </div>
+
+            <!-- Persona 2: Agencies -->
+            <div class="rounded-3xl bg-white overflow-hidden shadow-elevated border border-black/5 card-3d" data-z="58">
+              <div class="h-24 bg-gradient-to-r from-amber-200 via-orange-300 to-stone-500 relative"></div>
+              <div class="p-4">
+                <h4 class="text-sm font-bold text-neutral-900">Agencies <span class="font-serif-editorial italic font-normal text-neutral-500">on a deadline</span></h4>
+                <p class="text-[10px] text-neutral-500 mt-1">Deliver bespoke client directions in hours instead of multi-week sprints.</p>
+              </div>
+            </div>
+
+            <!-- Persona 3: Indie Hackers -->
+            <div class="rounded-3xl bg-white overflow-hidden shadow-elevated border border-black/5 card-3d" data-z="48">
+              <div class="h-24 bg-gradient-to-r from-slate-800 via-sky-700 to-sky-200 relative"></div>
+              <div class="p-4">
+                <h4 class="text-sm font-bold text-neutral-900">Indie hackers <span class="font-serif-editorial italic font-normal text-neutral-500">&amp; builders</span></h4>
+                <p class="text-[10px] text-neutral-500 mt-1">Make your solo launch look like it was crafted by a 20-person studio.</p>
+              </div>
+            </div>
+
+            <!-- Persona 4: Marketers -->
+            <div class="rounded-3xl bg-white overflow-hidden shadow-elevated border border-black/5 card-3d" data-z="52">
+              <div class="h-24 bg-gradient-to-r from-rose-900 via-orange-600 to-amber-300 relative"></div>
+              <div class="p-4">
+                <h4 class="text-sm font-bold text-neutral-900">Marketers <span class="font-serif-editorial italic font-normal text-neutral-500">in a hurry</span></h4>
+                <p class="text-[10px] text-neutral-500 mt-1">Spin up high-converting campaign pages without waiting on engineering.</p>
+              </div>
+            </div>
+
+            <!-- Persona 5: Designers -->
+            <div class="rounded-3xl bg-white overflow-hidden shadow-elevated border border-black/5 card-3d" data-z="64">
+              <div class="h-24 bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-100 relative"></div>
+              <div class="p-4">
+                <h4 class="text-sm font-bold text-neutral-900">Designers <span class="font-serif-editorial italic font-normal text-neutral-500">who ship</span></h4>
+                <p class="text-[10px] text-neutral-500 mt-1">Bridge the gap from static canvas to tactile 3D web experiences.</p>
+              </div>
+            </div>
+
+            <!-- Persona 6: Creators -->
+            <div class="rounded-3xl bg-white overflow-hidden shadow-elevated border border-black/5 card-3d" data-z="52">
+              <div class="h-24 bg-gradient-to-r from-slate-950 via-blue-900 to-cyan-500 relative"></div>
+              <div class="p-4">
+                <h4 class="text-sm font-bold text-neutral-900">Developers <span class="font-serif-editorial italic font-normal text-neutral-500">&amp; teams</span></h4>
+                <p class="text-[10px] text-neutral-500 mt-1">Focus on core architecture while Opus 5.5 nails the frontend polish.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: "Real Prompts — Real Results" STACKED DECK (00:06 - 00:07)
+             ========================================== -->
+        <section class="relative py-20 px-4 text-center" style="transform-style: preserve-3d;">
+          <div class="relative flex items-center justify-center my-6" style="transform-style: preserve-3d;">
+            <!-- Left Text -->
+            <div class="mr-12 text-right">
+              <span class="text-2xl font-bold text-neutral-900 tracking-tight">Real Prompts</span>
+            </div>
+
+            <!-- Center High-Z Popped Stacked Photo Card -->
+            <div class="relative w-64 card-3d" data-z="90">
+              <!-- Back stacked cards for deck depth -->
+              <div class="absolute inset-0 translate-y-3 scale-95 rounded-3xl bg-neutral-900/80 shadow-xl"></div>
+              <div class="absolute inset-0 translate-y-1.5 scale-[0.98] rounded-3xl bg-white shadow-xl border border-black/10"></div>
+
+              <!-- Foreground Card -->
+              <div class="relative rounded-3xl bg-white p-3 shadow-elevated-strong border border-black/10 text-left">
+                <div class="rounded-2xl overflow-hidden h-44">
+                  <svg class="w-full h-full object-cover" viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="240" height="180" fill="#78350f"/>
+                    <circle cx="185" cy="40" r="55" fill="#f59e0b" opacity="0.4"/>
+                    <ellipse cx="120" cy="95" rx="38" ry="44" fill="#b45309"/>
+                    <circle cx="106" cy="88" r="14" stroke="#fef3c7" stroke-width="2.5" fill="rgba(254,243,199,0.2)"/>
+                    <circle cx="138" cy="88" r="14" stroke="#fef3c7" stroke-width="2.5" fill="rgba(254,243,199,0.2)"/>
+                    <line x1="120" y1="87" x2="124" y2="87" stroke="#fef3c7" stroke-width="2.5"/>
+                    <path d="M65 180 C70 135 170 135 175 180 Z" fill="#d97706"/>
+                  </svg>
+                </div>
+                <div class="pt-3 px-1 pb-1">
+                  <p class="text-base font-bold text-neutral-900 leading-tight">Opus<br/>5.5</p>
+                  <p class="font-serif-editorial italic text-sm text-neutral-500 mt-0.5">Designing clear joy into day one</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Text -->
+            <div class="ml-12 text-left">
+              <span class="font-serif-editorial italic text-3xl text-neutral-400">Real Results</span>
+            </div>
+          </div>
+
+          <p class="max-w-lg mx-auto text-[11px] text-neutral-500 italic mt-8 leading-relaxed">
+            “I typed one sentence about the mood and 3D perspective I wanted. Opus 5.5 delivered the layout, copy, and motion in a single pass.”
+          </p>
+          <div class="text-amber-500 text-sm tracking-widest mt-2">★★★★★</div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: FAQ ACCORDION ("You've got questions.") (00:07 - 00:08)
+             ========================================== -->
+        <section class="relative py-14 px-4 max-w-2xl mx-auto text-center" style="transform-style: preserve-3d;">
+          <h2 class="text-3xl font-bold tracking-tight text-neutral-900">
+            You’ve got questions.<br/>
+            <span class="font-serif-editorial italic font-normal text-4xl text-neutral-500">Opus 5.5 has answers.</span>
+          </h2>
+          <p class="text-[11px] text-neutral-400 mt-1">
+            Find quick answers to help you get the most out of your Opus 5.5 experience.
+          </p>
+
+          <div class="mt-8 rounded-3xl bg-white p-4 shadow-elevated border border-black/5 text-left space-y-2 card-3d" data-z="55">
+            <div class="rounded-2xl bg-amber-50/90 border border-amber-200/70 p-3.5 flex items-center justify-between">
+              <div>
+                <p class="text-xs font-bold text-neutral-900">Who designed this page?</p>
+                <p class="text-[10px] text-neutral-600 mt-0.5">Prompted and crafted with Opus 5.5 to showcase 3D perspective storytelling and tactile UI cards.</p>
+              </div>
+              <span class="text-xs font-bold text-neutral-400">−</span>
+            </div>
+            <div class="rounded-xl px-3.5 py-2.5 flex items-center justify-between border-b border-neutral-100 text-xs font-semibold text-neutral-700">
+              <span>Is this really built from one prompt?</span>
+              <span class="text-neutral-400">+</span>
+            </div>
+            <div class="rounded-xl px-3.5 py-2.5 flex items-center justify-between border-b border-neutral-100 text-xs font-semibold text-neutral-700">
+              <span>How do I ship my first Opus 5.5 site?</span>
+              <span class="text-neutral-400">+</span>
+            </div>
+            <div class="rounded-xl px-3.5 py-2.5 flex items-center justify-between border-b border-neutral-100 text-xs font-semibold text-neutral-700">
+              <span>Why does Opus 5.5 feel so different?</span>
+              <span class="text-neutral-400">+</span>
+            </div>
+            <div class="rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs font-semibold text-neutral-700">
+              <span>Can I build more than one page with Opus 5.5?</span>
+              <span class="text-neutral-400">+</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: WILDFLOWER & CLOUD FOOTER ("Opus 5.5") (00:08 - 00:09)
+             ========================================== -->
+        <section class="relative mt-10 -mx-[24px] rounded-b-[36px] overflow-hidden pt-20 pb-6 text-center" style="transform-style: preserve-3d;">
+          <!-- Lush Sky, Cumulus Clouds & Wildflower Meadow Illustration -->
+          <svg class="absolute inset-0 w-full h-full object-cover pointer-events-none" viewBox="0 0 960 440" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="footerSky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#faf8f5"/>
+                <stop offset="22%" stop-color="#bae6fd"/>
+                <stop offset="58%" stop-color="#7dd3fc"/>
+                <stop offset="82%" stop-color="#fef08a"/>
+                <stop offset="100%" stop-color="#15803d"/>
+              </linearGradient>
+            </defs>
+            <rect width="960" height="440" fill="url(#footerSky)"/>
+            <!-- Sunlit Cumulus Clouds -->
+            <g fill="#ffffff" opacity="0.9">
+              <circle cx="180" cy="210" r="85"/>
+              <circle cx="265" cy="230" r="70"/>
+              <circle cx="760" cy="200" r="95"/>
+              <circle cx="660" cy="225" r="75"/>
+              <circle cx="480" cy="245" r="110"/>
+            </g>
+            <!-- Rolling Green Meadow Hills -->
+            <path d="M0 320 Q240 270 480 310 T960 295 L960 440 L0 440 Z" fill="#166534"/>
+            <path d="M0 355 Q300 315 620 350 T960 340 L960 440 L0 440 Z" fill="#14532d"/>
+            <!-- Wildflower Dots (Poppies, Daisies, Cornflowers) -->
+            <g>
+              <circle cx="80" cy="370" r="5" fill="#f97316"/>
+              <circle cx="145" cy="390" r="4" fill="#facc15"/>
+              <circle cx="210" cy="365" r="6" fill="#ef4444"/>
+              <circle cx="290" cy="395" r="5" fill="#38bdf8"/>
+              <circle cx="370" cy="375" r="5" fill="#f43f5e"/>
+              <circle cx="450" cy="400" r="4" fill="#facc15"/>
+              <circle cx="530" cy="372" r="6" fill="#fb923c"/>
+              <circle cx="615" cy="390" r="5" fill="#a855f7"/>
+              <circle cx="700" cy="368" r="6" fill="#ef4444"/>
+              <circle cx="785" cy="395" r="4" fill="#facc15"/>
+              <circle cx="860" cy="375" r="5" fill="#38bdf8"/>
+            </g>
+          </svg>
+
+          <div class="relative z-10 card-3d" data-z="42">
+            <h3 class="text-3xl font-bold text-neutral-900">
+              Start <span class="font-serif-editorial italic font-normal text-4xl text-neutral-700">your prompt</span>
+            </h3>
+            <div class="mt-4">
+              <span class="inline-flex items-center px-6 py-2.5 rounded-full bg-neutral-900 text-white text-xs font-semibold shadow-xl">
+                Get started for free
+              </span>
+            </div>
+          </div>
+
+          <!-- Giant Bold "Opus 5.5" Footer Wordmark -->
+          <div class="relative z-10 mt-14 select-none card-3d" data-z="30">
+            <div class="text-[138px] font-extrabold tracking-tighter leading-[0.82] text-white drop-shadow-[0_10px_25px_rgba(0,0,0,0.35)]">
+              Opus 5.5
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       INTERACTIVE CONTROL DOCK (BOTTOM RIGHT)
+       ========================================== -->
+  <div class="fixed bottom-4 right-4 z-50 w-80 rounded-2xl bg-white/90 backdrop-blur-xl border border-black/10 shadow-2xl p-4 text-xs text-neutral-800">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <button id="playPauseBtn" class="px-3 py-1.5 rounded-lg bg-neutral-900 text-white font-semibold flex items-center gap-1.5 hover:bg-neutral-800 transition">
+          <span id="playPauseIcon">⏸</span>
+          <span id="playPauseText">Pause Loop</span>
+        </button>
+        <button id="restartBtn" class="px-2.5 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 font-semibold text-neutral-700 transition" title="Restart Loop">
+          ↺
+        </button>
+      </div>
+      <span class="text-[10px] font-medium text-neutral-400">Scroll or Drag Stage</span>
+    </div>
+
+    <!-- Timeline Scrubber -->
+    <div class="mb-3">
+      <div class="flex justify-between text-[10px] font-semibold text-neutral-500 mb-1">
+        <span>Timeline Progress</span>
+        <span id="timeReadout">0.0s / 14.0s</span>
+      </div>
+      <input id="timelineSlider" type="range" min="0" max="1" step="0.001" value="0" class="w-full" />
+    </div>
+
+    <!-- 3D Tilt & Z-Pop Sliders -->
+    <div class="grid grid-cols-2 gap-3 pt-2 border-t border-black/5">
+      <div>
+        <div class="flex justify-between text-[10px] font-semibold text-neutral-500 mb-1">
+          <span>Base Tilt (X)</span>
+          <span id="tiltReadout">48°</span>
+        </div>
+        <input id="tiltSlider" type="range" min="0" max="62" step="1" value="48" class="w-full" />
+      </div>
+      <div>
+        <div class="flex justify-between text-[10px] font-semibold text-neutral-500 mb-1">
+          <span>3D Card Pop (Z)</span>
+          <span id="zPopReadout">100%</span>
+        </div>
+        <input id="zPopSlider" type="range" min="0" max="1.8" step="0.05" value="1" class="w-full" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       3D CHOREOGRAPHY & INTERACTION ENGINE
+       ========================================== -->
+  <script>
+    window.onload = function () {
+      const cameraRig = document.getElementById('cameraRig');
+      const pageSlab = document.getElementById('pageSlab');
+      const finaleHeader = document.getElementById('finaleHeader');
+      const squircleOrange = document.getElementById('squircleOrange');
+      const squircleDark = document.getElementById('squircleDark');
+      const squircleBlue = document.getElementById('squircleBlue');
+      const dofTop = document.getElementById('dofTop');
+      const dofBottom = document.getElementById('dofBottom');
+      const bokehLeft = document.getElementById('bokehLeft');
+      const bokehRight = document.getElementById('bokehRight');
+
+      const phaseLabel = document.getElementById('phaseLabel');
+      const playPauseBtn = document.getElementById('playPauseBtn');
+      const playPauseIcon = document.getElementById('playPauseIcon');
+      const playPauseText = document.getElementById('playPauseText');
+      const restartBtn = document.getElementById('restartBtn');
+      const timelineSlider = document.getElementById('timelineSlider');
+      const timeReadout = document.getElementById('timeReadout');
+      const tiltSlider = document.getElementById('tiltSlider');
+      const tiltReadout = document.getElementById('tiltReadout');
+      const zPopSlider = document.getElementById('zPopSlider');
+      const zPopReadout = document.getElementById('zPopReadout');
+      const viewportStage = document.getElementById('viewportStage');
+
+      const cards3D = Array.from(document.querySelectorAll('.card-3d'));
+
+      // Total duration matching the 14-second reference video
+      const LOOP_DURATION = 14000;
+      let isPlaying = true;
+      let progress = 0; // 0.0 -> 1.0
+      let lastTimestamp = performance.now();
+      let baseTiltDeg = 48;
+      let zPopMultiplier = 1.0;
+
+      // Easing utilities
+      function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+      }
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+      function easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      }
+      function easeOutQuart(t) {
+        return 1 - Math.pow(1 - t, 4);
+      }
+
+      // Cache each 3D card's vertical center offset relative to the slab
+      let slabHeight = 3200;
+      const cardMetrics = [];
+
+      function measureLayout() {
+        slabHeight = pageSlab.offsetHeight;
+        cardMetrics.length = 0;
+        const slabRect = pageSlab.getBoundingClientRect();
+        cards3D.forEach((el) => {
+          // Walk offsetTop up to pageSlab
+          let top = 0;
+          let curr = el;
+          while (curr && curr !== pageSlab) {
+            top += curr.offsetTop;
+            curr = curr.offsetParent;
+          }
+          const centerOffset = top + el.offsetHeight * 0.5;
+          const targetZ = parseFloat(el.getAttribute('data-z') || '40');
+          const tiltZ = parseFloat(el.getAttribute('data-tilt') || '0');
+          cardMetrics.push({ el, centerOffset, targetZ, tiltZ });
+        });
+      }
+
+      measureLayout();
+      window.addEventListener('resize', measureLayout);
+
+      /**
+       * Computes camera rig transform, slab scroll offset, depth-of-field blur,
+       * and per-card dynamic Z-pop based on normalized timeline progress `p` (0..1)
+       */
+      function renderScene(p, nowMs) {
+        const maxScrollY = Math.max(100, slabHeight - 640);
+
+        let rotateX = baseTiltDeg;
+        let scale = 0.92;
+        let rigY = 40;
+        let scrollY = 0;
+        let finaleAlpha = 0;
+        let squircleAlpha = 0;
+        let dofStrength = 0.92;
+
+        // ==========================================================
+        // PHASE 1 (0.00 -> 0.60 | 0.0s -> 8.4s):
+        // Panels half-lying down at ~48deg, smoothly scrolling down to bottom footer
+        // ==========================================================
+        if (p < 0.60) {
+          const t = p / 0.60;
+          // Smooth scroll from top hero down to wildflower footer
+          const easedScroll = easeInOutCubic(t);
+          scrollY = lerp(0, maxScrollY, easedScroll);
+          rotateX = baseTiltDeg;
+          scale = 0.95;
+          rigY = 65;
+          dofStrength = 0.94;
+
+          // Squircles appear briefly at 00:01 as we leave hero
+          if (p > 0.05 && p < 0.16) {
+            squircleAlpha = Math.sin(((p - 0.05) / 0.11) * Math.PI);
+          }
+          phaseLabel.textContent = 'Phase 1: 3D Tilted Scroll Down';
+        }
+        // ==========================================================
+        // PHASE 2A (0.60 -> 0.68 | 8.4s -> 9.5s):
+        // At bottom footer, zoom out to reveal full vertical ribbon strip (00:09)
+        // ==========================================================
+        else if (p < 0.68) {
+          const t = easeInOutCubic((p - 0.60) / 0.08);
+          scrollY = lerp(maxScrollY, maxScrollY * 0.48, t);
+          rotateX = lerp(baseTiltDeg, 10, t);
+          scale = lerp(0.95, 0.25, t);
+          rigY = lerp(65, 220, t);
+          dofStrength = lerp(0.94, 0.15, t);
+          phaseLabel.textContent = 'Phase 2: Full-Ribbon Pullback';
+        }
+        // ==========================================================
+        // PHASE 2B (0.68 -> 0.75 | 9.5s -> 10.5s):
+        // Rapidly sweep back up to the top Hero Card & zoom into Finale Frame
+        // ==========================================================
+        else if (p < 0.75) {
+          const t = easeOutQuart((p - 0.68) / 0.07);
+          scrollY = lerp(maxScrollY * 0.48, 0, t);
+          rotateX = lerp(10, 7, t);
+          scale = lerp(0.25, 0.80, t);
+          rigY = lerp(220, 145, t);
+          finaleAlpha = t;
+          squircleAlpha = t;
+          dofStrength = lerp(0.15, 0.35, t);
+          phaseLabel.textContent = 'Phase 2: Return Sweep to Top';
+        }
+        // ==========================================================
+        // PHASE 3 (0.75 -> 0.93 | 10.5s -> 13.0s):
+        // Hero Finale Presentation ("You'll need Opus 5.5, for this level of quality")
+        // ==========================================================
+        else if (p < 0.93) {
+          const t = (p - 0.75) / 0.18;
+          scrollY = 0;
+          rotateX = lerp(7, 9, Math.sin(t * Math.PI));
+          scale = lerp(0.80, 0.83, easeOutQuart(t));
+          rigY = 145;
+          finaleAlpha = 1;
+          squircleAlpha = 1;
+          dofStrength = 0.32;
+          phaseLabel.textContent = 'Phase 3: Hero Finale Showcase';
+        }
+        // ==========================================================
+        // PHASE 4 (0.93 -> 1.00 | 13.0s -> 14.0s):
+        // Tilt back down to 48deg ("half lying down") to seamlessly loop
+        // ==========================================================
+        else {
+          const t = easeInOutCubic((p - 0.93) / 0.07);
+          scrollY = 0;
+          rotateX = lerp(9, baseTiltDeg, t);
+          scale = lerp(0.83, 0.95, t);
+          rigY = lerp(145, 65, t);
+          finaleAlpha = 1 - t;
+          squircleAlpha = 1 - t;
+          dofStrength = lerp(0.32, 0.94, t);
+          phaseLabel.textContent = 'Transition: Tilting Into 3D Loop';
+        }
+
+        // Apply 3D transform to the Camera Rig & Page Slab
+        cameraRig.style.transform = `translate3d(0px, ${rigY.toFixed(1)}px, 0px) scale(${scale.toFixed(4)}) rotateX(${rotateX.toFixed(2)}deg)`;
+        pageSlab.style.transform = `translate3d(0px, ${(-scrollY).toFixed(1)}px, 0px)`;
+
+        // Finale Header & Foreground Bokeh
+        finaleHeader.style.opacity = finaleAlpha.toFixed(3);
+        finaleHeader.style.transform = `translate3d(0px, ${(1 - finaleAlpha) * 18}px, 30px)`;
+        bokehLeft.style.opacity = finaleAlpha.toFixed(3);
+        bokehRight.style.opacity = finaleAlpha.toFixed(3);
+
+        // Depth of Field Blur Overlays
+        const activeDof = clamp(dofStrength * (rotateX / 48), 0.1, 0.96);
+        dofTop.style.opacity = activeDof.toFixed(2);
+        dofBottom.style.opacity = activeDof.toFixed(2);
+
+        // Floating 3D Squircle Asterisk Badges (hovering in Z-space)
+        const bob = Math.sin(nowMs * 0.003) * 6;
+        squircleOrange.style.opacity = squircleAlpha.toFixed(3);
+        squircleOrange.style.transform = `translate3d(0px, ${bob.toFixed(1)}px, ${(95 * squircleAlpha).toFixed(1)}px) rotateZ(-12deg)`;
+
+        squircleDark.style.opacity = squircleAlpha.toFixed(3);
+        squircleDark.style.transform = `translate3d(0px, ${(-bob).toFixed(1)}px, ${(105 * squircleAlpha).toFixed(1)}px) rotateZ(10deg)`;
+
+        squircleBlue.style.opacity = squircleAlpha.toFixed(3);
+        squircleBlue.style.transform = `translate3d(0px, ${(bob * 0.8).toFixed(1)}px, ${(85 * squircleAlpha).toFixed(1)}px) rotateZ(-8deg)`;
+
+        // Dynamic Per-Card Z-Axis Pop as cards pass through the active focal zone
+        const focalCenterY = scrollY + 340;
+        const focalRadius = 560;
+
+        for (let i = 0; i < cardMetrics.length; i++) {
+          const item = cardMetrics[i];
+          const dist = Math.abs(item.centerOffset - focalCenterY);
+          const proximity = clamp(1 - dist / focalRadius, 0, 1);
+          // Smooth bell curve so cards pop up in Z-space as they enter the center viewport
+          const popFactor = Math.sin(proximity * Math.PI * 0.5);
+          const zVal = item.targetZ * popFactor * zPopMultiplier;
+          item.el.style.transform = `translate3d(0px, 0px, ${zVal.toFixed(1)}px) rotateZ(${item.tiltZ}deg)`;
+        }
+
+        // Update UI readouts
+        timelineSlider.value = p.toFixed(3);
+        timeReadout.textContent = `${(p * 14).toFixed(1)}s / 14.0s`;
+      }
+
+      // Main 60fps requestAnimationFrame Loop
+      function animate(now) {
+        const dt = now - lastTimestamp;
+        lastTimestamp = now;
+
+        if (isPlaying) {
+          progress = (progress + dt / LOOP_DURATION) % 1.0;
+        }
+
+        renderScene(progress, now);
+        requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+
+      // ==========================================================
+      // INTERACTIVE CONTROLS (Play/Pause, Scrubber, Wheel, Drag)
+      // ==========================================================
+      function setPlayingState(playing) {
+        isPlaying = playing;
+        playPauseIcon.textContent = isPlaying ? '⏸' : '▶';
+        playPauseText.textContent = isPlaying ? 'Pause Loop' : 'Play Loop';
+      }
+
+      playPauseBtn.addEventListener('click', () => {
+        setPlayingState(!isPlaying);
+      });
+
+      restartBtn.addEventListener('click', () => {
+        progress = 0;
+        setPlayingState(true);
+      });
+
+      timelineSlider.addEventListener('input', (e) => {
+        setPlayingState(false);
+        progress = parseFloat(e.target.value);
+      });
+
+      tiltSlider.addEventListener('input', (e) => {
+        baseTiltDeg = parseFloat(e.target.value);
+        tiltReadout.textContent = `${baseTiltDeg}°`;
+      });
+
+      zPopSlider.addEventListener('input', (e) => {
+        zPopMultiplier = parseFloat(e.target.value);
+        zPopReadout.textContent = `${Math.round(zPopMultiplier * 100)}%`;
+      });
+
+      // Mouse Wheel Manual Scrubbing
+      window.addEventListener('wheel', (e) => {
+        setPlayingState(false);
+        const delta = e.deltaY * 0.00025;
+        progress = (progress + delta + 1.0) % 1.0;
+      }, { passive: true });
+
+      // Pointer Drag on Stage
+      let isDragging = false;
+      let lastPointerY = 0;
+
+      viewportStage.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        lastPointerY = e.clientY;
+        setPlayingState(false);
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dy = lastPointerY - e.clientY;
+        lastPointerY = e.clientY;
+        progress = (progress + dy * 0.0009 + 1.0) % 1.0;
+      });
+
+      window.addEventListener('pointerup', () => {
+        isDragging = false;
+      });
+    };
+  </script>
+</body>
+</html>

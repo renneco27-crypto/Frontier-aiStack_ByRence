@@ -1,0 +1,1 @@
+{"nodes": [{"id": "$graphify-root$_apps_v4_content_docs_dark_mode_index_mdx", "label": "index.mdx", "file_type": "document", "node_kind": "page", "source_file": "apps/v4/content/docs/dark-mode/index.mdx", "source_location": "L1", "frontmatter": {"title": "Dark Mode", "description": "Adding dark mode to your site."}}], "edges": [], "input_tokens": 0, "output_tokens": 0}

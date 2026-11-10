@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyUp | Terms of Service</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body, html {
+            width: 100%; min-height: 100%;
+            background-color: #050505;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            scroll-behavior: smooth;
+        }
+
+
+
+        /* ── Navbar ── */
+        .swiss-nav {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 60px; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 2.5rem;
+            background: rgba(5,5,5,.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .nav-logo {
+            font-family: "Courier New", monospace;
+            font-size: .95rem; font-weight: 700; letter-spacing: 2px;
+            color: #fff; text-decoration: none;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .nav-logo .tag { color: #e63946; font-weight: 400; font-size: .8rem; }
+        .nav-links { display: flex; align-items: center; gap: 1.6rem; list-style: none; }
+        .nav-links a {
+            font-size: .8rem; text-transform: uppercase; letter-spacing: 1.5px;
+            color: #888; text-decoration: none; transition: color .2s;
+        }
+        .nav-links a:hover { color: #fff; }
+        .btn-cta {
+            font-family: "Courier New", monospace;
+            font-size: .78rem; letter-spacing: 1.5px; text-transform: uppercase;
+            color: #fff; background: #161616; border: 1px solid #333;
+            padding: 6px 14px; border-radius: 2px; text-decoration: none; transition: all .2s;
+        }
+        .btn-cta:hover { background: #fff; color: #050505; border-color: #fff; }
+
+        /* ── Particle canvas ── */
+        #node-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1; pointer-events: none;
+        }
+
+        /* ── Hero ── */
+        .hero-wrapper {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100vh; z-index: 2;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            pointer-events: none;
+        }
+        .hero-kicker {
+            font-family: "Courier New", monospace;
+            font-size: .85rem; letter-spacing: 3px; text-transform: uppercase;
+            color: #e63946; margin-bottom: 1.2rem;
+        }
+        h1 { font-size: 4.2rem; font-weight: 300; letter-spacing: -2px; margin-bottom: .6rem; }
+        .hero-sub {
+            font-size: 1.05rem; color: #666; letter-spacing: 2px;
+            text-transform: uppercase; margin-bottom: 2rem;
+        }
+        .terminal-line {
+            font-family: "Courier New", monospace;
+            font-size: 1rem; color: #ccc;
+            padding: 10px 18px; border-left: 2px solid #333;
+        }
+        .blinker {
+            display: inline-block; width: 9px; height: 1em;
+            background: #fff; vertical-align: middle; margin-left: 4px;
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+        /* ── Pixel Transition ── */
+        .scrolling-content { position: relative; z-index: 10; margin-top: 100vh; }
+        .pixel-transition { height: 320px; width: 100%; position: relative; margin-bottom: -1px; }
+        .pixel-block { position: absolute; background-color: #0d0d0d; opacity: 0; }
+        .pixel-text {
+            position: absolute; top: 28px; left: 0; width: 100%;
+            text-align: center; font-size: 3.5rem; font-weight: 300;
+            letter-spacing: -1px; color: #fff; z-index: 20; pointer-events: none;
+        }
+
+        /* ── GSAP Transition Sections (Mistral-style sticky) ── */
+        .intro-section {
+            position: relative; width: 100%; height: 200vh; background: #050505;
+        }
+        .sticky-viewport {
+            position: sticky; top: 0; left: 0;
+            width: 100%; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
+            justify-content: space-between;
+            padding: 3.5rem 4.5rem; box-sizing: border-box;
+            background: #050505; border-top: 1px solid #1a1a1a;
+        }
+        .section-top-row {
+            display: flex; width: 100%; height: 52%; gap: 2rem;
+            position: relative; will-change: transform;
+        }
+        .col-main-title {
+            width: 66%; display: flex; flex-direction: column;
+            justify-content: center; overflow: hidden; white-space: nowrap;
+        }
+        .col-main-title .section-tag {
+            font-family: "Courier New", monospace;
+            font-size: .85rem; letter-spacing: 2px; text-transform: uppercase;
+            color: #e63946; margin-bottom: .75rem;
+        }
+        .col-main-title h2 {
+            font-size: 4.8rem; line-height: .92;
+            letter-spacing: -.05em; color: #ececec; margin: 0;
+        }
+        .col-top-panel { width: 34%; height: 100%; display: flex; }
+        .expanding-panel-inner {
+            position: relative; width: 100%; height: 100%;
+            background: #121212; border: 1px solid #282828;
+            border-radius: 4px; padding: 2.5rem; box-sizing: border-box;
+            display: flex; flex-direction: column; justify-content: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,.5);
+            overflow: hidden;
+        }
+        .panel-kicker {
+            font-family: "Courier New", monospace;
+            font-size: .8rem; letter-spacing: 2px; text-transform: uppercase;
+            color: #f4a261; margin-bottom: 1rem;
+        }
+        .expanding-panel-inner p {
+            font-size: 1.2rem; line-height: 1.5; color: #d1d1d1;
+            margin-bottom: 1.5rem; font-weight: 300;
+        }
+        .stack-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .stack-list span {
+            font-family: "Courier New", monospace;
+            font-size: .85rem; letter-spacing: 1.5px; text-transform: uppercase;
+            color: #fff; background: #202020; border: 1px solid #333;
+            padding: 6px 12px; border-radius: 2px;
+        }
+        .section-bottom-row {
+            display: flex; width: 100%; height: 42%; gap: 2rem;
+        }
+        .col-bottom-media { width: 66%; height: 100%; }
+        .color-matrix {
+            width: 100%; height: 100%;
+            display: grid; grid-template-columns: repeat(3,1fr);
+            grid-template-rows: repeat(2,1fr); gap: 6px;
+        }
+        .block { width: 100%; height: 100%; border-radius: 2px; transition: transform .3s, filter .3s; }
+        .block:hover { transform: scale(.98); filter: brightness(1.15); }
+        .b-red    { background: #e63946; }
+        .b-orange { background: #f4a261; }
+        .b-darkred{ background: #9b2226; }
+        .col-bottom-extra {
+            width: 34%; height: 100%;
+            border: 1px dashed #282828; border-radius: 4px;
+            padding: 2rem; box-sizing: border-box;
+            display: flex; flex-direction: column; justify-content: space-between;
+            background: rgba(255,255,255,.015);
+        }
+        .col-bottom-extra .extra-header {
+            font-family: "Courier New", monospace;
+            font-size: .8rem; color: #777; letter-spacing: 2px; text-transform: uppercase;
+        }
+        .col-bottom-extra .extra-text { font-size: 1.1rem; color: #aaa; font-weight: 300; }
+        .col-bottom-extra .extra-arrow { font-size: 1.8rem; color: #fff; align-self: flex-end; }
+
+        /* ── Main TOS body ── */
+        .tos-body { background: #0d0d0d; min-height: 100vh; position: relative; z-index: 10; border-top: 1px solid #1a1a1a; }
+        .tos-banner {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 4.5rem; border-bottom: 1px solid #1a1a1a; background: #090909;
+        }
+        .tos-banner span { font-family: "Courier New", monospace; font-size: .78rem; letter-spacing: 2px; text-transform: uppercase; color: #555; }
+        .tos-banner .badge { background: #e63946; color: #fff; font-size: .72rem; padding: 3px 10px; border-radius: 2px; letter-spacing: 1.5px; }
+        .tos-layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+
+        /* Sidebar */
+        .tos-sidebar {
+            border-right: 1px solid #1a1a1a; padding: 3rem 2rem;
+            position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto;
+        }
+        .tos-sidebar::-webkit-scrollbar { width: 4px; }
+        .tos-sidebar::-webkit-scrollbar-thumb { background: #222; }
+        .sidebar-label { font-family: "Courier New", monospace; font-size: .72rem; letter-spacing: 2.5px; text-transform: uppercase; color: #444; margin-bottom: 1.5rem; }
+        .toc-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 1.1rem; text-decoration: none; }
+        .toc-num { font-family: "Courier New", monospace; font-size: .72rem; color: #e63946; padding-top: 2px; min-width: 20px; }
+        .toc-title { font-size: .82rem; color: #666; letter-spacing: .5px; line-height: 1.4; transition: color .2s; }
+        .toc-item:hover .toc-title, .toc-item.active .toc-title { color: #fff; }
+
+        /* Content */
+        .tos-content { padding: 4rem 5rem 6rem; }
+        .tos-intro { max-width: 680px; margin-bottom: 4rem; padding-bottom: 3rem; border-bottom: 1px solid #1a1a1a; }
+        .tos-intro p { font-size: 1.25rem; font-weight: 300; color: #888; line-height: 1.7; }
+        .tos-section { margin-bottom: 3.5rem; opacity: 0; transform: translateY(30px); }
+        .section-header { display: flex; align-items: center; gap: 1.2rem; margin-bottom: 1.5rem; }
+        .section-num { font-family: "Courier New", monospace; font-size: .78rem; color: #e63946; letter-spacing: 2px; min-width: 36px; }
+        .section-title { font-size: 1.55rem; font-weight: 300; letter-spacing: -.03em; color: #ececec; }
+        .section-divider { flex: 1; height: 1px; background: #1a1a1a; }
+        .section-body { background: #121212; border: 1px solid #222; border-radius: 4px; padding: 2.5rem; }
+        .section-body p { font-size: .95rem; color: #999; line-height: 1.85; margin-bottom: 1rem; }
+        .section-body p:last-child { margin-bottom: 0; }
+        .section-body strong { color: #ddd; font-weight: 500; }
+        .clause-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 1.5rem; }
+        .clause-card { background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 2px; padding: 1.2rem 1.4rem; }
+        .clause-card .clause-label { font-family: "Courier New", monospace; font-size: .7rem; letter-spacing: 2px; text-transform: uppercase; color: #f4a261; margin-bottom: .5rem; }
+        .clause-card p { font-size: .85rem !important; color: #777 !important; line-height: 1.6 !important; margin: 0 !important; }
+        .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1.5rem; }
+        .tag-pill { font-family: "Courier New", monospace; font-size: .75rem; letter-spacing: 1.5px; text-transform: uppercase; color: #fff; background: #1c1c1c; border: 1px solid #2e2e2e; padding: 5px 11px; border-radius: 2px; }
+        .alert-box { display: flex; gap: 1rem; align-items: flex-start; background: rgba(230,57,70,.07); border: 1px solid rgba(230,57,70,.25); border-radius: 4px; padding: 1.2rem 1.5rem; margin-top: 1.5rem; }
+        .alert-box .alert-icon { font-size: 1.1rem; padding-top: 1px; }
+        .alert-box p { font-size: .88rem !important; color: #c77 !important; line-height: 1.7 !important; margin: 0 !important; }
+
+        /* Footer */
+        .tos-footer {
+            background: #050505; border-top: 1px solid #1a1a1a;
+            padding: 3rem 4.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+            position: relative; z-index: 10;
+        }
+        .footer-left .logo { font-family: "Courier New", monospace; font-size: .9rem; font-weight: 700; letter-spacing: 2px; color: #fff; margin-bottom: .4rem; }
+        .footer-left p { font-size: .8rem; color: #444; }
+        .footer-links { display: flex; gap: 2rem; }
+        .footer-links a { font-size: .78rem; text-transform: uppercase; letter-spacing: 1.5px; color: #555; text-decoration: none; transition: color .2s; }
+        .footer-links a:hover { color: #fff; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #222; }
+
+        @media (max-width: 900px) {
+            .tos-layout { grid-template-columns: 1fr; }
+            .tos-sidebar { display: none; }
+            .tos-content { padding: 2.5rem 1.5rem 4rem; }
+            h1 { font-size: 2.8rem; }
+            .clause-grid { grid-template-columns: 1fr; }
+            .tos-banner { padding: 1rem 1.5rem; }
+            .tos-footer { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
+            .section-bottom-row { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="swiss-nav">
+    <a href="#" class="nav-logo">STUDYUP <span class="tag">/ LEGAL</span></a>
+    <ul class="nav-links">
+        <li><a href="#">Home</a></li>
+        <li><a href="#">Privacy</a></li>
+        <li><a href="#">Support</a></li>
+    </ul>
+    <a href="#" class="btn-cta">Sign In →</a>
+</nav>
+
+<!-- Particle canvas -->
+<canvas id="node-canvas"></canvas>
+
+<!-- Hero -->
+<div class="hero-wrapper">
+    <div class="hero-kicker">Legal Documentation</div>
+    <h1>Terms of Service</h1>
+    <div class="hero-sub">Effective — January 1, 2025</div>
+    <div class="terminal-line">Please read carefully before using StudyUp<span class="blinker"></span></div>
+</div>
+
+<!-- Scrollable content -->
+<div class="scrolling-content">
+
+    <!-- Pixel transition -->
+    <div class="pixel-transition" id="pixel-transition">
+        <div class="pixel-text">Agreement</div>
+    </div>
+
+    <!-- GSAP Sticky Intro Section -->
+    <section class="intro-section section-intro">
+        <div class="sticky-viewport">
+            <div class="section-top-row">
+                <div class="col-main-title">
+                    <span class="section-tag">// STUDYUP · LEGAL</span>
+                    <h2>Read before</h2>
+                    <h2>you proceed.</h2>
+                </div>
+                <div class="col-top-panel">
+                    <div class="expanding-panel-inner" id="intro-panel">
+                        <span class="panel-kicker">TERMS OVERVIEW</span>
+                        <p>By using StudyUp you agree to lawful personal study use, our content licensing terms, and our file-sharing policies.</p>
+                        <div class="stack-list">
+                            <span>Binding Agreement</span>
+                            <span>DMCA Compliant</span>
+                            <span>GDPR Aware</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="section-bottom-row">
+                <div class="col-bottom-media">
+                    <div class="color-matrix">
+                        <div class="block b-red"></div>
+                        <div class="block b-orange"></div>
+                        <div class="block b-darkred"></div>
+                        <div class="block b-red"></div>
+                        <div class="block b-orange"></div>
+                        <div class="block b-darkred"></div>
+                    </div>
+                </div>
+                <div class="col-bottom-extra">
+                    <span class="extra-header">Version 3.1</span>
+                    <div class="extra-text">Last revised January 2025</div>
+                    <div class="extra-arrow">↘</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TOS Banner -->
+    <div class="tos-banner">
+        <span>Document Version — 3.1 &nbsp;|&nbsp; Last Revised January 2025</span>
+        <span class="badge">Binding Agreement</span>
+    </div>
+
+    <!-- Main TOS layout -->
+    <div class="tos-body">
+        <div class="tos-layout">
+
+            <!-- Sidebar TOC -->
+            <aside class="tos-sidebar">
+                <div class="sidebar-label">Contents</div>
+                <a class="toc-item" href="#s1"><span class="toc-num">01</span><span class="toc-title">Acceptance of Terms</span></a>
+                <a class="toc-item" href="#s2"><span class="toc-num">02</span><span class="toc-title">Permitted Use</span></a>
+                <a class="toc-item" href="#s3"><span class="toc-num">03</span><span class="toc-title">Content Ownership &amp; Licensing</span></a>
+                <a class="toc-item" href="#s4"><span class="toc-num">04</span><span class="toc-title">File Upload Policy</span></a>
+                <a class="toc-item" href="#s5"><span class="toc-num">05</span><span class="toc-title">Copyright Compliance</span></a>
+                <a class="toc-item" href="#s6"><span class="toc-num">06</span><span class="toc-title">Prohibited Conduct</span></a>
+                <a class="toc-item" href="#s7"><span class="toc-num">07</span><span class="toc-title">Privacy &amp; Data</span></a>
+                <a class="toc-item" href="#s8"><span class="toc-num">08</span><span class="toc-title">Service Availability</span></a>
+                <a class="toc-item" href="#s9"><span class="toc-num">09</span><span class="toc-title">Disclaimers &amp; Liability</span></a>
+                <a class="toc-item" href="#s10"><span class="toc-num">10</span><span class="toc-title">Termination</span></a>
+                <a class="toc-item" href="#s11"><span class="toc-num">11</span><span class="toc-title">Modifications to Terms</span></a>
+                <a class="toc-item" href="#s12"><span class="toc-num">12</span><span class="toc-title">Governing Law</span></a>
+                <a class="toc-item" href="#s13"><span class="toc-num">13</span><span class="toc-title">Contact &amp; Disputes</span></a>
+            </aside>
+
+            <!-- Content -->
+            <main class="tos-content">
+                <div class="tos-intro">
+                    <p>These Terms of Service govern your access to and use of StudyUp. By creating an account, uploading materials, or otherwise interacting with the platform, you acknowledge that you have read, understood, and agree to be bound by all provisions set forth herein.</p>
+                </div>
+
+                <div class="tos-section" id="s1">
+                    <div class="section-header"><span class="section-num">01</span><h2 class="section-title">Acceptance of Terms</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>By accessing StudyUp through any device, browser, or application interface, you enter into a legally binding agreement with StudyUp and its operators. This agreement applies to all users, including visitors who browse without an account, registered users, and any individual accessing the platform on behalf of an institution or organization.</p>
+                        <p>Your continued use of the service following any changes to these Terms constitutes your acceptance of those changes. StudyUp recommends reviewing this document periodically.</p>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s2">
+                    <div class="section-header"><span class="section-num">02</span><h2 class="section-title">Permitted Use</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>StudyUp is provided exclusively for <strong>lawful personal study and academic purposes</strong>. You may use the platform to organize study notes, upload educational materials, collaborate on academic content, and access community-shared resources.</p>
+                        <div class="clause-grid">
+                            <div class="clause-card"><div class="clause-label">Allowed</div><p>Personal note-taking, flashcard creation, collaborative study groups, referencing uploaded materials for private learning.</p></div>
+                            <div class="clause-card"><div class="clause-label">Not Allowed</div><p>Commercial resale of content, academic fraud, impersonation, automated scraping, or bypassing access controls.</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s3">
+                    <div class="section-header"><span class="section-num">03</span><h2 class="section-title">Content Ownership &amp; Licensing</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>You retain full ownership of any original content you create and upload to StudyUp. We do not claim ownership of your personal notes, essays, or original study materials.</p>
+                        <p>However, by uploading content to StudyUp, <strong>you grant StudyUp a non-exclusive, royalty-free, worldwide, sublicensable license</strong> to store, display, reproduce, adapt, and distribute that content as part of the platform's services — including making it available to other users of the platform. This license exists for as long as your content remains on the service.</p>
+                        <p>StudyUp reserves the right to feature, index, recommend, or surface uploaded content to other registered users as part of the platform's shared study resource functionality.</p>
+                        <div class="tag-row">
+                            <span class="tag-pill">Non-Exclusive License</span>
+                            <span class="tag-pill">User Retains IP</span>
+                            <span class="tag-pill">Platform Distribution</span>
+                            <span class="tag-pill">Shared Resources</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s4">
+                    <div class="section-header"><span class="section-num">04</span><h2 class="section-title">File Upload Policy</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>StudyUp allows users to upload documents, images, PDFs, notes, and other study materials to the platform. <strong>StudyUp reserves the right to make any files uploaded to its platform available to other registered users</strong> as part of its shared study resource ecosystem, unless files are explicitly marked as private at the time of upload.</p>
+                        <p>By uploading a file, you represent that you have the right to share that material and that doing so does not violate any third-party intellectual property rights.</p>
+                        <div class="alert-box"><span class="alert-icon">⚠</span><p>Uploading files containing personal identifiable information (PII) of third parties, private communications, or confidential institutional documents without authorization is strictly prohibited and may result in immediate account termination.</p></div>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s5">
+                    <div class="section-header"><span class="section-num">05</span><h2 class="section-title">Copyright Compliance</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>You may not use StudyUp to upload, store, or distribute copyrighted material without the express written permission of the rights holder. This includes textbook scans, journal articles behind paywalls, instructor-provided course materials distributed without permission, and copyrighted examination papers.</p>
+                        <p>StudyUp complies with the Digital Millennium Copyright Act (DMCA). If you believe your copyrighted work has been uploaded without authorization, submit a takedown notice to our legal team. We will respond within 72 hours of a valid request.</p>
+                        <p>Repeat infringers will have their accounts permanently suspended without notice or refund.</p>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s6">
+                    <div class="section-header"><span class="section-num">06</span><h2 class="section-title">Prohibited Conduct</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>Users must not engage in any of the following while using StudyUp:</p>
+                        <div class="clause-grid">
+                            <div class="clause-card"><div class="clause-label">Integrity</div><p>Facilitating academic dishonesty, contract cheating, or distributing exam answers in unauthorized contexts.</p></div>
+                            <div class="clause-card"><div class="clause-label">Security</div><p>Attempting to reverse engineer, decompile, or circumvent any authentication or access control on the platform.</p></div>
+                            <div class="clause-card"><div class="clause-label">Harassment</div><p>Using the platform to harass, threaten, defame, or target any individual or group of people.</p></div>
+                            <div class="clause-card"><div class="clause-label">Automation</div><p>Running bots, scrapers, or automated tools against the platform without prior written consent from StudyUp.</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s7">
+                    <div class="section-header"><span class="section-num">07</span><h2 class="section-title">Privacy &amp; Data</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>StudyUp collects and processes personal data in accordance with our Privacy Policy, which is incorporated by reference into these Terms. We collect information such as account credentials, usage activity, uploaded content metadata, and device information.</p>
+                        <p>This data is used to operate, improve, and personalize the StudyUp experience. We do not sell your personal data to third-party advertisers.</p>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s8">
+                    <div class="section-header"><span class="section-num">08</span><h2 class="section-title">Service Availability</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>StudyUp is provided on an <strong>"as-is" and "as-available" basis</strong>. We do not guarantee that the service will be uninterrupted, error-free, or free of harmful components. We reserve the right to modify, suspend, or discontinue any part of the platform at any time without prior notice.</p>
+                        <p>Scheduled maintenance, unexpected outages, or third-party service failures may temporarily affect availability. StudyUp is not liable for any losses or damages resulting from service downtime.</p>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s9">
+                    <div class="section-header"><span class="section-num">09</span><h2 class="section-title">Disclaimers &amp; Limitation of Liability</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>To the fullest extent permitted by applicable law, StudyUp and its developers, employees, and affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the service.</p>
+                        <p>This includes but is not limited to: <strong>loss of data, service interruptions, unauthorized access to your account, or reliance on content posted by other users</strong>.</p>
+                        <div class="alert-box"><span class="alert-icon">⚠</span><p>StudyUp is not responsible for the accuracy or academic validity of user-generated content. Always verify study materials against authoritative sources before relying on them for examinations or coursework.</p></div>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s10">
+                    <div class="section-header"><span class="section-num">10</span><h2 class="section-title">Termination</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>StudyUp may suspend or permanently terminate your account at any time, with or without notice, if we determine you have violated these Terms or engaged in conduct harmful to the platform, its users, or third parties.</p>
+                        <p>Upon deletion, your personal profile data will be removed, though <strong>content you have made publicly available may remain on the platform</strong> under the license granted in Section 03, unless you explicitly request its removal prior to account closure.</p>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s11">
+                    <div class="section-header"><span class="section-num">11</span><h2 class="section-title">Modifications to Terms</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>StudyUp reserves the right to update or revise these Terms at any time. When material changes are made, we will make reasonable efforts to notify registered users via email or an in-app notification at least 7 days before the changes take effect.</p>
+                        <p><strong>Your continued use of the platform after any update constitutes acceptance of the revised Terms.</strong></p>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s12">
+                    <div class="section-header"><span class="section-num">12</span><h2 class="section-title">Governing Law</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which StudyUp is registered, without regard to conflict of law principles. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts of that jurisdiction.</p>
+                        <p>If any provision of these Terms is found to be unenforceable, the remaining provisions shall continue in full force and effect.</p>
+                    </div>
+                </div>
+
+                <div class="tos-section" id="s13">
+                    <div class="section-header"><span class="section-num">13</span><h2 class="section-title">Contact &amp; Disputes</h2><div class="section-divider"></div></div>
+                    <div class="section-body">
+                        <p>For questions regarding these Terms, copyright takedown requests, or general legal inquiries, please contact us at:</p>
+                        <div class="clause-grid">
+                            <div class="clause-card"><div class="clause-label">General Inquiries</div><p>legal@studyup.io</p></div>
+                            <div class="clause-card"><div class="clause-label">DMCA / Copyright</div><p>copyright@studyup.io</p></div>
+                        </div>
+                        <div class="tag-row">
+                            <span class="tag-pill">72hr Response SLA</span>
+                            <span class="tag-pill">DMCA Compliant</span>
+                            <span class="tag-pill">GDPR Aware</span>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="tos-footer">
+        <div class="footer-left">
+            <div class="logo">STUDYUP</div>
+            <p>© 2025 StudyUp. All rights reserved.</p>
+        </div>
+        <nav class="footer-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Cookie Policy</a>
+            <a href="#">Accessibility</a>
+            <a href="#">Contact</a>
+        </nav>
+    </footer>
+
+</div><!-- /scrolling-content -->
+
+<script>
+
+
+/* ══════════════════════════════════════════
+   2. PARTICLE CANVAS — with cursor linking
+══════════════════════════════════════════ */
+const canvas = document.getElementById('node-canvas');
+const ctx    = canvas.getContext('2d');
+let W, H, particles = [];
+const N = 80, D = 130;
+let mx = null, my = null;
+
+window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+window.addEventListener('mouseout',  ()  => { mx = null; my = null; });
+
+function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+window.addEventListener('resize', resize);
+resize();
+
+class P {
+    constructor() {
+        this.x  = Math.random() * W; this.y  = Math.random() * H;
+        this.vx = (Math.random() - .5) * .6; this.vy = (Math.random() - .5) * .6;
+    }
+    step() {
+        this.x += this.vx; this.y += this.vy;
+        if (this.x < 0 || this.x > W) this.vx *= -1;
+        if (this.y < 0 || this.y > H) this.vy *= -1;
+    }
+    draw() {
+        ctx.beginPath(); ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fill();
+    }
+}
+
+for (let i = 0; i < N; i++) particles.push(new P());
+
+(function loop() {
+    ctx.clearRect(0, 0, W, H);
+    for (let i = 0; i < N; i++) {
+        particles[i].step();
+        particles[i].draw();
+        // node-to-node lines
+        for (let j = i + 1; j < N; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const d  = Math.hypot(dx, dy);
+            if (d < D) {
+                ctx.beginPath(); ctx.lineWidth = .5;
+                ctx.strokeStyle = `rgba(255,255,255,${1 - d / D})`;
+                ctx.moveTo(particles[i].x, particles[i].y);
+                ctx.lineTo(particles[j].x, particles[j].y);
+                ctx.stroke();
+            }
+        }
+        // cursor-to-node lines
+        if (mx !== null) {
+            const dx = particles[i].x - mx;
+            const dy = particles[i].y - my;
+            const d  = Math.hypot(dx, dy);
+            if (d < 150) {
+                ctx.beginPath(); ctx.lineWidth = .8;
+                ctx.strokeStyle = `rgba(255,255,255,${1 - d / 150})`;
+                ctx.moveTo(particles[i].x, particles[i].y);
+                ctx.lineTo(mx, my);
+                ctx.stroke();
+            }
+        }
+    }
+    requestAnimationFrame(loop);
+})();
+
+/* ══════════════════════════════════════════
+   3. PIXEL TRANSITION
+══════════════════════════════════════════ */
+(function buildPixels() {
+    const container = document.getElementById('pixel-transition');
+    if (!container) return;
+    const columns = 24, rows = 14, blocks = [];
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < columns; col++) {
+            const b = document.createElement('div');
+            b.classList.add('pixel-block');
+            b.style.width  = `calc(${100 / columns}% + 1px)`;
+            b.style.height = `calc(${100 / rows}% + 1px)`;
+            b.style.left   = (col * (100 / columns)) + '%';
+            b.style.top    = (row * (100 / rows)) + '%';
+            const distC = Math.abs((columns / 2) - col);
+            const distB = (rows - 1) - row;
+            let t = (distB / rows) * .5 + (distC / (columns / 2)) * .25 + (Math.random() * .1) - .03;
+            t = Math.min(Math.max(t, 0), .92);
+            container.appendChild(b);
+            blocks.push({ element: b, threshold: t });
+        }
+    }
+    window.addEventListener('scroll', () => {
+        const rect = container.getBoundingClientRect();
+        const start = window.innerHeight, end = window.innerHeight * .05;
+        let p = (start - rect.top) / (start - end);
+        p = Math.max(0, Math.min(1, p));
+        blocks.forEach(b => b.element.style.opacity = p > b.threshold ? '1' : '0');
+    });
+})();
+
+/* ══════════════════════════════════════════
+   4. GSAP CLIP-PATH PANEL TRANSITION
+   (intro section: slides in from right, exits upward)
+══════════════════════════════════════════ */
+gsap.registerPlugin(ScrollTrigger);
+
+function fixedOverlay(cssExtra, innerHTML) {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;top:0;left:0;z-index:50;pointer-events:none;opacity:0;' + cssExtra;
+    if (innerHTML) d.innerHTML = innerHTML;
+    document.body.appendChild(d);
+    return d;
+}
+
+(() => {
+    const sec      = document.querySelector('.section-intro'); if (!sec) return;
+    const title    = sec.querySelector('.col-main-title');
+    const botMedia = sec.querySelector('.col-bottom-media');
+    const botExtra = sec.querySelector('.col-bottom-extra');
+    const src      = sec.querySelector('.expanding-panel-inner');
+
+    const ov = fixedOverlay(
+        'width:100vw;height:100vh;background:#0d0d0d;display:flex;' +
+        'align-items:center;justify-content:flex-end;padding:5rem 6rem;' +
+        'box-sizing:border-box;clip-path:inset(0 0 0 100%);',
+        src ? src.innerHTML : ''
+    );
+
+    const tl = gsap.timeline({ scrollTrigger: {
+        trigger: sec, start: 'top top', end: 'bottom bottom', scrub: 1.2,
+        onEnter:     () => gsap.set(ov, { opacity: 1, clipPath: 'inset(0 0 0 100%)', pointerEvents: 'auto' }),
+        onLeaveBack: () => gsap.set(ov, { opacity: 0, clipPath: 'inset(0 0 0 100%)', pointerEvents: 'none' }),
+    }});
+
+    tl.to(title,    { x: '-60vw', opacity: 0, ease: 'power2.in', duration: .5 }, 0);
+    tl.to(botMedia, { y: '50vh',  opacity: 0, ease: 'power2.in', duration: .5 }, 0);
+    tl.to(botExtra, { x: '55vw',  opacity: 0, ease: 'power2.in', duration: .5 }, .05);
+    // Clip in from right
+    tl.fromTo(ov, { clipPath: 'inset(0 0 0 100%)' }, { clipPath: 'inset(0 0 0 0%)',   ease: 'power3.inOut', duration: .9 }, .1);
+    // Exit upward
+    tl.to(ov,      { clipPath: 'inset(0% 0 100% 0)', ease: 'power3.inOut', duration: .9 }, 1.1);
+    tl.from(ov.querySelectorAll('.stack-list span'),
+        { y: 25, opacity: 0, stagger: .06, duration: .4, ease: 'power2.out' }, .65);
+})();
+
+/* ══════════════════════════════════════════
+   5. TOS SECTION SCROLL REVEALS
+══════════════════════════════════════════ */
+document.querySelectorAll('.tos-section').forEach(sec => {
+    gsap.to(sec, {
+        scrollTrigger: { trigger: sec, start: 'top 82%', toggleActions: 'play none none none' },
+        opacity: 1, y: 0, duration: .6, ease: 'power2.out',
+    });
+});
+
+/* ══════════════════════════════════════════
+   6. ACTIVE TOC HIGHLIGHT
+══════════════════════════════════════════ */
+const sections = document.querySelectorAll('.tos-section[id]');
+const tocItems  = document.querySelectorAll('.toc-item');
+
+new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            tocItems.forEach(t => t.classList.remove('active'));
+            const match = document.querySelector(`.toc-item[href="#${entry.target.id}"]`);
+            if (match) match.classList.add('active');
+        }
+    });
+}, { rootMargin: '-30% 0px -60% 0px' }).observe
+    ? sections.forEach(s => new IntersectionObserver(entries => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                tocItems.forEach(t => t.classList.remove('active'));
+                const m = document.querySelector(`.toc-item[href="#${e.target.id}"]`);
+                if (m) m.classList.add('active');
+            }
+        });
+    }, { rootMargin: '-30% 0px -60% 0px' }).observe(s))
+    : null;
+</script>
+</body>
+</html>

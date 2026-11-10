@@ -1,0 +1,611 @@
+'use client'
+
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+  Calculator, Play, Pause, RotateCcw, ChevronRight, ChevronLeft,
+  ArrowLeft, ChevronDown, BookOpen, Sparkles, Check, Scissors
+} from 'lucide-react'
+import KaTeXMath from '@/components/KaTeXMath'
+import { PRELOADED_MATH_CHALLENGES, MathChallenge, MathStep } from './preloadedMathDeck'
+import type { Card } from '@/lib/zodSchemas'
+
+interface MathLabViewProps {
+  deckTitle?: string
+  onBack?: () => void
+  cards?: Card[]
+}
+
+export function parseMathChallenges(cards?: Card[]): MathChallenge[] {
+  if (!cards || cards.length === 0) return []
+  const parsed: MathChallenge[] = []
+
+  cards.forEach((c, i) => {
+    // Accept type='math' or type='math_problem', OR legacy &*( tag
+    const isMathType = c.type === 'math' || c.type === 'math_problem'
+    const legacyTag  = c.front.includes('&*(') || c.back.includes('&*(')
+    if (!isMathType && !legacyTag) return
+
+    const topic    = c.front.replace(/&\*\(/g, '').trim() || 'Math Problem'
+    const problem  = c.math_problem  || topic
+    const answer   = c.math_answer   || c.back.replace(/&\*\(/g, '').trim() || problem
+    const category = (c.math_category   || 'Algebra') as MathChallenge['category']
+    const difficulty = (c.math_difficulty || 'Intermediate') as MathChallenge['difficulty']
+
+    // Decode math_steps
+    // Format per step: "latex|explanation|operationType|badge"
+    // Steps separated by " ; " (space-semicolon-space)
+    const rawSteps: string = c.math_steps || ''
+    let steps: MathStep[] = []
+
+    if (rawSteps.trim()) {
+      steps = rawSteps.split(';').map((chunk, idx) => {
+        const parts = chunk.split('|').map(p => p.trim())
+        return {
+          stepNumber:     idx + 1,
+          latex:          parts[0] || problem,
+          explanation:    parts[1] || (idx === 0 ? 'Given expression.' : `Step ${idx + 1}`),
+          operationType:  (parts[2] || (idx === 0 ? 'start' : 'simplify')) as MathStep['operationType'],
+          operationBadge: parts[3] || undefined,
+        }
+      })
+    }
+
+    // Fallback: minimal 2-step view (problem → answer)
+    if (steps.length === 0) {
+      steps = [
+        { stepNumber: 1, latex: problem, explanation: 'Given expression.', operationType: 'start', operationBadge: 'Start' },
+        { stepNumber: 2, latex: answer,  explanation: 'Final answer.',      operationType: 'final', operationBadge: `Answer: ${answer}` },
+      ]
+    }
+
+    // Answer quiz (What's Next?)
+    const correctOption = { textLatex: answer, isCorrect: true, explanation: 'Correct final answer.' }
+    const dummyOptions = [
+      { textLatex: '0',    isCorrect: false, explanation: 'Incorrect.' },
+      { textLatex: '1',    isCorrect: false, explanation: 'Incorrect.' },
+      { textLatex: 'None', isCorrect: false, explanation: 'Incorrect.' },
+    ]
+
+    parsed.push({
+      id:           c.id || `card-math-${i}`,
+      topic,
+      category,
+      difficulty,
+      problemLatex: problem,
+      description:  topic,
+      steps,
+      whatsNextQuiz: {
+        question: `What is the final answer to: ${problem}?`,
+        options:  [correctOption, ...dummyOptions],
+      },
+      bugHunterQuiz: {
+        flawedSteps: [
+          { stepNumber: 1, latex: `${problem} + 1 = 0`, hasError: true, errorReason: 'Incorrect manipulation.' },
+        ],
+        correctStepLatex: answer,
+      },
+    })
+  })
+
+  return parsed
+}
+
+export default function MathLabView({ deckTitle = 'Math Lab', onBack, cards }: MathLabViewProps) {
+  const [challenges, setChallenges] = useState<MathChallenge[]>(() => {
+    const fromCards = parseMathChallenges(cards)
+    if (fromCards.length > 0) return fromCards
+    return PRELOADED_MATH_CHALLENGES
+  })
+  
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentStep, setCurrentStep] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playbackSpeed] = useState(2800)
+  const [showDrawer, setShowDrawer] = useState(false)
+  const [showProblemMenu, setShowProblemMenu] = useState(false)
+
+  // Physical animation state: 'idle' | 'slashing' | 'colliding' | 'fusing'
+  const [animState, setAnimState] = useState<'idle' | 'slashing' | 'colliding' | 'fusing'>('idle')
+  const [, setPrevStepLatex] = useState<string>('')
+
+  // Reactively sync challenges whenever cards prop loads or changes
+  useEffect(() => {
+    const updated = parseMathChallenges(cards)
+    if (updated.length > 0) {
+      setChallenges(updated)
+      setCurrentIndex(0)
+      setCurrentStep(0)
+    } else if (cards && cards.length > 0) {
+      setChallenges([])
+      setCurrentIndex(0)
+      setCurrentStep(0)
+    }
+  }, [cards])
+
+  const currentChallenge = challenges[currentIndex] || challenges[0]
+  const steps = currentChallenge?.steps || []
+  const activeStep: MathStep | undefined = steps[currentStep] || steps[0]
+
+  // Reset step when challenge changes
+  const handleChallengeChange = (idx: number) => {
+    setCurrentIndex(idx)
+    setCurrentStep(0)
+    setIsPlaying(false)
+    setShowProblemMenu(false)
+    setAnimState('idle')
+  }
+
+  // Trigger physical animation upon step progression
+  const triggerStepTransition = (nextIdx: number) => {
+    const nextStep = steps[nextIdx]
+    if (!nextStep || !activeStep) return
+
+    setPrevStepLatex(activeStep.latex)
+
+    // Detect operation type for physical animation
+    if (nextStep.operationType === 'cancel' || (nextStep.cancelledTerms && nextStep.cancelledTerms.length > 0)) {
+      setAnimState('slashing')
+      setTimeout(() => {
+        setCurrentStep(nextIdx)
+        setAnimState('fusing')
+        setTimeout(() => setAnimState('idle'), 400)
+      }, 500)
+    } else if (nextStep.operationType === 'add_sub' || nextStep.operationType === 'mul_div' || nextStep.operationType === 'simplify') {
+      setAnimState('colliding')
+      setTimeout(() => {
+        setCurrentStep(nextIdx)
+        setAnimState('fusing')
+        setTimeout(() => setAnimState('idle'), 400)
+      }, 450)
+    } else {
+      setCurrentStep(nextIdx)
+      setAnimState('fusing')
+      setTimeout(() => setAnimState('idle'), 300)
+    }
+  }
+
+  // Playback Auto-Stepper
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (isPlaying) {
+      timer = setInterval(() => {
+        if (currentStep < steps.length - 1) {
+          triggerStepTransition(currentStep + 1)
+        } else {
+          setIsPlaying(false)
+        }
+      }, playbackSpeed)
+    }
+    return () => clearInterval(timer)
+  }, [isPlaying, currentStep, steps.length, playbackSpeed])
+
+  // Step Navigation Handlers
+  const handlePrevStep = useCallback(() => {
+    setIsPlaying(false)
+    if (currentStep > 0) {
+      triggerStepTransition(currentStep - 1)
+    }
+  }, [currentStep])
+
+  const handleNextStep = useCallback(() => {
+    setIsPlaying(false)
+    if (currentStep < steps.length - 1) {
+      triggerStepTransition(currentStep + 1)
+    }
+  }, [currentStep, steps.length])
+
+  const handleTogglePlay = useCallback(() => {
+    if (currentStep >= steps.length - 1) {
+      setCurrentStep(0)
+      setIsPlaying(true)
+    } else {
+      setIsPlaying((prev) => !prev)
+    }
+  }, [currentStep, steps.length])
+
+  const handleReset = useCallback(() => {
+    setIsPlaying(false)
+    setCurrentStep(0)
+    setAnimState('idle')
+  }, [])
+
+  // Keyboard Shortcuts (Arrow keys & Spacebar)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        handleNextStep()
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        handlePrevStep()
+      } else if (e.key === ' ') {
+        e.preventDefault()
+        handleTogglePlay()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleNextStep, handlePrevStep, handleTogglePlay])
+
+  if (!currentChallenge || challenges.length === 0 || !activeStep) {
+    return (
+      <div className="min-h-screen bg-[var(--color-bg,#0a0e1a)] text-[#E2E8F0] font-sans antialiased flex flex-col">
+        <header className="sticky top-0 z-30 border-b border-[var(--color-border,rgba(255,255,255,0.08))] bg-[var(--color-bg,#0a0e1a)]/90 backdrop-blur-md px-4 sm:px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="p-1.5 rounded-xl border border-[var(--color-border,rgba(255,255,255,0.1))] hover:bg-white/5 text-[var(--color-text-secondary,#94a3b8)] hover:text-white transition-colors cursor-pointer"
+                title="Back"
+              >
+                <ArrowLeft size={16} />
+              </button>
+            )}
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[var(--color-accent,#ff2d85)]/10 text-[var(--color-accent,#ff2d85)] flex items-center justify-center border border-[var(--color-accent,#ff2d85)]/20">
+                <Calculator size={15} />
+              </div>
+              <span className="text-xs sm:text-sm font-semibold text-white tracking-wide">
+                {deckTitle}
+              </span>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 mb-4">
+            <Calculator size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">No Math Challenges Found</h2>
+          <p className="text-sm text-slate-400 max-w-md mb-6">
+            This deck does not contain any cards with type &quot;math&quot; or &quot;math_problem&quot;. Upload or add math problem cards to start step-by-step solving.
+          </p>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="px-5 py-2.5 rounded-xl bg-[var(--color-accent,#ff2d85)] text-white font-medium hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-2"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Deck</span>
+            </button>
+          )}
+        </main>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-[var(--color-bg,#0a0e1a)] text-[#E2E8F0] font-sans antialiased pb-32 selection:bg-[var(--color-accent,#ff2d85)]/30">
+      {/* ─────────────────────────────────────────────────────────────
+          TIER 2: CONTEXT HEADER BAR (Quiet & Minimal)
+         ───────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-30 border-b border-[var(--color-border,rgba(255,255,255,0.08))] bg-[var(--color-bg,#0a0e1a)]/90 backdrop-blur-md px-4 sm:px-8 py-3 flex items-center justify-between">
+        {/* Left: Back & Deck Title */}
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="p-1.5 rounded-xl border border-[var(--color-border,rgba(255,255,255,0.1))] hover:bg-white/5 text-[var(--color-text-secondary,#94a3b8)] hover:text-white transition-colors cursor-pointer"
+              title="Back"
+            >
+              <ArrowLeft size={16} />
+            </button>
+          )}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[var(--color-accent,#ff2d85)]/10 text-[var(--color-accent,#ff2d85)] flex items-center justify-center border border-[var(--color-accent,#ff2d85)]/20">
+              <Calculator size={15} />
+            </div>
+            <span className="text-xs sm:text-sm font-semibold text-white tracking-wide">
+              {deckTitle}
+            </span>
+          </div>
+        </div>
+
+        {/* Center / Right: Problem Selector */}
+        <div className="relative flex items-center gap-1.5">
+          <button
+            onClick={() => handleChallengeChange(Math.max(0, currentIndex - 1))}
+            disabled={currentIndex === 0}
+            className="p-1.5 rounded-lg border border-[var(--color-border,rgba(255,255,255,0.08))] hover:bg-white/5 disabled:opacity-30 text-white transition-colors cursor-pointer"
+            title="Previous Problem"
+          >
+            <ChevronLeft size={15} />
+          </button>
+
+          <button
+            onClick={() => setShowProblemMenu(!showProblemMenu)}
+            className="px-3 py-1.5 rounded-xl border border-[var(--color-border,rgba(255,255,255,0.08))] hover:border-[var(--color-accent,#ff2d85)]/40 bg-white/[0.02] hover:bg-white/5 text-xs font-medium text-white flex items-center gap-2 transition-all cursor-pointer"
+          >
+            <span className="text-[var(--color-accent,#ff2d85)] font-mono font-bold">
+              {currentIndex + 1}/{challenges.length}
+            </span>
+            <span className="hidden sm:inline max-w-[160px] truncate">{currentChallenge.topic}</span>
+            <ChevronDown size={13} className={`text-slate-400 transition-transform ${showProblemMenu ? 'rotate-180' : ''}`} />
+          </button>
+
+          <button
+            onClick={() => handleChallengeChange(Math.min(challenges.length - 1, currentIndex + 1))}
+            disabled={currentIndex === challenges.length - 1}
+            className="p-1.5 rounded-lg border border-[var(--color-border,rgba(255,255,255,0.08))] hover:bg-white/5 disabled:opacity-30 text-white transition-colors cursor-pointer"
+            title="Next Problem"
+          >
+            <ChevronRight size={15} />
+          </button>
+
+          {/* Problem Dropdown List */}
+          {showProblemMenu && (
+            <div className="absolute top-full right-0 mt-2 w-72 max-h-80 overflow-y-auto bg-[var(--color-surface-1,#0f172a)] border border-[var(--color-border,rgba(255,255,255,0.12))] rounded-2xl shadow-2xl p-1.5 z-50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-3 py-2 text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-muted,#64748b)] border-b border-white/5">
+                Select Problem
+              </div>
+              {challenges.map((c, i) => (
+                <button
+                  key={c.id}
+                  onClick={() => handleChallengeChange(i)}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-colors my-0.5 cursor-pointer ${
+                    currentIndex === i
+                      ? 'bg-[var(--color-accent,#ff2d85)]/15 text-white font-semibold border border-[var(--color-accent,#ff2d85)]/30'
+                      : 'text-[var(--color-text-secondary,#94a3b8)] hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="w-4 h-4 rounded-full bg-slate-800 text-[10px] flex items-center justify-center font-mono shrink-0">
+                      {i + 1}
+                    </span>
+                    <span className="truncate">{c.topic}</span>
+                  </div>
+                  {currentIndex === i && <Check size={13} className="text-[var(--color-accent,#ff2d85)] shrink-0 ml-2" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* ─────────────────────────────────────────────────────────────
+          MAIN ZEN WORKSPACE
+         ───────────────────────────────────────────────────────────── */}
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12">
+        {/* Challenge Topic Title (Subtle) */}
+        <div className="text-center mb-6">
+          <span className="text-[11px] font-mono tracking-widest uppercase px-2.5 py-1 rounded-full bg-[var(--color-accent,#ff2d85)]/10 text-[var(--color-accent,#ff2d85)] border border-[var(--color-accent,#ff2d85)]/20">
+            {currentChallenge.category} • {currentChallenge.difficulty}
+          </span>
+          <h1 className="text-xl sm:text-2xl font-bold text-white mt-2 tracking-tight">
+            {currentChallenge.topic}
+          </h1>
+        </div>
+
+        {/* ─────────────────────────────────────────────────────────
+            TIER 1: PRIMARY FOCUS CARD WITH PHYSICAL ANIMATIONS
+           ───────────────────────────────────────────────────────── */}
+        <div className="relative rounded-3xl bg-[var(--color-surface-1,#0f172a)]/80 border border-[var(--color-border,rgba(255,255,255,0.08))] p-6 sm:p-10 shadow-2xl backdrop-blur-xl transition-all duration-300 overflow-hidden">
+          {/* Step Counter & Operation Badge */}
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
+            <span className="text-xs font-mono text-[var(--color-text-muted,#64748b)]">
+              Step <strong className="text-white">{currentStep + 1}</strong> of {steps.length}
+            </span>
+
+            {activeStep.operationBadge ? (
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-accent,#ff2d85)]/15 text-[var(--color-accent,#ff2d85)] text-xs font-mono font-medium border border-[var(--color-accent,#ff2d85)]/30 transition-transform ${animState !== 'idle' ? 'scale-110 shadow-[0_0_12px_rgba(255,45,133,0.5)]' : ''}`}>
+                {activeStep.operationType === 'cancel' ? <Scissors size={12} className="animate-pulse" /> : <Sparkles size={12} />}
+                {activeStep.operationBadge}
+              </span>
+            ) : (
+              <span className="text-xs font-mono text-[var(--color-text-muted,#64748b)]">
+                Initial State
+              </span>
+            )}
+          </div>
+
+          {/* Large Active KaTeX Equation with Term-Level Physics */}
+          <div className="relative py-6 sm:py-8 text-center overflow-x-auto min-h-[140px] flex items-center justify-center">
+            <style>{`
+              .term-slash {
+                position: relative;
+                display: inline-block;
+                color: #fda4af !important;
+                transition: all 0.3s ease;
+              }
+              .term-slash::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: -3px;
+                right: -3px;
+                height: 2.5px;
+                background: #ff2d85;
+                box-shadow: 0 0 10px #ff2d85, 0 0 4px #ffffff;
+                transform: rotate(-18deg);
+                border-radius: 2px;
+                animation: laserSlashSweep 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+              }
+              .term-div-red {
+                position: relative;
+                display: inline-block;
+                color: #f87171 !important;
+                text-shadow: 0 0 12px rgba(239, 68, 68, 0.85);
+                animation: redDivideCollide 0.5s ease-in-out infinite alternate;
+              }
+              .term-mult-glow {
+                position: relative;
+                display: inline-block;
+                color: #38bdf8 !important;
+                text-shadow: 0 0 10px rgba(56, 189, 248, 0.85);
+                animation: multGlowConnect 0.5s ease-in-out infinite alternate;
+              }
+              .term-combine {
+                position: relative;
+                display: inline-block;
+                color: #fbbf24 !important;
+                text-shadow: 0 0 8px rgba(251, 191, 36, 0.7);
+                animation: combineTermPop 0.35s ease-out;
+              }
+              @keyframes laserSlashSweep {
+                0% { width: 0; opacity: 0; }
+                100% { width: 100%; opacity: 1; }
+              }
+              @keyframes redDivideCollide {
+                0% { transform: scale(1); filter: brightness(1); }
+                100% { transform: scale(1.1); filter: brightness(1.35) drop-shadow(0 0 8px #ef4444); }
+              }
+              @keyframes multGlowConnect {
+                0% { transform: scale(1); filter: drop-shadow(0 0 2px #38bdf8); }
+                100% { transform: scale(1.08); filter: drop-shadow(0 0 8px #0284c7); }
+              }
+              @keyframes combineTermPop {
+                0% { transform: scale(0.92); }
+                50% { transform: scale(1.12); }
+                100% { transform: scale(1); }
+              }
+            `}</style>
+
+            <div
+              className={`text-3xl sm:text-4xl text-white font-serif tracking-wide transition-all duration-300 transform ${
+                animState === 'fusing'
+                  ? 'scale-105 opacity-90 drop-shadow-[0_0_15px_rgba(255,45,133,0.4)]'
+                  : 'scale-100 opacity-100'
+              }`}
+            >
+              <KaTeXMath math={activeStep.latex} displayMode={true} />
+            </div>
+          </div>
+
+          {/* Cancelled terms badge if applicable */}
+          {activeStep.cancelledTerms && activeStep.cancelledTerms.length > 0 && (
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                <Scissors size={11} /> Cancelled: {activeStep.cancelledTerms.join(', ')}
+              </span>
+            </div>
+          )}
+
+          {/* ─────────────────────────────────────────────────────────
+              TIER 3: PROGRESSIVE DISCLOSURE (Explanation Accordion)
+             ───────────────────────────────────────────────────────── */}
+          <div className="mt-8 pt-6 border-t border-white/5">
+            <button
+              onClick={() => setShowDrawer(!showDrawer)}
+              className="w-full flex items-center justify-between py-2 text-xs font-medium text-[var(--color-text-secondary,#94a3b8)] hover:text-white transition-colors group cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                <BookOpen size={14} className="text-[var(--color-accent,#ff2d85)]" />
+                Why this step works
+              </span>
+              <ChevronDown size={14} className={`text-slate-500 group-hover:text-white transition-transform ${showDrawer ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showDrawer && (
+              <div className="mt-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 text-xs sm:text-sm text-slate-300 leading-relaxed animate-in fade-in slide-in-from-top-2 duration-200">
+                <p>{activeStep.explanation}</p>
+
+                {/* Compact Step History Timeline */}
+                <div className="mt-4 pt-3 border-t border-white/5">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-muted,#64748b)] block mb-2">
+                    Step History
+                  </span>
+                  <div className="space-y-1.5">
+                    {steps.map((s, idx) => (
+                      <div
+                        key={s.stepNumber}
+                        onClick={() => {
+                          setIsPlaying(false)
+                          setCurrentStep(idx)
+                        }}
+                        className={`p-2 rounded-xl text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                          currentStep === idx
+                            ? 'bg-[var(--color-accent,#ff2d85)]/10 text-white font-medium border border-[var(--color-accent,#ff2d85)]/20'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="font-mono text-[10px] text-slate-500">#{s.stepNumber}</span>
+                          <span className="font-serif truncate">{s.latex}</span>
+                        </div>
+                        {s.operationBadge && (
+                          <span className="text-[10px] font-mono text-[var(--color-accent,#ff2d85)] shrink-0 ml-2">
+                            {s.operationBadge}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* ─────────────────────────────────────────────────────────────
+          TIER 2: FLOATING MINIMAL DOCK (Primary Playback Controls)
+         ───────────────────────────────────────────────────────────── */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+        <div className="bg-[var(--color-surface-1,#0f172a)]/90 backdrop-blur-2xl border border-white/10 rounded-full px-5 py-2.5 shadow-2xl flex items-center gap-3 sm:gap-5">
+          {/* Previous Step */}
+          <button
+            onClick={handlePrevStep}
+            disabled={currentStep === 0}
+            className="p-2 rounded-full hover:bg-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+            title="Previous Step (←)"
+          >
+            <ChevronLeft size={18} />
+          </button>
+
+          {/* Step Indicator Dots */}
+          <div className="flex items-center gap-1.5 px-2">
+            {steps.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setIsPlaying(false)
+                  triggerStepTransition(i)
+                }}
+                className={`transition-all duration-200 rounded-full cursor-pointer ${
+                  currentStep === i
+                    ? 'w-6 h-2 bg-[var(--color-accent,#ff2d85)] shadow-[0_0_8px_rgba(255,45,133,0.6)]'
+                    : i < currentStep
+                    ? 'w-2 h-2 bg-slate-400 hover:bg-slate-200'
+                    : 'w-2 h-2 bg-slate-700 hover:bg-slate-500'
+                }`}
+                title={`Jump to step ${i + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Play / Pause Toggle */}
+          <button
+            onClick={handleTogglePlay}
+            className="w-10 h-10 rounded-full bg-[var(--color-accent,#ff2d85)] hover:brightness-110 text-white flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer"
+            title={isPlaying ? 'Pause (Space)' : 'Auto-Play (Space)'}
+          >
+            {isPlaying ? <Pause size={17} /> : <Play size={17} className="ml-0.5" />}
+          </button>
+
+          {/* Next Step */}
+          <button
+            onClick={handleNextStep}
+            disabled={currentStep === steps.length - 1}
+            className="p-2 rounded-full hover:bg-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+            title="Next Step (→)"
+          >
+            <ChevronRight size={18} />
+          </button>
+
+          {/* Reset Action */}
+          <div className="h-4 w-px bg-white/10 ml-1" />
+          <button
+            onClick={handleReset}
+            className="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
+            title="Restart to Step 1"
+          >
+            <RotateCcw size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,46 @@
+'use client'
+
+import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import CodeLabView from '@/features/code/CodeLabView'
+import { getDeck } from '@/db/deckRepository'
+import type { Deck } from '@/lib/zodSchemas'
+
+export default function CodeLabClient() {
+  const params = useParams()
+  const router = useRouter()
+  const rawDeckId = params?.deckId as string
+  const deckId = (rawDeckId && rawDeckId !== '_offline')
+    ? rawDeckId
+    : (typeof window !== 'undefined' ? window.location.pathname.split('/study/')[1]?.split('/')[0]?.split('?')[0] || '' : '')
+
+  const [deck, setDeck] = useState<Deck | null>(null)
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    if (deckId) {
+      getDeck(deckId).then((d) => {
+        setDeck(d || null)
+        setLoading(false)
+      })
+    } else {
+      setLoading(false)
+    }
+  }, [deckId])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#070b14] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-[var(--color-accent,#ff2d85)] border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
+  return (
+    <CodeLabView
+      deckTitle={deck?.title ?? "Interactive Coding & SQL IDE"}
+      onBack={() => router.push(`/study/${deckId}`)}
+      cards={deck?.cards}
+    />
+  )
+}

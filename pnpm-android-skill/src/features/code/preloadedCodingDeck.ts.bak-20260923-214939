@@ -1,0 +1,35 @@
+// src/features/code/preloadedCodingDeck.ts
+// Type definitions for Zero-LLM Coding & SQL IDE
+// Supports 2 Unified Modes: Scenario Builder (Clean Slate) & Bug Hunter (Find 2-3 Bugs)
+
+export type CodeLanguage = 'java' | 'python' | 'sql' | 'javascript'
+
+export interface ScenarioModeData {
+  scenarioPrompt: string
+  starterTemplate: string
+  expectedKeywords: string[]
+  forbiddenPatterns?: string[]
+  sampleSolution: string
+  simulatedOutput: string
+}
+
+export interface BugHunterModeData {
+  scenarioPrompt: string
+  buggyCode: string
+  bugCount: number
+  bugDescriptions: string[]
+  cleanSolution: string
+  simulatedOutput: string
+}
+
+export interface UnifiedCodeChallenge {
+  id: string
+  topic: string
+  category: 'OOP' | 'Data Structures' | 'Databases & SQL' | 'Error Handling' | 'Algorithms'
+  language: CodeLanguage
+  description: string
+  scenario: ScenarioModeData
+  bugHunter: BugHunterModeData
+}
+
+export const PRELOADED_CODING_CHALLENGES: UnifiedCodeChallenge[] = []

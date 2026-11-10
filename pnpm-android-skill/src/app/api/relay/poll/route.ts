@@ -1,0 +1,107 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { registerWorkerPing, claimNextPendingJob } from '@/lib/relayQueue'
+import { checkRateLimit } from '@/lib/rateLimiter'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-relay-sha, x-active-jobs, x-worker-id',
+}
+
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const relaySha = searchParams.get('relay_sha') || request.headers.get('x-relay-sha') || ''
+  const configuredSha = process.env.RELAY_SHA
+
+  // If a server-side RELAY_SHA is defined, verify match
+  if (configuredSha && relaySha !== configuredSha) {
+    return NextResponse.json({ error: 'Unauthorized: Invalid relay_sha' }, { status: 401, headers: corsHeaders })
+  }
+
+  const workerId = searchParams.get('worker_id') || request.headers.get('x-worker-id') || relaySha || 'worker_default'
+  const activeJobs = parseInt(searchParams.get('active_jobs') || request.headers.get('x-active-jobs') || '0', 10) || 0
+  
+  // Extract client IP for rate limiting
+  const forwardedFor = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || ''
+  const clientIp = forwardedFor.split(',')[0]?.trim() || '127.0.0.1'
+  const userAgent = request.headers.get('user-agent') || 'Extension Worker'
+
+  // Apply SQL-based rate limiting (3 requests per 5 hours)
+  const rateLimitResult = await checkRateLimit(clientIp, '/api/relay/poll')
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { 
+        error: rateLimitResult.error,
+        rateLimit: {
+          remaining: rateLimitResult.remaining,
+          resetAt: rateLimitResult.resetAt
+        }
+      }, 
+      { 
+        status: 429, 
+        headers: {
+          ...corsHeaders,
+          'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+          'X-RateLimit-Reset': String(rateLimitResult.resetAt),
+          'Retry-After': String(Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000))
+        }
+      }
+    )
+  }
+
+  registerWorkerPing(workerId, relaySha, clientIp, activeJobs, userAgent)
+
+  const claimedJob = claimNextPendingJob(workerId, clientIp, activeJobs)
+  if (claimedJob) {
+    return NextResponse.json(
+      {
+        status: 'job_available',
+        job: {
+          id: claimedJob.id,
+          deckId: claimedJob.deckId,
+          prompt: claimedJob.prompt,
+          payload: claimedJob.payload,
+          topic: claimedJob.topic,
+          modelPreference: claimedJob.modelPreference || 'flash',
+          images: claimedJob.images || [],
+        },
+        rateLimit: {
+          remaining: rateLimitResult.remaining,
+          resetAt: rateLimitResult.resetAt
+        }
+      },
+      { 
+        headers: {
+          ...corsHeaders,
+          'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+          'X-RateLimit-Reset': String(rateLimitResult.resetAt)
+        }
+      }
+    )
+  }
+
+  return NextResponse.json(
+    { 
+      status: 'idle', 
+      workerId, 
+      clientIp,
+      rateLimit: {
+        remaining: rateLimitResult.remaining,
+        resetAt: rateLimitResult.resetAt
+      }
+    }, 
+    { 
+      headers: {
+        ...corsHeaders,
+        'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+        'X-RateLimit-Reset': String(rateLimitResult.resetAt)
+      }
+    }
+  )
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders })
+}
+
+export const dynamic = 'force-dynamic'

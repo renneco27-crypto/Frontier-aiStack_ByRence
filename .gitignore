@@ -32,7 +32,22 @@ ENV/
 *.ckpt
 *.h5
 
-# Local caches
+# Node / Frontend / Android
+node_modules/
+.pnpm-store/
+.next/
+.turbo/
+.gradle/
+*.apk
+*.aab
+local.properties
+google-services.json
+*.keystore
+*.jks
+.cxx/
+.DS_Store
+Thumbs.db
+
 .cache/
 .pytest_cache/
 *.log

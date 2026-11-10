@@ -1,0 +1,303 @@
+================================================================================
+STUDYUP ANDROID APP ARCHITECTURE & FIXES LOG (making android app.txt)
+================================================================================
+
+1. ROOT CAUSE SUMMARY (WHY THE APP PREVIOUSLY BEHAVED AS A REMOTE WEB WRAPPER):
+--------------------------------------------------------------------------------
+- Legacy Infiltration:
+  * The old android folder contained BackupSite.java and OfflineResourceInterceptor.java
+    which intercepted every localhost request in shouldInterceptRequest() and passed it
+    to proxyToLiveServer(), forwarding it to https://stitchcsv-f4r9.onrender.com.
+  * Serwist service worker (/sw.js) used a NetworkFirst policy on navigations, attempting
+    to reach the network for every page change before falling back to local files.
+  * ServiceWorkerRegister.tsx was repeatedly triggering downloadWebappUpdate() and
+    forcing a page reload via window.location.reload() upon worker installation.
+  * capacitor.config.ts contained allowNavigation rules for external render / cloud-ip
+    domains, allowing the WebView to break out of https://localhost.
+
+2. ROOT CAUSES FOUND DURING LIVE ADB LOGCAT (DEVICE: 192.168.1.3):
+--------------------------------------------------------------------------------
+- Capacitor HTML5 Asset Serving Blocker:
+  * In Capacitor's WebViewLocalServer.java, any requested route without a file extension
+    (such as /feed, /leaderboard, /download) is hardcoded to return this.basePath + "/index.html".
+  * When tapping navbar items or navigating via router.push('/feed'), Next.js fetches
+    the route with header "RSC: 1". Because Capacitor returned index.html (text/html) instead
+    of the precompiled feed.rsc (text/x-component), the Next.js App Router RSC parser failed,
+    triggering a fallback window.location.href = '/feed'.
+  * The hard reload then again hit Capacitor's WebViewLocalServer, which served index.html
+    (My Library). Thus, the user was permanently trapped on "My Library".
+- Empty Directory Blockers in Android Assets:
+  * Next.js static build created empty directories for /feed, /leaderboard, /download
+    inside assets/public/. When Capacitor's asset handler looked for the route, it found
+    an empty folder with no index.html, throwing net::ERR_FILE_NOT_FOUND (404).
+- Remote Auth Gate Lockout:
+  * In AuthWrapper.tsx, only /download, /offline, and /study were whitelisted as public.
+    When navigating to /feed or /leaderboard, AuthWrapper checked cloud Supabase session.
+    Because the user had no session and Wi-Fi was connected, AuthGate was mounted over
+    the screen.
+  * On Sign Out, SignOutButton.tsx deleted all localStorage keys and redirected to '/',
+    leaving authenticated = false and trapping the user on the login screen with no way back.
+- Uncaught App.addListener TypeError:
+  * In AuthWrapper.tsx, AppPlugin.addListener('appUrlOpen') was chained with .then().
+    In Capacitor 8, addListener returns a handle directly, causing an unhandled rejection:
+    "TypeError: s.addListener(...).then is not a function".
+- VersionUpdateModal Web Reload Loop:
+  * The isNative check used window.Capacitor?.isNativePlatform?.() (which does not exist
+    on the window bridge object), causing VersionUpdateModal to pop up and prompt web updates.
+
+3. ARCHITECTURAL RESOLUTIONS IMPLEMENTED:
+--------------------------------------------------------------------------------
+A. Native Android Custom Routing in MainActivity.java:
+   - Attached custom BridgeWebViewClient with handleLocalRouting():
+     1. RSC Interception: Intercepts requests with "RSC: 1" or "?_rsc=" and serves the
+        corresponding *.rsc file (e.g. public/feed.rsc, public/study/_offline/flashcards.rsc)
+        with MIME type text/x-component.
+     2. Page Navigation: Rewrites extensionless routes (/feed, /leaderboard, /download, etc.)
+        to their matching .html files (e.g. /feed.html), passing them to Capacitor's
+        internal JSInjector so bridge scripts (capacitor.js, native plugins) are injected.
+     3. Study Player Offline Dynamic Routing: Routes /study/[deckId]/flashcards, blanks, notes,
+        quiz, and stats directly to public/study/_offline/*.html and *.rsc.
+     4. API Fallback: Proxies /api/* to the live backend server if online; provides safe
+        200 OK empty JSON ({}) when offline so local operations never fail.
+
+B. Asset Synchronization (scripts/sync-android-assets.js):
+   - Copies precompiled .next/server/app HTML and RSC files into android assets.
+   - Creates directory index.html and index.rsc pairs (e.g. public/feed/index.html,
+     public/leaderboard/index.html, public/download/index.html) so standard asset loaders
+     never encounter 404s.
+
+C. Native Authentication & Sign Out:
+   - AuthWrapper.tsx properly gates authenticated views:
+     * When unauthenticated (e.g. after clicking "Sign Out"), AuthGate is cleanly displayed.
+     * No auto-guest generation or fake accounts; users authenticate properly with Google or Email.
+   - AuthGate.tsx delegates Google Sign-In to Android's native GoogleAuthBridge without external web browser redirects.
+     * When signing in with Google, photoUrl and displayName are stored into studyup_cached_session
+       and studyup_cached_user_avatar in localStorage.
+     * Sidebar.tsx and download/page.tsx read cached avatars and names immediately on mount,
+       with onError fallback to /assets/avatars/01.png, preventing blank avatars.
+
+D. Public Feed Folders & API Proxying:
+   - Supabase RLS issue resolved: The anon role was previously denied access to schema public
+     for feed_folders, causing /api/folders to return an empty array [].
+   - /api/folders now utilizes createAdminSupabase() to query feed_folders reliably.
+   - MainActivity.java and feed/page.tsx include automatic caching and fallbacks for folders
+     ("maee" and "Lawrence") so feed folders are guaranteed to populate both online and offline.
+
+E. Local Storage & IndexedDB (Dexie):
+   - getAllDecks() and getCardsByDeck() query local IndexedDB (StitchDB) directly.
+   - Offline flashcard study, blanks, quiz, and past deck reviews operate 100% offline
+     with zero network calls required.
+
+4. NOVEMBER 5, 2026 ISSUES & RESOLUTIONS:
+--------------------------------------------------------------------------------
+A. Mangled HTML / Missing CSS in My Library:
+   - Root Cause: scripts/sync-android-assets.js was copying public/index.html (a stale
+     export referencing deleted CSS/JS chunks) and overwriting .next/server/app/index.html.
+   - Resolution: scripts/sync-android-assets.js updated to skip entry.name === 'index.html'
+     and exclude any .env* files. Fresh Next.js CSS links now persist cleanly in Android assets.
+
+B. Public Feed Deck Fetch Timeout & "Unexpected token < doctype":
+   - Root Cause: Downloading 10MB deck payloads (with embedded base64 images) exceeded the
+     6-second timeout in MainActivity.java, causing proxyApiRequest to drop the connection
+     and return {} or an HTML 404 page. Calling res.json() on HTML threw a syntax error.
+   - Resolution:
+     * In MainActivity.java: Increased connect timeout to 15s and read timeout to 60s.
+     * In src/app/feed/page.tsx: Uses apiUrl('/api/feed/' + feedDeck.id) and parses response
+       as text first before JSON.parse() with graceful fallback toasts.
+     * In src/features/upload/jsonParser.ts: Explicitly rejects strings starting with
+       <!doctype or <html before attempting JSON repair.
+
+C. Leaderboard 10th Place / Duplicate Accounts Bug:
+   - Root Cause: In dual-database setups (Supabase A and Supabase B), a user can have
+     different UUIDs under the same email. Appending a local fallback user created a duplicate
+     entry with 0 XP at the bottom of the leaderboard (10th place).
+   - Resolution:
+     * In src/features/stats/supabaseSync.ts: Implemented canonical identity matching
+       (email + normalized display name + userId) with Strict Max Metric Deduplication:
+       totalCorrect = Math.max(existing.totalCorrect, candidate.totalCorrect).
+     * In src/app/leaderboard/page.tsx: Added dedupedUsers via useMemo to merge multi-DB
+       records and keep the highest metrics so the user correctly appears in 1st place.
+
+D. Clean Removal of Claude Prompts & Button:
+   - Excised all 520 lines of CLAUDE_PROMPT_TEMPLATE and CLAUDE_NOTES_PROMPT_TEMPLATE
+     from src/components/UploadModal.tsx.
+   - Removed handleCopyToClaude, handleCopyNotesToClaude, and the "Copy to Claude" button.
+
+E. Standalone APK Secrets & Stripe Pro Cloud Architecture:
+   - Standalone APKs never bake environment variables or secret keys into the build.
+   - Removed dummy NEXT_PUBLIC_STRIPE_PAYMENT_LINK from .env.local.
+   - Purchase Flow Architecture:
+     1. Client opens cloud Render backend (/api/stripe/checkout?userId={userId}) in browser.
+     2. Stripe redirects to Render upon success (?stripe=success).
+     3. Render updates Supabase user_purchases (is_paid = true) with Row Level Security (RLS).
+     4. App queries Supabase using authenticated session to unlock "Upload Files" tab.
+     5. Relay daemon (extension / relay_daemon) verifies with Supabase that the requesting
+        device/user has is_paid = true before processing conversion jobs.
+================================================================================
+
+
+================================================================================
+5. MASTER ARCHITECTURAL SPECIFICATION & OFFLINE ROUTING BLUEPRINT
+================================================================================
+
+A. HOW OFFLINE JAVA ROUTING WORKS (MainActivity.java):
+--------------------------------------------------------------------------------
+Next.js App Router relies on two navigation mechanisms that normally fail inside
+an offline Android WebView:
+1. React Server Component (RSC) requests sent with header "RSC: 1" or "?_rsc="
+2. Client-side HTML route transitions (e.g. router.push('/feed'))
+
+In MainActivity.java, a custom BridgeWebViewClient intercepts shouldInterceptRequest():
+```java
+// 1. Next.js RSC requests
+Map<String, String> headers = request.getRequestHeaders();
+boolean isRsc = (headers != null && "1".equals(headers.get("RSC"))) || uri.getQueryParameter("_rsc") != null;
+if (isRsc) {
+    String rscAsset = resolveRscAsset(path);
+    if (rscAsset != null) {
+        InputStream is = getAssets().open(rscAsset);
+        return new WebResourceResponse("text/x-component", "UTF-8", 200, "OK", null, is);
+    }
+}
+
+// 2. Study player dynamic routes (/study/[deckId]/[mode])
+if (path.startsWith("/study/")) {
+    String subPath = path.substring("/study/".length());
+    int slashIdx = subPath.indexOf('/');
+    if (slashIdx >= 0) {
+        String mode = subPath.substring(slashIdx + 1);
+        String studyHtmlAsset = "public/study/_offline/" + mode + ".html";
+        return defaultClient.shouldInterceptRequest(view, rewriteRequest(request, "/" + studyHtmlAsset));
+    }
+}
+
+// 3. Known page routes (/feed, /leaderboard, /download, /search, /offline)
+String cleanPath = path.startsWith("/") ? path.substring(1) : path;
+if (!cleanPath.isEmpty() && !cleanPath.contains(".")) {
+    String htmlAsset = "public/" + cleanPath + ".html";
+    return defaultClient.shouldInterceptRequest(view, rewriteRequest(request, "/" + cleanPath + ".html"));
+}
+```
+
+B. HOW API ROUTING WORKS (ONLINE PROXY VS OFFLINE FALLBACK):
+--------------------------------------------------------------------------------
+1. GET / HEAD requests to /api/*:
+   - When online: Proxied directly via HttpURLConnection to REMOTE_API_BASE
+     (https://www.studyup.cloud-ip.cc).
+   - Timeouts: Connect timeout = 15,000ms (15s), Read timeout = 60,000ms (60s)
+     to comfortably allow downloading large 10MB+ study decks with embedded media.
+   - When offline or connection fails: Catches exception and returns a safe,
+     empty JSON 200 OK WebResourceResponse ({}) so the app never throws unhandled network errors.
+2. POST / PUT / DELETE requests:
+   - In MainActivity.java: Bypassed by returning null in shouldInterceptRequest().
+   - Handled directly by Chromium's native HTTP stack via apiUrl() (from @/lib/apiBase),
+     preserving full request bodies, multipart forms, and headers.
+
+C. TRIPLE-GUARD PROTECTION: NEVER PACKAGE .ENV IN STANDALONE APK:
+--------------------------------------------------------------------------------
+1. Gradle AAPT Exclusion (android/app/build.gradle):
+   ```groovy
+   aaptOptions {
+       ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:<dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~:.env*:.env'
+   }
+   ```
+2. Gradle Packaging Options (android/app/build.gradle):
+   ```groovy
+   packagingOptions {
+       resources {
+           excludes += ['**/.env*', '**/*.env', '**/META-INF/.env*']
+       }
+   }
+   ```
+3. Asset Sync Clean Sweep (scripts/sync-android-assets.js):
+   - Pre-copy filter skips entry.name.startsWith('.env')
+   - Post-sync recursive sweep unlinks any accidental .env files from android assets.
+
+D. COMPLETE CATALOG OF 10 COMMON BUGS & EXACT FIXES:
+--------------------------------------------------------------------------------
+
+[BUG-01] Mangled HTML / Unstyled Page in WebView (Missing CSS)
+- Symptom: My Library and other tabs render with raw, unstyled HTML without Tailwind CSS styles.
+- Root Cause: scripts/sync-android-assets.js copied public/index.html (a stale export pointing to obsolete hashed CSS/JS chunks) and overwrote .next/server/app/index.html. The WebView requested outdated CSS hashes that 404'd.
+- Solution Applied: In scripts/sync-android-assets.js, skip entry.name === 'index.html' when copying public/ and explicitly sync the freshly compiled .next/server/app/index.html to android/app/src/main/assets/public/index.html and public/index.html.
+
+[BUG-02] Public Feed 10MB Payload Timeout & 'Unexpected token < doctype'
+- Symptom: Clicking Add or loading large decks in Public Feed crashes with 'Unexpected token < doctype is not a valid json'.
+- Root Cause: Decks with embedded base64 images can be 10MB+. MainActivity.java had a 6-second HttpURLConnection read timeout, causing large downloads to abort and return {} or an HTML 404 error page. Calling res.json() on HTML threw a syntax error.
+- Solution Applied: 1) In MainActivity.java, increase connect timeout to 15s and read timeout to 60s. 2) In feed/page.tsx, route downloads through apiUrl('/api/feed/' + id) and parse responses text-first with try/catch. 3) In jsonParser.ts, reject strings with <!doctype or <html before parsing.
+
+[BUG-03] Leaderboard 10th Place / Duplicate Account Splitting
+- Symptom: User appears in 10th place with 0 XP even when they should be in 1st place with high score.
+- Root Cause: Dual-database setup (Supabase A and Supabase B) assigned different UUIDs to the same email. Appending a fallback user entry when checking currentUserId created a duplicate record with 0 XP, which sorted to the bottom.
+- Solution Applied: 1) In supabaseSync.ts, implement canonical identity matching (email + normalized displayName + userId). 2) Apply Strict Max Metric Deduplication: totalCorrect = Math.max(existing.totalCorrect, candidate.totalCorrect). 3) In LeaderboardPage, use useMemo to deduplicate users by identity and keep the highest metrics.
+
+[BUG-04] Flashcard Controls Disabled on Card Front
+- Symptom: 'I Know' and 'Still Learning' buttons do nothing when clicked on the front of a flashcard.
+- Root Cause: useFlashcardSession.ts had an unnecessary '!isFlipped' guard returning early, requiring the card to be flipped before clicking.
+- Solution Applied: Remove the '!isFlipped' guard so cards can be marked as known or still learning directly from front or back.
+
+[BUG-05] Enumeration Check Answers Flash / Double Trigger
+- Symptom: Clicking 'Check Answers' flashes the answers for a split second, requiring a second click to work.
+- Root Cause: shuffledItems was defined using useCallback(...)() which regenerated a new array reference on every render, triggering an unintended reset useEffect in EnumerationCard.
+- Solution Applied: 1) Change shuffledItems from useCallback(...)() to useMemo(...). 2) Guard EnumerationCard reset effect with prevTopicRef.current !== topic so state is not reset on parent re-renders.
+
+[BUG-06] Notes Tab Infinite Loading State
+- Symptom: Opening /study/[deckId]/notes gets stuck on an infinite loading spinner.
+- Root Cause: Dynamic route parameter deckId was unresolved or undefined in the offline WebView environment, causing database lookup to never settle.
+- Solution Applied: Add robust effectiveDeckId fallback using window.location.pathname regex and localStorage.getItem('studyup_active_deck_id'), wrapped in try ... finally { setLoading(false) }.
+
+[BUG-07] Gallery Thinking It's Empty (Self-Healing)
+- Symptom: Deck images/gallery reports empty even when cards have images.
+- Root Cause: Dexie imageRepository was empty because cards had not synced their embedded base64 images into the images table.
+- Solution Applied: Add automatic self-healing in ImagesClient.tsx: on load, inspect cards and deck.sourceJson for embedded images and call bulkCreateImages() dynamically if the images table is empty.
+
+[BUG-08] AI Practice Sidebar HTTP 404
+- Symptom: AI chat in drawer returns HTTP 404.
+- Root Cause: fetch('/api/lab/chat') was requesting a relative path on http://localhost in the Capacitor WebView where no backend server runs.
+- Solution Applied: Wrap API calls in apiUrl('/api/lab/chat'), dynamically resolving to https://www.studyup.cloud-ip.cc on native Android and relative on web.
+
+[BUG-09] AAPT & Gradle Standalone APK Secret Leaks
+- Symptom: Standalone APK could accidentally package .env files or secret keys into APK assets.
+- Root Cause: Default Android asset packaging does not exclude .env* files unless explicitly configured in AAPT and packaging options.
+- Solution Applied: 1) In android/app/build.gradle, add aaptOptions.ignoreAssetsPattern with .env* exclusions and packagingOptions.resources.excludes. 2) In sync-android-assets.js, filter out .env* files and run a recursive purge sweep.
+
+[BUG-10] Stripe Pro Purchase Cloud Architecture
+- Symptom: Hardcoded buy.stripe.com links gave AWS CloudFront AccessDenied RequestId b8seaxn5dp4v7j5k.
+- Root Cause: Direct hardcoded payment links expire or require secret keys that must never be in the APK.
+- Solution Applied: App opens cloud Render backend (/api/stripe/checkout?userId=...) via Capacitor Browser. Upon completion, Stripe webhooks update Supabase user_purchases (is_paid = true) with RLS. The app queries Supabase to unlock features, and the Relay daemon verifies purchase before processing files.
+
+
+[BUG-11] AAPT <dir>_* Directory Exclusion (The "No CSS Just HTML" Bug)
+- Symptom: App launches but renders as raw unstyled HTML with no CSS, and logcat throws "Unable to open asset URL: http://localhost/_next/static/css/...".
+- Root Cause: Android's AAPT asset packager includes `<dir>_*` in its default ignoreAssetsPattern, instructing Gradle to purge any directory starting with an underscore (`_`). Because Next.js compiles all CSS stylesheets and JavaScript chunks into `_next/`, AAPT silently strips the entire `_next/` directory from the APK during compilation (0 files in APK's `_next`).
+- Solution Applied: Remove `<dir>_*` from aaptOptions.ignoreAssetsPattern in android/app/build.gradle:
+  `ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:.env*:.env'`
+  Verify with Python zipfile that APK contains 180+ `_next` files and all compiled CSS bundles while strictly maintaining 0 `.env` files.
+
+================================================================================
+6. BUILD & DEPLOYMENT INSTRUCTIONS WITH PNPM
+================================================================================
+1. Install dependencies:
+   pnpm install
+
+2. Build Next.js web application (using Webpack):
+   pnpm run build
+
+3. Synchronize assets to Android container:
+   node scripts/sync-android-assets.js
+
+4. Assemble Android Debug APK:
+   cd android
+   .\gradlew.bat assembleDebug
+   cd ..
+
+5. Deploy to connected physical Android device:
+   adb push android/app/build/outputs/apk/debug/app-debug.apk /data/local/tmp/app.apk
+   adb shell pm install -r /data/local/tmp/app.apk
+   adb shell am force-stop com.studyup.app
+   adb shell am start -n com.studyup.app/.MainActivity
+
+6. Publish APK to Supabase Storage Bucket (Open-source):
+   Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local, then run:
+   node scripts/upload-apk.js
+================================================================================

@@ -1,0 +1,2399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Higgsfield KATANA × Claude Motion — 44-Shot Frame-Accurate Recreation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&family=Syne:wght@800&family=Space+Grotesk:wght@300;400;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --stage-scale-x: 1;
+      --stage-scale-y: 1;
+      --font-heavy: 'Archivo Black', 'Inter', sans-serif;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-serif: 'Instrument Serif', Georgia, serif;
+      --font-thin: 'Space Grotesk', sans-serif;
+      --cream: #F5F2E9;
+      --orange: #FF4500;
+      --orange-bright: #FF6600;
+      --dark: #0A0808;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #080707;
+      color: #ffffff;
+      font-family: var(--font-sans);
+    }
+
+    /* =========================================================================
+       1. FULL-BLEED 100VW x 100VH BACKGROUND LAYER (NO FLEX SHRINKING EVER)
+       ========================================================================= */
+    #screen-bg {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      background: #0A0808;
+      overflow: hidden;
+    }
+
+    #bg-grid-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #ember-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s linear;
+    }
+
+    /* =========================================================================
+       2. FIXED 1920x1080 VIRTUAL STAGE CENTERED AT 50% / 50%
+       ========================================================================= */
+    #stage {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 1920px;
+      height: 1080px;
+      z-index: 2;
+      transform-origin: center center;
+      transform: translate(-50%, -50%) scale(var(--stage-scale-x), var(--stage-scale-y));
+      pointer-events: none;
+      perspective: 1400px;
+      overflow: visible;
+    }
+
+    #camera-rig {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      transform-style: preserve-3d;
+      will-change: transform, filter;
+    }
+
+    /* Post-FX Vignette & Flash Overlay */
+    #flash-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #ffffff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 50;
+      mix-blend-mode: screen;
+    }
+
+    #crt-vignette {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 40;
+      background:
+        radial-gradient(circle at center, transparent 62%, rgba(0, 0, 0, 0.48) 100%),
+        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0px, rgba(0, 0, 0, 0.04) 1px, transparent 1px, transparent 3px);
+    }
+
+    /* =========================================================================
+       3. TYPOGRAPHY & VISUAL FX UTILITIES
+       ========================================================================= */
+    .brutal {
+      font-family: var(--font-heavy);
+      text-transform: uppercase;
+      letter-spacing: -0.04em;
+      line-height: 0.85;
+    }
+
+    .glow-white-red {
+      color: #FFFDF8;
+      text-shadow:
+        0 0 20px rgba(255, 255, 255, 0.95),
+        0 0 55px rgba(255, 69, 0, 0.95),
+        0 0 120px rgba(255, 30, 0, 0.85),
+        0 0 210px rgba(190, 10, 0, 0.75);
+    }
+
+    .glow-orange {
+      color: #FF5500;
+      text-shadow:
+        0 0 20px rgba(255, 110, 0, 0.95),
+        0 0 65px rgba(255, 50, 0, 0.85),
+        0 0 130px rgba(255, 20, 0, 0.65);
+    }
+
+    .glow-lime {
+      color: #D9FF38;
+      text-shadow:
+        0 0 22px rgba(217, 255, 56, 0.95),
+        0 0 65px rgba(180, 255, 0, 0.8);
+    }
+
+    .wireframe-white {
+      color: transparent;
+      -webkit-text-stroke: 3px rgba(255, 255, 255, 0.72);
+    }
+
+    .wireframe-orange {
+      color: transparent;
+      -webkit-text-stroke: 3px rgba(255, 90, 0, 0.85);
+    }
+
+    .checkerboard-text {
+      background-image:
+        linear-gradient(45deg, #8a8a8a 25%, transparent 25%),
+        linear-gradient(-45deg, #8a8a8a 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #8a8a8a 75%),
+        linear-gradient(-45deg, transparent 75%, #8a8a8a 75%);
+      background-size: 38px 38px;
+      background-position: 0 0, 0 19px, 19px -19px, -19px 0;
+      background-color: #d0d0d0;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.75));
+    }
+
+    /* True 3D CSS Cube for Shot 26 */
+    .cube-wrap {
+      width: 320px;
+      height: 320px;
+      perspective: 1000px;
+    }
+    .cube-3d {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+    }
+    .cube-face {
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+    }
+    .cube-front  { background: linear-gradient(135deg, #FF4D00, #D92B00); transform: rotateY(  0deg) translateZ(160px); }
+    .cube-right  { background: linear-gradient(135deg, #C42200, #8F1400); transform: rotateY( 90deg) translateZ(160px); }
+    .cube-back   { background: linear-gradient(135deg, #A81C00, #700E00); transform: rotateY(180deg) translateZ(160px); }
+    .cube-left   { background: linear-gradient(135deg, #FF7300, #FF3800); transform: rotateY(-90deg) translateZ(160px); }
+    .cube-top    { background: linear-gradient(135deg, #FFC400, #FF7B00); transform: rotateX( 90deg) translateZ(160px); }
+    .cube-bottom { background: linear-gradient(135deg, #5E0D00, #2B0400); transform: rotateX(-90deg) translateZ(160px); }
+
+    /* =========================================================================
+       4. FLOATING AUTO-DIMMING HUD CONTROLS BAR
+       ========================================================================= */
+    #hud-bar {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(12, 12, 16, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.75);
+      width: min(96vw, 1120px);
+      transition: opacity 0.3s ease;
+      opacity: 0.38;
+    }
+    #hud-bar:hover, #hud-bar.paused {
+      opacity: 1;
+    }
+
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #f4f4f6;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .hud-btn:hover {
+      background: rgba(255, 69, 0, 0.28);
+      border-color: rgba(255, 69, 0, 0.65);
+      color: #ffffff;
+    }
+    .hud-btn-primary {
+      background: #FF4500;
+      border-color: #FF6A00;
+      color: #ffffff;
+      box-shadow: 0 0 16px rgba(255, 69, 0, 0.55);
+    }
+    .hud-btn-primary:hover {
+      background: #FF5500;
+    }
+
+    #shot-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: #FFB800;
+      background: rgba(255, 184, 0, 0.12);
+      border: 1px solid rgba(255, 184, 0, 0.35);
+      padding: 5px 11px;
+      border-radius: 999px;
+      white-space: nowrap;
+      min-width: 195px;
+      text-align: center;
+    }
+
+    #scrubber-wrap {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      height: 24px;
+    }
+    #scrubber {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.15);
+      height: 6px;
+      border-radius: 999px;
+      cursor: pointer;
+      outline: none;
+    }
+    #scrubber::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #FF4500;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 10px #FF4500;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SVG Filters for Directional Motion Blur & Chromatic Glitch -->
+  <svg width="0" height="0" style="position:absolute;pointer-events:none;">
+    <defs>
+      <filter id="cam-blur" x="-35%" y="-35%" width="170%" height="170%">
+        <feGaussianBlur id="cam-blur-node" in="SourceGraphic" stdDeviation="0 0" />
+      </filter>
+      <filter id="blur-h" x="-40%" y="-10%" width="180%" height="120%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="32 0" />
+      </filter>
+      <filter id="blur-h-med" x="-25%" y="-10%" width="150%" height="120%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="14 0" />
+      </filter>
+      <filter id="blur-v" x="-10%" y="-40%" width="120%" height="180%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="0 34" />
+      </filter>
+      <filter id="blur-v-med" x="-10%" y="-25%" width="120%" height="150%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="0 14" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- 1. FULL-BLEED 100VW x 100VH BACKGROUND & BOKEH EMBER CANVAS -->
+  <div id="screen-bg" title="Click anywhere on screen to Play / Pause">
+    <div id="bg-grid-overlay"></div>
+    <canvas id="ember-canvas"></canvas>
+  </div>
+
+  <!-- 2. FIXED 1920x1080 STAGE -->
+  <div id="stage">
+    <div id="camera-rig"></div>
+  </div>
+
+  <!-- 3. SCREEN-WIDE FLASH & VIGNETTE OVERLAYS -->
+  <div id="flash-overlay"></div>
+  <div id="crt-vignette"></div>
+
+  <!-- 4. FLOATING BOTTOM PLAYBACK & SHOT-STEPPER BAR -->
+  <div id="hud-bar">
+    <button id="btn-play" class="hud-btn hud-btn-primary" title="Play / Pause (Space)">
+      <span id="play-icon">❚❚</span>
+    </button>
+    <button id="btn-prev" class="hud-btn" title="Previous Shot (Left Arrow)">◀ Prev</button>
+    <button id="btn-next" class="hud-btn" title="Next Shot (Right Arrow)">Next ▶</button>
+
+    <div id="shot-badge">Shot 01/44 • Ref 00:10.0</div>
+
+    <div id="scrubber-wrap">
+      <input id="scrubber" type="range" min="0" max="78" step="0.02" value="0" />
+    </div>
+
+    <div id="time-readout" style="font-family:var(--font-mono);font-size:11px;color:#ccc;min-width:86px;text-align:right;">
+      00.0s / 78.0s
+    </div>
+
+    <button id="btn-speed" class="hud-btn" title="Playback Speed">1.0x</button>
+    <button id="btn-fit" class="hud-btn" title="Toggle Aspect Fit vs Full Stretch">Fit: Contain</button>
+    <button id="btn-sfx" class="hud-btn" title="Toggle Procedural Audio & SFX">🔊 SFX</button>
+  </div>
+
+  <script>
+    /***************************************************************************
+     * 1. FULL-SCREEN SCALING ENGINE (ZERO FLEXBOX CLIPPING)
+     ***************************************************************************/
+    let stretchMode = false;
+    let playbackSpeed = 1.0;
+    const emberCanvas = document.getElementById('ember-canvas');
+    const emberCtx = emberCanvas.getContext('2d');
+
+    function updateViewportScale() {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      emberCanvas.width = vw;
+      emberCanvas.height = vh;
+
+      if (stretchMode) {
+        document.documentElement.style.setProperty('--stage-scale-x', vw / 1920);
+        document.documentElement.style.setProperty('--stage-scale-y', vh / 1080);
+      } else {
+        const scale = Math.min(vw / 1920, vh / 1080);
+        document.documentElement.style.setProperty('--stage-scale-x', scale);
+        document.documentElement.style.setProperty('--stage-scale-y', scale);
+      }
+    }
+    window.addEventListener('resize', updateViewportScale);
+    updateViewportScale();
+
+    /***************************************************************************
+     * 2. ALL 44 FRAME-ACCURATE SHOT DEFINITIONS (0.0s -> 78.0s)
+     ***************************************************************************/
+    const TOTAL_DURATION = 78.0;
+    const SHOTS = [
+      { id: 1,  s: 0.0,  e: 0.8,  ref: '00:10.0', label: 'Pulsing Orange Dot & Streaks' },
+      { id: 2,  s: 0.8,  e: 1.3,  ref: '00:11.0', label: 'Top-to-Bottom Whip: NO' },
+      { id: 3,  s: 1.3,  e: 1.75, ref: '00:11.5', label: 'Top-to-Bottom Whip: FUCKING' },
+      { id: 4,  s: 1.75, e: 2.25, ref: '00:12.0', label: 'Top-to-Bottom Whip: WAY.' },
+      { id: 5,  s: 2.25, e: 3.3,  ref: '00:12.5', label: 'Zoom Out Stack: NO / FUCKING / WAY.' },
+      { id: 6,  s: 3.3,  e: 4.3,  ref: '00:13.5', label: 'Vertical Ghost Blur OKAY, + HA HA' },
+      { id: 7,  s: 4.3,  e: 5.75, ref: '00:14.5', label: 'Kinetic Bounce OKAY. + Smile Stroke' },
+      { id: 8,  s: 5.75, e: 6.2,  ref: '00:16.0', label: '14x Camera Zoom Through O' },
+      { id: 9,  s: 6.2,  e: 7.1,  ref: '00:16.5', label: 'Vertical Track: CAN -> YOU -> BELIEVE' },
+      { id: 10, s: 7.1,  e: 7.8,  ref: '00:17.5', label: 'Vertical Track: 3D THAT -> I DID' },
+      { id: 11, s: 7.8,  e: 8.3,  ref: '00:18.0', label: 'Vertical Whip Blur: NOT -> EVEN' },
+      { id: 12, s: 8.3,  e: 10.3, ref: '00:18.5', label: 'Vertical Track: TOUCH AE FOR THIS VIDEO? Slash' },
+      { id: 13, s: 10.3, e: 12.5, ref: '00:20.5', label: 'Vertical Track: AND BEFORE -> YOU -> ASK ? ?' },
+      { id: 14, s: 12.5, e: 13.3, ref: '00:23.0', label: 'Violent Horizontal Shake: NO.' },
+      { id: 15, s: 13.3, e: 14.3, ref: '00:23.5', label: 'Laser Split: THIS / ISN\'T' },
+      { id: 16, s: 14.3, e: 16.3, ref: '00:24.5', label: 'Camera Pan Down: THIS ISN\'T AN MCP Graph' },
+      { id: 17, s: 16.3, e: 17.5, ref: '00:26.5', label: 'Vertical Roll THIS -> Giant IS' },
+      { id: 18, s: 17.5, e: 20.0, ref: '00:28.0', label: '3D Pullback: Higgsfield KATANA Reveal' },
+      { id: 19, s: 20.0, e: 22.3, ref: '00:30.5', label: 'Vertical Scroll YOU TELL CLAUDE -> Split Screen' },
+      { id: 20, s: 22.3, e: 23.3, ref: '00:32.5', label: 'Laser Trace KATANA Pill -> Pan Down TURNS' },
+      { id: 21, s: 23.3, e: 25.6, ref: '00:33.5', label: 'Vertical Scroll: TURNS THAT INTO THE ANIMATION' },
+      { id: 22, s: 25.6, e: 27.3, ref: '00:36.0', label: 'Vertical Scroll: ALL YOU NEED -> IS TO -> WRITE:|' },
+      { id: 23, s: 27.3, e: 30.8, ref: '00:37.5', label: '3D Camera Orbit: Prompt Typing & Highlights' },
+      { id: 24, s: 30.8, e: 31.8, ref: '00:41.0', label: 'Wave K●NETIC + Vertical Drop TYPE' },
+      { id: 25, s: 31.8, e: 32.8, ref: '00:42.0', label: 'MORPHING SHAPES (Circle -> Square -> Triangle)' },
+      { id: 26, s: 32.8, e: 34.3, ref: '00:43.0', label: '3D Cube Spin + Vertical Rise ELEMENTS' },
+      { id: 27, s: 34.3, e: 35.8, ref: '00:44.5', label: '3D Camera Swoop: FLUID -> CAMERA -> MOVES.' },
+      { id: 28, s: 35.8, e: 36.8, ref: '00:46.0', label: 'Glitch Scan NOW + Solar Orb' },
+      { id: 29, s: 36.8, e: 40.0, ref: '00:47.0', label: 'Vertical Pistons THE LETTERS -> STRETCH -> Zoom T' },
+      { id: 30, s: 40.0, e: 43.0, ref: '00:50.0', label: '3D Z-Flythrough: FOLLOW -> THAT -> [ CAMERA ]' },
+      { id: 31, s: 43.0, e: 45.3, ref: '00:57.0', label: 'HUD Dial Push-In: and wait / for the / transition—' },
+      { id: 32, s: 45.3, e: 49.0, ref: '00:59.0', label: 'Top-to-Bottom Slam KIDDING ME?! -> Gravity Fall' },
+      { id: 33, s: 49.0, e: 52.0, ref: '01:03.0', label: 'Vertical Track: THINK -> MAKING [THIS] -> usual way' },
+      { id: 34, s: 52.0, e: 53.2, ref: '01:06.0', label: 'Falling 3D Timeline Bars: LAYERS.' },
+      { id: 35, s: 53.2, e: 54.4, ref: '01:07.0', label: 'Vertical Whip + Sliding Diamonds: KEYFRAMES.' },
+      { id: 36, s: 54.4, e: 55.6, ref: '01:08.0', label: 'Dynamic Bezier Spline: GRAPH / EDITOR.' },
+      { id: 37, s: 55.6, e: 57.0, ref: '01:09.0', label: '3D Tilt & Vertical Scroll: 11-Row Pyramid Stack' },
+      { id: 38, s: 57.0, e: 58.3, ref: '01:10.0', label: 'Top-to-Bottom: THEN -> THE...' },
+      { id: 39, s: 58.3, e: 61.5, ref: '01:11.0', label: 'Vertical Track: RENDER. -> 2% -> 03:37:10 Slash' },
+      { id: 40, s: 61.5, e: 63.5, ref: '01:17.0', label: 'Tilted HERE? -> Vertical Slot-Machine KATANA' },
+      { id: 41, s: 63.5, e: 66.2, ref: '01:19.0', label: 'Vertical Cascade: PROMPT -> GENERATE -> RENDER' },
+      { id: 42, s: 66.2, e: 68.5, ref: '01:21.5', label: 'Play Flip: AND THIS VIDEO -> Zoom Scrubber Dot' },
+      { id: 43, s: 68.5, e: 71.5, ref: '01:24.0', label: 'Horizontal Pan: FIRST IDEA -> KINETIC TYPE -> FINAL FRAME' },
+      { id: 44, s: 71.5, e: 78.0, ref: '01:27.0', label: 'ONE PROMPT -> Horizontal Pan FUUUUUUUU -> Outro' }
+    ];
+
+    /***************************************************************************
+     * 3. MATH & EASING HELPERS
+     ***************************************************************************/
+    const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const norm = (t, s, e) => clamp((t - s) / (e - s), 0, 1);
+    const easeOutExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+    const easeInExpo = (x) => (x <= 0 ? 0 : Math.pow(2, 10 * x - 10));
+    const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+    const easeInCubic = (x) => x * x * x;
+    const easeInOutCubic = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+    const easeOutBack = (x) => {
+      const c1 = 1.70158, c3 = c1 + 1;
+      return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    };
+
+    /***************************************************************************
+     * 4. FLOATING BOKEH EMBERS RENDERER
+     ***************************************************************************/
+    const EMBERS = Array.from({ length: 48 }, (_, i) => ({
+      x: (i * 173) % 100,
+      y: (i * 293) % 100,
+      r: 5 + (i % 7) * 5,
+      vx: -1.8 + (i % 5) * 0.9,
+      vy: -3.2 - (i % 6) * 1.1,
+      a: 0.35 + (i % 5) * 0.12
+    }));
+
+    function drawEmbers(t, show) {
+      emberCanvas.style.opacity = show ? '1' : '0';
+      if (!show) return;
+      const w = emberCanvas.width;
+      const h = emberCanvas.height;
+      emberCtx.clearRect(0, 0, w, h);
+
+      for (let i = 0; i < EMBERS.length; i++) {
+        const p = EMBERS[i];
+        const px = (((p.x + p.vx * t) % 100 + 100) % 100) * 0.01 * w;
+        const py = (((p.y + p.vy * t) % 100 + 100) % 100) * 0.01 * h;
+        const rad = p.r * (Math.min(w, h) / 700);
+
+        const g = emberCtx.createRadialGradient(px, py, 0, px, py, rad * 2.5);
+        g.addColorStop(0, `rgba(255, 210, 120, ${p.a})`);
+        g.addColorStop(0.45, `rgba(255, 85, 0, ${p.a * 0.75})`);
+        g.addColorStop(1, 'rgba(255, 40, 0, 0)');
+        emberCtx.fillStyle = g;
+        emberCtx.beginPath();
+        emberCtx.arc(px, py, rad * 2.5, 0, Math.PI * 2);
+        emberCtx.fill();
+      }
+    }
+
+    /***************************************************************************
+     * 5. WEB AUDIO API PROCEDURAL SFX & BEAT SYNTHESIZER
+     ***************************************************************************/
+    class AudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.lastStep = -1;
+        this.lastShotId = -1;
+      }
+      init() {
+        if (!this.ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) this.ctx = new AC();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      }
+      boom(freq = 62, dur = 0.38) {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(freq * 2, now);
+        o.frequency.exponentialRampToValueAtTime(28, now + dur);
+        g.gain.setValueAtTime(0.32, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        o.connect(g);
+        g.connect(this.ctx.destination);
+        o.start(now);
+        o.stop(now + dur);
+      }
+      slash() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const len = Math.floor(this.ctx.sampleRate * 0.28);
+        const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.06));
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        const flt = this.ctx.createBiquadFilter();
+        flt.type = 'bandpass';
+        flt.frequency.setValueAtTime(3400, now);
+        flt.frequency.exponentialRampToValueAtTime(750, now + 0.26);
+        flt.Q.value = 2.8;
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.38, now);
+        g.gain.exponentialRampToValueAtTime(0.01, now + 0.27);
+        src.connect(flt);
+        flt.connect(g);
+        g.connect(this.ctx.destination);
+        src.start(now);
+      }
+      tick(hi = false) {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(hi ? 1600 : 950, now);
+        o.frequency.exponentialRampToValueAtTime(250, now + 0.03);
+        g.gain.setValueAtTime(0.08, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+        o.connect(g);
+        g.connect(this.ctx.destination);
+        o.start(now);
+        o.stop(now + 0.035);
+      }
+      update(t, shotId, playing) {
+        if (!playing || !this.enabled || !this.ctx) return;
+        const step = Math.floor(t * 4);
+        if (step !== this.lastStep) {
+          this.lastStep = step;
+          this.tick(step % 2 === 0);
+        }
+        if (shotId !== this.lastShotId) {
+          this.lastShotId = shotId;
+          if ([2, 5, 12, 15, 16, 18, 20, 29, 32, 40, 44].includes(shotId)) {
+            this.slash();
+          } else {
+            this.boom(60, 0.3);
+          }
+        }
+      }
+    }
+    const audio = new AudioEngine();
+
+    /***************************************************************************
+     * 6. DYNAMIC COMPONENT HELPERS (SLOT ROLL KATANA, ANIMATED AE CARD)
+     ***************************************************************************/
+    function getKatanaLockupHTML(showHiggsfield = true, showClaude = true, scale = 1, slotProgress = 1, claudeProgress = 1, t = 0) {
+      const letters = ['K', 'A', 'T', 'A', 'N', 'A'];
+      const lettersHTML = letters.map((ch, idx) => {
+        const lp = clamp((slotProgress - idx * 0.09) / 0.45, 0, 1);
+        const yOff = (1 - easeOutBack(lp)) * (idx % 2 === 0 ? -180 : 180);
+        const blur = lp < 0.7 ? 'filter:url(#blur-v-med);' : '';
+        return `<span style="display:inline-block;transform:translateY(${yOff}px);opacity:${clamp(lp * 2, 0, 1)};${blur}">${ch}</span>`;
+      }).join('');
+
+      const claudeText = 'Claude Motion';
+      const claudeLetters = claudeText.split('').map((ch, idx) => {
+        const cp = clamp((claudeProgress - idx * 0.04) / 0.4, 0, 1);
+        const yOff = (1 - easeOutBack(cp)) * 55;
+        return `<span style="display:inline-block;transform:translateY(${yOff}px);opacity:${cp};">${ch === ' ' ? '&nbsp;' : ch}</span>`;
+      }).join('');
+
+      const flamePulse = 1 + Math.sin(t * 14) * 0.06;
+
+      return `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;transform:scale(${scale});">
+          ${showHiggsfield ? `
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;transform:translateY(${lerp(-40, 0, clamp(slotProgress * 1.5, 0, 1))}px);opacity:${clamp(slotProgress * 1.5, 0, 1)};">
+              <svg width="48" height="48" viewBox="0 0 40 40" fill="none" stroke="#FF6A00" stroke-width="4" style="transform:rotate(${Math.sin(t * 4) * 10}deg);">
+                <path d="M12 8 C22 8, 28 16, 20 20 C12 24, 18 32, 28 32" stroke-linecap="round"/>
+                <path d="M28 8 C18 8, 12 16, 20 20 C28 24, 22 32, 12 32" stroke-linecap="round"/>
+              </svg>
+              <span style="font-weight:800;font-size:52px;color:#F5F2E9;letter-spacing:-0.02em;">Higgsfield</span>
+            </div>
+          ` : ''}
+          <div style="position:relative;display:flex;align-items:center;justify-content:center;padding:8px 40px;overflow:hidden;">
+            <svg width="110" height="150" viewBox="0 0 100 140" fill="none" stroke="#FF5500" stroke-width="5" style="margin-right:-16px;filter:drop-shadow(0 0 18px #FF4500);transform:scale(${flamePulse});">
+              <path d="M85 110 C40 110, 20 75, 45 45 C30 65, 55 75, 65 55 C50 35, 70 15, 90 30" stroke-linecap="round"/>
+            </svg>
+            <span class="brutal glow-white-red" style="font-family:'Syne',var(--font-heavy);font-size:185px;font-style:italic;letter-spacing:0.03em;display:inline-flex;">
+              ${lettersHTML}
+            </span>
+            <svg width="110" height="150" viewBox="0 0 100 140" fill="none" stroke="#FF5500" stroke-width="5" style="margin-left:-16px;transform:scaleX(-1) scale(${flamePulse});filter:drop-shadow(0 0 18px #FF4500);">
+              <path d="M85 110 C40 110, 20 75, 45 45 C30 65, 55 75, 65 55 C50 35, 70 15, 90 30" stroke-linecap="round"/>
+            </svg>
+          </div>
+          ${showClaude ? `
+            <div style="display:flex;align-items:center;gap:14px;margin-top:16px;overflow:hidden;padding:4px 12px;">
+              <span style="color:#FF6A00;font-size:48px;display:inline-block;transform:rotate(${t * 90}deg);">✳</span>
+              <span style="font-family:var(--font-serif);font-size:64px;color:#F5F2E9;display:inline-flex;">${claudeLetters}</span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function getAECardInnerHTML(animP = 1) {
+      const s1 = lerp(40, 160, easeOutCubic(clamp(animP * 1.4, 0, 1)));
+      const s2 = lerp(180, 70, easeOutCubic(clamp(animP * 1.4, 0, 1)));
+      const s3 = lerp(90, 260, easeOutCubic(clamp(animP * 1.4, 0, 1)));
+      return `
+        <div style="text-align:center;font-weight:800;font-size:42px;color:#222;margin-bottom:26px;">After Effects</div>
+        <div style="display:flex;flex-direction:column;gap:26px;">
+          <div style="display:flex;align-items:center;gap:24px;">
+            <div style="width:170px;font-family:var(--font-mono);font-weight:700;font-size:24px;color:#666;display:flex;align-items:center;gap:10px;">
+              <span style="width:14px;height:14px;background:#a855f7;border-radius:3px;"></span>Text
+            </div>
+            <div style="flex:1;height:36px;background:#e4e4e7;border-radius:8px;display:flex;align-items:center;padding:0 60px;gap:${lerp(140, 240, animP)}px;">
+              <div style="width:18px;height:18px;background:#333;transform:rotate(45deg);"></div>
+              <div style="width:18px;height:18px;background:#333;transform:rotate(45deg);"></div>
+              <div style="width:18px;height:18px;background:#92400e;transform:rotate(45deg);"></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:24px;">
+            <div style="width:170px;font-family:var(--font-mono);font-weight:700;font-size:24px;color:#555;display:flex;align-items:center;gap:10px;">
+              <span style="width:14px;height:14px;background:#facc15;border-radius:3px;"></span>Shape 1
+            </div>
+            <div style="flex:1;height:36px;background:#e4e4e7;border-radius:8px;display:flex;align-items:center;padding-left:${s1}px;gap:45px;">
+              <div style="width:340px;height:26px;background:#fde047;border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+                <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+              </div>
+              <div style="width:360px;height:26px;background:#fde047;border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+                <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:24px;">
+            <div style="width:170px;font-family:var(--font-mono);font-weight:700;font-size:24px;color:#555;display:flex;align-items:center;gap:10px;">
+              <span style="width:14px;height:14px;background:#f97316;border-radius:3px;"></span>Shape 2
+            </div>
+            <div style="flex:1;height:36px;background:#e4e4e7;border-radius:8px;display:flex;align-items:center;padding-left:${s2}px;gap:50px;">
+              <div style="width:250px;height:26px;background:#fb923c;border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+                <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+              </div>
+              <div style="width:350px;height:26px;background:#fb923c;border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+                <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:24px;">
+            <div style="width:170px;font-family:var(--font-mono);font-weight:700;font-size:24px;color:#666;display:flex;align-items:center;gap:10px;">
+              <span style="width:14px;height:14px;background:#fdba74;border-radius:3px;"></span>Camera
+            </div>
+            <div style="flex:1;height:36px;background:#e4e4e7;border-radius:8px;display:flex;align-items:center;justify-content:space-between;padding:0 50px;">
+              <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+              <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:24px;">
+            <div style="width:170px;font-family:var(--font-mono);font-weight:700;font-size:24px;color:#666;display:flex;align-items:center;gap:10px;">
+              <span style="width:14px;height:14px;background:#bef264;border-radius:3px;"></span>Null 1
+            </div>
+            <div style="flex:1;height:36px;background:#e4e4e7;border-radius:8px;display:flex;align-items:center;padding-left:${s3}px;">
+              <div style="width:480px;height:22px;background:#ecfccb;border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+                <div style="width:18px;height:18px;background:#222;transform:rotate(45deg);"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /***************************************************************************
+     * 7. MASTER 60FPS 3D CAMERA & VERTICAL-SCROLL CHOREOGRAPHY ENGINE
+     ***************************************************************************/
+    const screenBg = document.getElementById('screen-bg');
+    const bgGrid = document.getElementById('bg-grid-overlay');
+    const rig = document.getElementById('camera-rig');
+    const flashOverlay = document.getElementById('flash-overlay');
+    const shotBadge = document.getElementById('shot-badge');
+    const camBlurNode = document.getElementById('cam-blur-node');
+
+    let prevCamX = 0;
+    let prevCamY = 0;
+    let prevShotId = -1;
+
+    function getActiveShot(t) {
+      for (let i = 0; i < SHOTS.length; i++) {
+        if (t >= SHOTS[i].s && t < SHOTS[i].e) return SHOTS[i];
+      }
+      return SHOTS[SHOTS.length - 1];
+    }
+
+    function renderFrame(t) {
+      const shot = getActiveShot(t);
+      const p = norm(t, shot.s, shot.e);
+      shotBadge.textContent = `Shot ${String(shot.id).padStart(2, '0')}/44 • Ref ${shot.ref}`;
+
+      // 3D Virtual Camera Rig State (camX, camY = target point in world space)
+      let camX = 0;
+      let camY = 0;
+      let camScale = 1.0;
+      let rotX = 0;
+      let rotY = 0;
+      let rotZ = 0;
+      let blurX = 0;
+      let blurY = 0;
+
+      // Scene Environment State
+      let bgStyle = '#0A0808';
+      let gridType = 'none';
+      let showEmbers = false;
+      let flash = 0;
+      let shake = 0;
+      let html = '';
+
+      // =======================================================================
+      // SEQUENCE 1 (Shots 1 - 5 | 0.0s - 3.3s | Ref 00:10.0 - 00:13.3)
+      // Pulsing Dot -> Vertical Top-to-Bottom Whip Scroll: NO -> FUCKING -> WAY.
+      // =======================================================================
+      if (t < 0.8) {
+        // Shot 1: Camera pushes into pulsing orange dot + radial streaks
+        bgStyle = 'radial-gradient(circle at center, #2a2626 0%, #090808 100%)';
+        camScale = lerp(0.85, 2.2, easeInCubic(p));
+        const dotScale = 0.9 + 0.6 * Math.sin(p * Math.PI * 3) + p * 1.4;
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <svg width="1920" height="1080" style="position:absolute;inset:0;transform:rotate(${p * 25}deg) scale(${lerp(0.8, 1.35, p)});">
+              <g stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="${0.3 + p * 0.5}">
+                <line x1="650" y1="380" x2="520" y2="290" />
+                <line x1="1280" y1="420" x2="1420" y2="350" />
+                <line x1="780" y1="710" x2="660" y2="810" />
+                <line x1="1190" y1="680" x2="1310" y2="780" />
+              </g>
+            </svg>
+            <div style="width:32px;height:32px;border-radius:50%;background:#FF4510;box-shadow:0 0 45px 18px rgba(255,69,16,0.95);transform:scale(${dotScale});"></div>
+          </div>
+        `;
+      } else if (t < 3.3) {
+        // Shots 2, 3, 4, 5: Unified Vertical Top-to-Bottom Stack (NO / FUCKING / WAY.)
+        // Camera starts at top on NO (y = -320), whips DOWN to FUCKING (y = 0),
+        // whips DOWN to WAY. (y = +320), then zooms out to full stack as katana slices FUCKING!
+        let isDarkNo = false;
+        let isOrangeMid = false;
+        let sliceP = 0;
+
+        if (t < 1.3) {
+          // Shot 2 (0.8s - 1.3s): Top word NO
+          const sp = norm(t, 0.8, 1.3);
+          isDarkNo = true;
+          bgStyle = 'radial-gradient(circle at center, #6e1800 0%, #120300 70%)';
+          camY = lerp(-360, -320, easeOutExpo(sp));
+          camScale = lerp(2.35, 1.75, easeOutExpo(sp));
+          shake = (1 - sp) * 28;
+          flash = (1 - sp) * 0.45;
+        } else if (t < 1.75) {
+          // Shot 3 (1.3s - 1.75s): Vertical whip-pan DOWN from NO (-320) to FUCKING (0)
+          const sp = norm(t, 1.3, 1.75);
+          isOrangeMid = true;
+          bgStyle = 'radial-gradient(circle at center, #FFB700 0%, #FF4500 85%)';
+          camY = lerp(-320, 0, easeOutExpo(sp));
+          camScale = lerp(1.75, 1.42, easeOutExpo(sp));
+          blurY = (1 - sp) * 28;
+        } else if (t < 2.25) {
+          // Shot 4 (1.75s - 2.25s): Vertical whip-pan DOWN from FUCKING (0) to WAY. (+320)
+          const sp = norm(t, 1.75, 2.25);
+          bgStyle = '#F6F4EB';
+          camY = lerp(0, 320, easeOutExpo(sp));
+          camScale = lerp(1.42, 1.65, easeOutExpo(sp));
+          blurY = (1 - sp) * 28;
+        } else {
+          // Shot 5 (2.25s - 3.3s): Camera zooms out from WAY. (+320) to center (0) as FUCKING slices!
+          const sp = norm(t, 2.25, 3.3);
+          bgStyle = '#F5F2E9';
+          camY = lerp(320, 0, easeOutExpo(clamp(sp * 1.8, 0, 1)));
+          camScale = lerp(1.65, 0.96, easeOutExpo(clamp(sp * 1.8, 0, 1)));
+          sliceP = clamp((sp - 0.12) / 0.65, 0, 1);
+          blurX = sp < 0.35 ? (1 - sp / 0.35) * 18 : 0;
+          shake = sp > 0.12 && sp < 0.45 ? (1 - (sp - 0.12) / 0.33) * 18 : 0;
+        }
+
+        const slide = lerp(0, 26, easeOutBack(sliceP));
+        const noColor = isDarkNo ? '#FFFDF8' : '#181717';
+        const fkColor = isOrangeMid ? '#1A1412' : '#FF3D00';
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <!-- Confetti specks around top/bottom -->
+            <svg width="1920" height="1080" style="position:absolute;inset:0;opacity:${isDarkNo ? 0 : 0.85};transform:translateY(${Math.sin(t * 5) * 12}px);">
+              <g stroke="#222" stroke-width="4" stroke-linecap="round">
+                <line x1="690" y1="80" x2="680" y2="120" />
+                <line x1="780" y1="150" x2="775" y2="175" />
+                <line x1="1150" y1="110" x2="1165" y2="140" />
+                <line x1="1380" y1="60" x2="1400" y2="95" />
+                <line x1="1590" y1="120" x2="1615" y2="145" />
+              </g>
+            </svg>
+
+            <!-- ROW 1 (TOP): NO (y = -320) -->
+            <div style="position:relative;display:flex;align-items:center;justify-content:center;height:290px;">
+              ${isDarkNo ? `
+                <div class="brutal wireframe-white" style="position:absolute;font-size:350px;transform:translate(-35px,-22px);opacity:0.45;">NO</div>
+                <div class="brutal wireframe-white" style="position:absolute;font-size:350px;transform:translate(35px,22px);opacity:0.45;">NO</div>
+                <div style="position:absolute;width:2400px;height:6px;background:#fff;box-shadow:0 0 40px 14px #FF4500;"></div>
+              ` : ''}
+              <div class="brutal ${isDarkNo ? 'glow-white-red' : ''}" style="font-size:330px;color:${noColor};line-height:0.82;">NO</div>
+            </div>
+
+            <!-- ROW 2 (MIDDLE): FUCKING (y = 0) with diagonal katana shear -->
+            <div style="position:relative;width:1520px;height:250px;margin:10px 0;">
+              <div class="brutal" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:255px;color:${fkColor};clip-path:polygon(0 0, 100% 0, 100% 34%, 0 74%);transform:translate(${-slide}px, ${-slide * 0.25}px);">
+                FUCKING
+              </div>
+              <div class="brutal" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:255px;color:${fkColor};clip-path:polygon(0 76%, 100% 36%, 100% 100%, 0 100%);transform:translate(${slide}px, ${slide * 0.25}px);">
+                FUCKING
+              </div>
+              ${sliceP > 0 && sliceP < 0.55 ? `
+                <div style="position:absolute;left:-100px;right:-100px;top:52%;height:8px;background:#fff;box-shadow:0 0 30px 10px #FF3D00;transform:rotate(-8.5deg);opacity:${1 - sliceP / 0.55};"></div>
+              ` : ''}
+            </div>
+
+            <!-- ROW 3 (BOTTOM): WAY. (y = +320) -->
+            <div style="display:flex;align-items:baseline;height:280px;line-height:0.82;">
+              <span class="brutal" style="font-size:310px;color:#181717;">WAY</span>
+              <span style="width:78px;height:78px;border-radius:50%;background:#FF3D00;display:inline-block;margin-left:16px;transform:scale(${1 + Math.sin(t * 12) * 0.08});"></span>
+            </div>
+          </div>
+        `;
+      }
+
+      // =======================================================================
+      // SEQUENCE 2 (Shots 6 - 8 | 3.3s - 6.2s | Ref 00:13.5 - 00:16.2)
+      // Orange OKAY, HA HA -> Dark Glow OKAY. + Smile -> 14x Zoom Through 'O'
+      // =======================================================================
+      else if (t < 4.3) {
+        // Shot 6: Whip-pan down into OKAY, on orange + vertical ghost streaks + HA HA
+        bgStyle = '#F03C02';
+        const sp = norm(t, 3.3, 4.3);
+        camY = lerp(-240, 0, easeOutExpo(clamp(sp * 2.5, 0, 1)));
+        camScale = lerp(1.15, 1.0, easeOutCubic(sp));
+        const isBlurPhase = sp >= 0.48;
+        const bp = norm(sp, 0.48, 1.0);
+        if (sp < 0.2) blurY = (1 - sp / 0.2) * 24;
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            ${isBlurPhase ? `
+              <div class="brutal" style="position:absolute;font-size:330px;color:rgba(255,255,255,0.88);filter:url(#blur-v);transform:translateY(${lerp(-40, -210, bp)}px) scaleY(${lerp(1.2, 2.4, bp)});">
+                OKAY.
+              </div>
+              <div class="brutal" style="position:absolute;font-size:330px;color:rgba(120,230,255,0.68);transform:translate(${lerp(0, -24, bp)}px, 8px);">
+                OKAY,
+              </div>
+            ` : ''}
+            <div class="brutal" style="font-size:330px;color:#141212;position:relative;z-index:5;transform:scale(${1 + Math.sin(t * 16) * 0.02});">OKAY,</div>
+            <div class="brutal" style="position:absolute;top:125px;right:135px;font-size:120px;color:#FFF;transform:rotate(${lerp(-24, -10, easeOutBack(clamp(sp * 2.2, 0, 1)))}) scale(${easeOutBack(clamp(sp * 2.2, 0, 1))});">HA</div>
+            ${isBlurPhase ? `
+              <div class="brutal" style="position:absolute;bottom:100px;right:155px;font-size:105px;color:#FFF;transform:rotate(8deg) scale(${easeOutBack( clamp(bp * 2, 0, 1))});">HA</div>
+            ` : ''}
+          </div>
+        `;
+      } else if (t < 6.2) {
+        // Shots 7 & 8 (4.3s - 6.2s): Dark crimson glow OKAY. with per-letter bounce,
+        // curved smile stroke on 'A', and at 5.75s camera zooms 14x straight through the hole of 'O'!
+        bgStyle = 'radial-gradient(circle at center, #731800 0%, #1c0400 58%, #070200 100%)';
+        showEmbers = true;
+        const sp = norm(t, 4.3, 5.75);
+        const zoomP = norm(t, 5.75, 6.2);
+
+        // Camera tracks left onto the letter 'O' (-445px) and zooms 14x through its center!
+        camX = lerp(0, -445, easeInOutCubic(zoomP));
+        camY = lerp(0, -12, easeInOutCubic(zoomP));
+        camScale = lerp(1.0, 14.5, easeInExpo(zoomP));
+        if (zoomP > 0.2) blurX = zoomP * 16;
+
+        const smileDash = lerp(180, 0, easeOutCubic(clamp((sp - 0.25) / 0.45, 0, 1)));
+        const bO = Math.sin(t * 9) * 8;
+        const bK = Math.cos(t * 9 + 1) * 10;
+        const bA = Math.sin(t * 9 + 2) * 8;
+        const bY = Math.cos(t * 9 + 3) * 9;
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <div style="position:relative;display:flex;align-items:baseline;">
+              <span class="brutal glow-white-red" style="font-size:330px;display:inline-block;transform:translateY(${bO}px) rotate(${sp > 0.3 ? -4 : 0}deg);">O</span>
+              <span class="brutal glow-white-red" style="font-size:330px;display:inline-block;transform:translateY(${bK}px);">K</span>
+              <span class="brutal glow-white-red" style="font-size:330px;display:inline-block;transform:translateY(${bA}px) rotate(${sp > 0.3 ? 3 : 0}deg);">A</span>
+              <span class="brutal glow-white-red" style="font-size:330px;display:inline-block;transform:translateY(${bY}px);">Y</span>
+              <span style="width:84px;height:84px;border-radius:50%;background:#FF4500;box-shadow:0 0 40px #FF4500;display:inline-block;margin-left:14px;transform:scale(${1 + Math.sin(t * 14) * 0.12});"></span>
+              <svg width="210" height="210" viewBox="0 0 120 120" style="position:absolute;left:730px;top:145px;">
+                <path d="M 35 18 Q 75 65 20 102" fill="none" stroke="#EAE6DF" stroke-width="14" stroke-linecap="round" stroke-dasharray="180" stroke-dashoffset="${smileDash}" />
+              </svg>
+            </div>
+            ${sp > 0.25 ? `
+              <div class="brutal glow-orange" style="position:absolute;top:150px;right:260px;font-size:98px;transform:rotate(${12 + Math.sin(t * 10) * 4}deg) scale(${easeOutBack(clamp((sp - 0.25) * 3, 0, 1))});">HA</div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      // =======================================================================
+      // SEQUENCE 3 (Shots 9 - 12 | 6.2s - 10.3s | Ref 00:16.3 - 00:20.4)
+      // TRUE VERTICAL TOP-TO-BOTTOM CAMERA TRACKING COLUMN:
+      // CAN -> YOU -> BELIEVE -> 3D THAT -> I DID -> NOT -> EVEN -> TOUCH AE FOR THIS VIDEO?
+      // =======================================================================
+      else if (t < 10.3) {
+        bgStyle = t >= 7.8 && t < 8.3
+          ? 'radial-gradient(circle at center, #5c1600 0%, #0a0504 75%)'
+          : '#0B090A';
+        showEmbers = true;
+
+        // Calculate continuous vertical camera tracking position (camY) top-to-bottom:
+        // y = -1150 (CAN/YOU/BELIEVE) -> y = -480 (3D THAT / I DID) -> y = +180 (NOT / EVEN) -> y = +880 (TOUCH AE CARD)
+        if (t < 7.1) {
+          // Shot 9 (6.2s - 7.1s): Camera tracks down as CAN -> YOU -> BELIEVE -> THAT stack top-to-bottom
+          const sp = norm(t, 6.2, 7.1);
+          camY = lerp(-1280, -1040, easeOutCubic(sp));
+          camScale = lerp(1.22, 1.0, easeOutCubic(sp));
+        } else if (t < 7.8) {
+          // Shot 10 (7.1s - 7.8s): Camera pans down to 3D extruded THAT + glowing I DID
+          const sp = norm(t, 7.1, 7.8);
+          camY = lerp(-1040, -450, easeOutExpo(sp));
+          camScale = lerp(1.0, 1.08, sp);
+          blurY = (1 - sp) * 18;
+        } else if (t < 8.3) {
+          // Shot 11 (7.8s - 8.3s): High-speed vertical whip-pan through NOT / EVEN
+          const sp = norm(t, 7.8, 8.3);
+          camY = lerp(-450, 220, easeInOutCubic(sp));
+          camScale = 1.15;
+          blurY = 30;
+        } else {
+          // Shot 12 (8.3s - 10.3s): Camera lands on TOUCH / AFTER EFFECTS / FOR THIS VIDEO? + AE Card
+          const sp = norm(t, 8.3, 10.3);
+          const settleP = clamp(sp * 3.5, 0, 1);
+          camY = lerp(220, 880, easeOutExpo(settleP));
+          camScale = lerp(1.12, 0.96, easeOutCubic(sp));
+          if (sp < 0.25) blurY = (1 - sp / 0.25) * 24;
+        }
+
+        // Sub-animations for each row in the tall vertical column:
+        const pCan = clamp((t - 6.2) / 0.22, 0, 1);
+        const pYou = clamp((t - 6.4) / 0.22, 0, 1);
+        const pBel = clamp((t - 6.6) / 0.22, 0, 1);
+        const pThatWire = clamp((t - 6.8) / 0.25, 0, 1);
+        const pIdid = clamp((t - 7.2) / 0.35, 0, 1);
+
+        // Dynamic rolling header for Shot 12 (8.3s - 10.3s)
+        const local12 = t - 8.3;
+        let headerHTML = '';
+        let isSliced = false;
+        let sliceProgress = 0;
+
+        if (local12 < 0.48) {
+          const hp = clamp(local12 / 0.25, 0, 1);
+          headerHTML = `<span class="brutal glow-white-red" style="font-size:150px;display:inline-block;transform:translateX(${lerp(-180, 0, easeOutExpo(hp))}px);filter:${hp < 0.6 ? 'url(#blur-h-med)' : 'none'};">TOUCH</span>`;
+        } else if (local12 < 0.98) {
+          const hp = clamp((local12 - 0.48) / 0.25, 0, 1);
+          headerHTML = `<span class="brutal glow-white-red" style="font-size:142px;display:inline-block;transform:translateY(${lerp(60, 0, easeOutBack(hp))}px);">AFTER EFFECTS</span>`;
+        } else if (local12 < 1.42) {
+          const hp = clamp((local12 - 0.98) / 0.25, 0, 1);
+          headerHTML = `<span class="brutal glow-white-red" style="font-size:150px;display:inline-block;transform:translateY(${lerp(-60, 0, easeOutBack(hp))}px);">FOR THIS</span>`;
+        } else {
+          isSliced = true;
+          sliceProgress = norm(local12, 1.42, 2.0);
+          headerHTML = `
+            <span class="brutal glow-white-red" style="font-size:145px;">FOR THIS</span>
+            <span class="brutal glow-orange" style="font-size:145px;margin-left:28px;display:inline-block;transform:scale(${easeOutBack(clamp(sliceProgress * 3, 0, 1))});">VIDEO?</span>
+          `;
+          shake = (1 - sliceProgress) * 28;
+          flash = (1 - clamp(sliceProgress * 3, 0, 1)) * 0.5;
+        }
+
+        const dx = isSliced ? easeOutCubic(sliceProgress) * 195 : 0;
+        const dy = isSliced ? easeOutCubic(sliceProgress) * 120 : 0;
+        const rot = isSliced ? easeOutCubic(sliceProgress) * 9 : 0;
+        const cardAnimP = clamp(local12 / 1.4, 0, 1);
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <!-- SECTION A (y = -1120): CAN / YOU / BELIEVE / THAT -->
+            <div style="position:absolute;top:540px;transform:translateY(-1120px);display:flex;flex-direction:column;align-items:center;gap:6px;">
+              <div class="brutal" style="font-size:205px;color:#FFF;line-height:0.84;transform:translateY(${lerp(-80, 0, easeOutBack(pCan))}px);opacity:${pCan};">CAN</div>
+              <div class="brutal" style="font-size:205px;color:#FFF;line-height:0.84;transform:translateY(${lerp(-80, 0, easeOutBack(pYou))}px);opacity:${pYou};">YOU</div>
+              <div class="brutal" style="font-size:205px;color:#FFF;line-height:0.84;transform:translateY(${lerp(-80, 0, easeOutBack(pBel))}px);opacity:${pBel};">BELIEVE</div>
+              <div class="brutal wireframe-white" style="font-size:205px;line-height:0.84;transform:scale(${lerp(0.7, 1, easeOutBack(pThatWire))});opacity:${pThatWire};">THAT</div>
+            </div>
+
+            <!-- SECTION B (y = -450): 3D Extruded THAT + Glowing I DID -->
+            <div style="position:absolute;top:540px;transform:translateY(-450px);width:1920px;height:700px;display:flex;flex-direction:column;justify-content:space-between;">
+              <div style="display:flex;justify-content:center;margin-left:180px;">
+                <div class="brutal" style="position:relative;font-size:390px;line-height:0.8;">
+                  ${[4, 3, 2, 1].map(i => `
+                    <span class="wireframe-white" style="position:absolute;left:0;top:0;opacity:${0.18 * (5 - i)};transform:translate(${-i * 15 * pIdid}px, ${i * 15 * pIdid}px);">THAT</span>
+                  `).join('')}
+                  <span class="wireframe-white" style="position:relative;-webkit-text-stroke:5px #FFF;">THAT</span>
+                </div>
+              </div>
+              <div style="padding-left:180px;display:flex;align-items:center;">
+                <div class="brutal glow-white-red" style="font-size:280px;transform:translateX(${lerp(-220, 0, easeOutExpo(pIdid))}px);opacity:${pIdid};">I DID</div>
+              </div>
+              <div style="width:1920px;height:6px;background:linear-gradient(90deg,transparent,#FF4500,#FFF,#FF4500,transparent);box-shadow:0 0 35px #FF4500;"></div>
+            </div>
+
+            <!-- SECTION C (y = +220): Vertical Streak NOT / EVEN -->
+            <div style="position:absolute;top:540px;transform:translateY(220px);display:flex;flex-direction:column;align-items:center;">
+              <div class="brutal glow-white-red" style="font-size:350px;line-height:0.85;transform:scaleY(1.65);">NOT</div>
+              <div class="brutal glow-orange" style="font-size:350px;line-height:0.85;transform:scaleY(1.65);">EVEN</div>
+            </div>
+
+            <!-- SECTION D (y = +880): TOUCH AFTER EFFECTS FOR THIS VIDEO? + AE Card -->
+            <div style="position:absolute;top:540px;transform:translateY(880px);display:flex;flex-direction:column;align-items:center;">
+              <div style="width:1380px;height:165px;display:flex;align-items:baseline;justify-content:flex-start;margin-bottom:20px;z-index:20;">
+                ${headerHTML}
+              </div>
+              <div style="position:relative;width:1380px;height:580px;">
+                <div style="position:absolute;inset:0;background:#F5F2E9;border-radius:28px;padding:38px;border:4px solid #fff;clip-path:polygon(0 0, 100% 0, 22% 100%, 0 100%);transform:translate3d(${-dx}px, ${-dy}px, 0) rotate(${-rot}deg);">
+                  ${getAECardInnerHTML(cardAnimP)}
+                </div>
+                <div style="position:absolute;inset:0;background:#F5F2E9;border-radius:28px;padding:38px;border:4px solid #fff;clip-path:polygon(100% 0, 100% 100%, 22% 100%);transform:translate3d(${dx}px, ${dy}px, 0) rotate(${rot}deg);">
+                  ${getAECardInnerHTML(cardAnimP)}
+                </div>
+                <!-- Animated White Cursor -->
+                <svg width="145" height="175" viewBox="0 0 100 120" style="position:absolute;right:${lerp(-220, -135, cardAnimP)}px;top:${lerp(320, 190, cardAnimP)}px;filter:drop-shadow(0 12px 24px rgba(0,0,0,0.85));transform:translate(${dx * 1.1}px, ${dy * 1.1}px);">
+                  <polygon points="10,10 10,95 34,72 52,110 68,102 50,65 85,65" fill="#F5F2E9" stroke="#141212" stroke-width="4"/>
+                </svg>
+                ${isSliced ? `
+                  <div style="position:absolute;left:-220px;right:-220px;top:270px;height:14px;background:#fff;box-shadow:0 0 38px 14px #FF4500, 0 0 85px 28px #FF2200;transform:rotate(-29.5deg);z-index:40;"></div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // =======================================================================
+      // SEQUENCE 4 (Shots 13 - 14 | 10.3s - 13.3s | Ref 00:20.5 - 00:23.4)
+      // Vertical Top-to-Bottom Track: AND BEFORE -> YOU -> ASK ? ? -> Shaking NO.
+      // =======================================================================
+      else if (t < 12.5) {
+        // Shot 13: Camera starts close on AND BEFORE at top-left, pans down as YOU and ASK stack
+        // top-to-bottom, then pans right as the giant '?' and small '?' pop in!
+        bgStyle = '#F4F2E8';
+        const sp = norm(t, 10.3, 12.5);
+        camX = lerp(-240, 0, easeOutCubic(clamp(sp * 1.6, 0, 1)));
+        camY = lerp(-210, 0, easeOutCubic(clamp(sp * 1.6, 0, 1)));
+        camScale = lerp(1.35, 1.0, easeOutCubic(clamp(sp * 1.6, 0, 1)));
+
+        const pRow1 = clamp(sp * 4.5, 0, 1);
+        const pRow2 = clamp((sp - 0.1) * 4.0, 0, 1);
+        const pRow3 = clamp((sp - 0.2) * 4.0, 0, 1);
+        const showBigQ = sp >= 0.28;
+        const showSmallQ = sp >= 0.52;
+        const showGhostQ = sp >= 0.72;
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 140px;">
+            <div style="display:flex;flex-direction:column;align-items:flex-start;">
+              <div class="brutal" style="font-size:94px;color:#1D1C1A;margin-bottom:8px;transform:translateY(${lerp(-50, 0, easeOutBack(pRow1))}px);opacity:${pRow1};">AND BEFORE</div>
+              <div class="brutal" style="font-size:290px;color:#1D1C1A;line-height:0.83;transform:translateY(${lerp(80, 0, easeOutBack(pRow2))}px);opacity:${pRow2};">YOU</div>
+              <div class="brutal" style="font-size:290px;color:#FF3800;line-height:0.83;transform:translateY(${lerp(90, 0, easeOutBack(pRow3))}px);opacity:${pRow3};">ASK</div>
+            </div>
+            <div style="position:relative;width:760px;height:920px;">
+              ${showGhostQ ? `
+                <div class="brutal" style="position:absolute;left:95px;top:${lerp(180, 60, norm(sp, 0.72, 1))}px;font-size:320px;color:rgba(29,28,26,0.18);transform:rotate(-8deg);filter:url(#blur-v-med);">?</div>
+              ` : ''}
+              ${showSmallQ ? `
+                <div class="brutal" style="position:absolute;left:45px;bottom:140px;font-size:340px;color:#1D1C1A;transform:rotate(${lerp(-28, -8, easeOutBack(norm(sp, 0.52, 0.78)))}deg) scale(${easeOutBack(norm(sp, 0.52, 0.78))});">?</div>
+              ` : ''}
+              ${showBigQ ? `
+                <div class="brutal" style="position:absolute;right:-35px;top:-45px;font-size:920px;color:#FF3800;line-height:0.85;transform:rotate(${lerp(28, 10, easeOutBack(norm(sp, 0.28, 0.55)))}deg) scale(${easeOutBack(norm(sp, 0.28, 0.55))});">?</div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      } else if (t < 13.3) {
+        // Shot 14: Blazing orange violently shaking NO.
+        bgStyle = '#EF3900';
+        const osc = Math.sin(t * 95) * 48;
+        shake = 24;
+        blurX = 16;
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <div class="brutal" style="position:absolute;font-size:520px;color:rgba(20,18,18,0.38);transform:translateX(${-osc * 1.4}px);filter:url(#blur-h);">NO.</div>
+            <div class="brutal" style="font-size:520px;color:#141212;transform:translateX(${osc}px);">NO.</div>
+            <div style="position:absolute;left:0;right:0;top:52%;height:4px;background:rgba(255,255,255,0.75);box-shadow:0 0 20px #fff;"></div>
+          </div>
+        `;
+      }
+
+      // =======================================================================
+      // SEQUENCE 5 (Shots 15 - 18 | 13.3s - 20.0s | Ref 00:23.5 - 00:30.0)
+      // THIS / ISN'T -> Camera Pan Down to MCP Graph -> Vertical Roll THIS -> IS -> KATANA
+      // =======================================================================
+      else if (t < 16.3) {
+        // Shots 15 & 16 unified vertical composition:
+        // At 13.3s - 14.3s, camera is on THIS / ISN'T laser split.
+        // At 14.3s - 16.3s, camera pans down onto the 3-node MCP workflow graph!
+        bgStyle = '#0B0909';
+        showEmbers = true;
+
+        if (t < 14.3) {
+          const sp = norm(t, 13.3, 14.3);
+          const showWords = sp >= 0.22;
+          const wp = norm(sp, 0.22, 1.0);
+          camScale = lerp(1.25, 1.0, easeOutCubic(sp));
+          html = `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              ${showWords ? `
+                <div class="brutal glow-white-red" style="font-size:340px;line-height:0.82;transform:translateY(${lerp(110, 0, easeOutExpo(wp))}px);">THIS</div>
+              ` : ''}
+              <div style="width:1920px;height:8px;background:#fff;box-shadow:0 0 45px 14px #FF4500;margin:10px 0;z-index:10;transform:scaleX(${easeOutExpo(clamp(sp * 3, 0, 1))});"></div>
+              ${showWords ? `
+                <div class="brutal glow-orange" style="font-size:340px;color:#FFB800;line-height:0.82;transform:translateY(${lerp(-110, 0, easeOutExpo(wp))}px) scaleY(${lerp(1.85, 1.0, easeOutExpo(wp))});filter:${wp < 0.4 ? 'url(#blur-v-med)' : 'none'};">ISN'T</div>
+              ` : ''}
+            </div>
+          `;
+        } else {
+          const sp = norm(t, 14.3, 16.3);
+          camY = lerp(-260, 0, easeOutExpo(clamp(sp * 2.5, 0, 1)));
+          if (sp < 0.2) blurY = (1 - sp / 0.2) * 20;
+
+          const smash = sp >= 0.65;
+          const smP = norm(sp, 0.65, 1.0);
+          if (smash) shake = (1 - smP) * 28;
+          const lineDash = lerp(900, 0, easeOutCubic(clamp(sp * 1.8, 0, 1)));
+
+          html = `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:95px 120px;">
+              <!-- Top Header -->
+              <div style="display:flex;align-items:center;gap:26px;">
+                <span class="brutal" style="font-size:115px;color:#F5F2E9;">THIS</span>
+                <span class="brutal glow-orange" style="font-size:115px;color:#FF4500;">ISN'T</span>
+                <span class="brutal" style="font-size:115px;color:#F5F2E9;">AN</span>
+                <div style="position:relative;padding:8px 30px;border-radius:18px;border:4px solid #FF4500;background:rgba(255,69,0,0.16);transform:scale(${easeOutBack(clamp((sp - 0.1) * 3, 0, 1))});">
+                  <span class="brutal" style="font-size:110px;color:#FF4500;">MCP</span>
+                  ${smash ? `<div style="position:absolute;left:-6%;right:-6%;top:50%;height:14px;background:#FF2200;box-shadow:0 0 25px #FF4500;transform:rotate(-5deg);"></div>` : ''}
+                </div>
+              </div>
+
+              <!-- 3-Node Graph -->
+              <div style="position:relative;width:1680px;height:600px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;">
+                <svg width="1680" height="600" viewBox="0 0 1680 600" style="position:absolute;inset:0;pointer-events:none;">
+                  <path d="M 420 360 C 560 360, 560 230, 670 230" fill="none" stroke="#FF4500" stroke-width="7" stroke-dasharray="14 8" stroke-dashoffset="${-t * 60}" />
+                  <path d="M 1010 230 C 1130 230, 1130 360, 1240 360" fill="none" stroke="#FF4500" stroke-width="7" stroke-dasharray="900" stroke-dashoffset="${lineDash}" />
+                  <circle cx="670" cy="230" r="12" fill="#FFF" />
+                  <circle cx="1010" cy="230" r="12" fill="#FFF" />
+                  ${smash ? `<line x1="650" y1="580" x2="1050" y2="20" stroke="#FFF" stroke-width="8" style="filter:drop-shadow(0 0 20px #FF4500);" />` : ''}
+                </svg>
+
+                <!-- Node 1: Claude -->
+                <div style="width:400px;padding:34px;border-radius:28px;background:#26252B;border:2px solid rgba(255,255,255,0.16);margin-top:110px;z-index:5;transform:translateX(${lerp(-140, 0, easeOutBack(clamp(sp * 2.5, 0, 1)))}px);">
+                  <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;color:#FF6A00;font-size:32px;margin-bottom:20px;">✳</div>
+                  <div style="font-family:var(--font-mono);font-size:20px;color:#aaa;">AI MODEL</div>
+                  <div style="font-weight:900;font-size:62px;color:#fff;">Claude</div>
+                </div>
+
+                <!-- Node 2: MCP -->
+                <div style="width:360px;padding:34px;border-radius:28px;background:linear-gradient(180deg,#FF6A00,#FF3300);border:4px solid #FFB888;box-shadow:0 0 85px rgba(255,69,0,0.85);margin-top:-90px;z-index:5;transform:${smash ? `scale(0.75) rotate(14deg)` : `scale(${easeOutBack(clamp((sp - 0.12) * 2.5, 0, 1))})`};opacity:${smash ? 0.35 : 1};">
+                  <div style="font-family:var(--font-mono);font-weight:800;font-size:20px;color:rgba(0,0,0,0.7);">PROTOCOL</div>
+                  <div class="brutal" style="font-size:78px;color:#141212;margin-top:6px;">MCP</div>
+                </div>
+
+                ${smash ? `
+                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:20;">
+                    <div class="brutal glow-white-red" style="font-size:240px;transform:scale(${lerp(1.9, 1.0, easeOutExpo(smP))}) rotate(-4deg);">ISN'T</div>
+                  </div>
+                ` : ''}
+
+                <!-- Node 3: After Effects -->
+                <div style="display:flex;flex-direction:column;align-items:center;margin-top:110px;z-index:5;transform:translateX(${lerp(140, 0, easeOutBack(clamp((sp - 0.22) * 2.5, 0, 1)))}px);">
+                  <div style="width:400px;padding:34px;border-radius:28px;background:#26252B;border:2px solid rgba(255,255,255,0.16);">
+                    <div style="font-family:var(--font-mono);font-size:20px;color:#aaa;">APP</div>
+                    <div style="font-weight:900;font-size:52px;color:#fff;line-height:1.05;margin-top:6px;">After<br>Effects</div>
+                  </div>
+                  <div style="margin-top:14px;padding:6px 24px;border-radius:999px;background:rgba(255,255,255,0.1);font-family:var(--font-mono);font-size:20px;color:#ccc;">• controlling</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      } else if (t < 17.5) {
+        // Shot 17 (16.3s - 17.5s): Vertical Rolling Cylinder THIS -> Giant Orange IS
+        const sp = norm(t, 16.3, 17.5);
+        if (sp < 0.55) {
+          const rp = norm(sp, 0, 0.55);
+          bgStyle = 'radial-gradient(circle at center, #701800 0%, #090302 75%)';
+          camY = lerp(-180, 180, rp);
+          blurY = 14;
+          html = `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <div class="brutal wireframe-orange" style="font-size:290px;opacity:0.55;margin-bottom:-30px;">THIS</div>
+              <div class="brutal glow-white-red" style="font-size:340px;z-index:5;">THIS</div>
+              <div class="brutal wireframe-orange" style="font-size:290px;opacity:0.55;margin-top:-30px;">THIS</div>
+            </div>
+          `;
+        } else {
+          bgStyle = '#FF5500';
+          const ip = norm(sp, 0.55, 1.0);
+          camScale = lerp(1.5, 1.0, easeOutExpo(ip));
+          html = `
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+              <div class="brutal" style="font-size:780px;color:#141212;">IS</div>
+            </div>
+          `;
+        }
+      } else if (t < 20.0) {
+        // Shot 18 (17.5s - 20.0s): 3D Camera Pullback + Slot-Roll Higgsfield KATANA Reveal
+        bgStyle = 'radial-gradient(circle at center, #5E1600 0%, #140400 62%, #050100 100%)';
+        showEmbers = true;
+        const sp = norm(t, 17.5, 20.0);
+        camScale = lerp(1.38, 1.0, easeOutCubic(sp));
+        rotZ = lerp(-4, 0, easeOutCubic(sp));
+        const slotP = clamp((sp - 0.1) / 0.55, 0, 1);
+        const claudeP = clamp((sp - 0.48) / 0.4, 0, 1);
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <div style="position:absolute;width:2400px;height:6px;background:#fff;box-shadow:0 0 45px 14px #FF4500;transform:rotate(-6deg) scaleX(${easeOutExpo(clamp(sp * 2.5, 0, 1))});"></div>
+            ${getKatanaLockupHTML(true, sp >= 0.45, 1.0, slotP, claudeP, t)}
+          </div>
+        `;
+      }
+
+      // =======================================================================
+      // SEQUENCE 6 (Shots 19 - 21 | 20.0s - 25.6s | Ref 00:30.5 - 00:35.8)
+      // Vertical Scroll: YOU TELL CLAUDE -> Split Screen -> KATANA Pill -> Pan Down ANIMATION
+      // =======================================================================
+      else if (t < 22.3) {
+        // Shot 19 (20.0s - 22.3s): Top-to-Bottom YOU TELL CLAUDE -> Whip-pan right to Split Screen
+        const sp = norm(t, 20.0, 22.3);
+        if (sp < 0.36) {
+          const vp = norm(sp, 0, 0.36);
+          bgStyle = '#F5F2E9';
+          camY = lerp(-240, 80, easeOutCubic(vp));
+          blurY = vp < 0.25 ? 18 : 0;
+          html = `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <div class="brutal" style="font-size:230px;color:#141212;transform:translateY(${lerp(-60, 0, easeOutBack(clamp(vp * 2, 0, 1)))}px);">YOU TELL</div>
+              <div class="brutal" style="font-size:260px;color:#FF4500;transform:translateY(${lerp(80, 0, easeOutBack(clamp((vp - 0.15) * 2.2, 0, 1)))}px);opacity:${clamp((vp - 0.1) * 3, 0, 1)};">CLAUDE</div>
+            </div>
+          `;
+        } else {
+          bgStyle = '#0B0909';
+          const wp = norm(sp, 0.36, 1.0);
+          camX = lerp(380, 0, easeOutExpo(clamp(wp * 2.5, 0, 1)));
+          if (wp < 0.2) blurX = (1 - wp / 0.2) * 26;
+
+          const r1 = clamp(wp * 3.5, 0, 1);
+          const r2 = clamp((wp - 0.15) * 3.5, 0, 1);
+          const r3 = clamp((wp - 0.3) * 3.5, 0, 1);
+
+          html = `
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 130px;">
+              <!-- Top-to-Bottom Left Cascade -->
+              <div style="display:flex;flex-direction:column;align-items:flex-start;">
+                <div class="brutal" style="font-size:135px;color:#F5F2E9;transform:translateY(${lerp(-60, 0, easeOutBack(r1))}px);opacity:${r1};">WHAT YOU</div>
+                <div class="brutal" style="font-size:185px;color:#F5F2E9;transform:translateY(${lerp(-60, 0, easeOutBack(r2))}px);opacity:${r2};">WANT</div>
+                <div class="brutal" style="font-size:165px;color:#F5F2E9;transform:translateY(${lerp(-60, 0, easeOutBack(r3))}px);opacity:${r3};">TO <span style="color:#FF4500;">SEE</span></div>
+              </div>
+              <!-- Animated Claude UI Card -->
+              <div style="width:760px;height:600px;background:#F5F2E9;border-radius:32px;padding:48px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 25px 80px rgba(0,0,0,0.85);transform:scale(${easeOutBack(clamp(wp * 2, 0, 1))});">
+                <div style="display:flex;align-items:center;gap:12px;font-family:var(--font-mono);font-weight:800;font-size:32px;color:#222;">
+                  <span style="color:#FF4500;">✳</span> CLAUDE
+                </div>
+                <div style="display:flex;flex-direction:column;gap:22px;">
+                  <div style="height:30px;background:#18181b;border-radius:8px;width:${lerp(0, 82, clamp(wp * 2.5, 0, 1))}%;"></div>
+                  <div style="height:30px;background:#18181b;border-radius:8px;width:${lerp(0, 96, clamp((wp - 0.15) * 2.5, 0, 1))}%;"></div>
+                  <div style="height:30px;background:#FF4500;border-radius:8px;width:${lerp(0, 74, clamp((wp - 0.3) * 2.5, 0, 1))}%;"></div>
+                  <div style="height:30px;background:#FF4500;border-radius:8px;width:${lerp(0, 88, clamp((wp - 0.45) * 2.5, 0, 1))}%;"></div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;">
+                  <div style="width:68px;height:68px;border-radius:50%;background:#FF4500;color:#fff;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;transform:scale(${wp > 0.75 ? 0.85 : 1});box-shadow:0 0 ${wp > 0.75 ? 35 : 0}px #FF4500;">↑</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      } else if (t < 25.6) {
+        // Shots 20 & 21 (22.3s - 25.6s): Unified Vertical Camera Scroll!
+        // Top of world (y = -480) has the glowing KATANA orange pill + TURNS.
+        // At 23.3s, camera tracks DOWN (camY: -480 -> +180) to reveal the Filmstrip, Video Player,
+        // and top-to-bottom stack: TURNS THAT -> INTO THE -> ANIMATION!
+        bgStyle = '#0B0909';
+        const isShot21 = t >= 23.3;
+        const p20 = norm(t, 22.3, 23.3);
+        const p21 = norm(t, 23.3, 25.6);
+
+        camY = !isShot21
+          ? lerp(-540, -440, easeOutCubic(p20))
+          : lerp(-440, 220, easeOutExpo(clamp(p21 * 2.2, 0, 1)));
+        if (isShot21 && p21 < 0.25) blurY = (1 - p21 / 0.25) * 24;
+
+        const radius = lerp(50, 18, easeInOutCubic(p21));
+        const rot = lerp(0, 95, easeInOutCubic(p21));
+        const filmShift = lerp(120, -40, p21);
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <!-- TOP SECTION (y = -460): KATANA Orange Pill -->
+            <div style="position:absolute;top:540px;transform:translateY(-560px);width:1680px;display:flex;flex-direction:column;align-items:flex-start;">
+              <div style="width:1360px;height:270px;border-radius:999px;background:linear-gradient(90deg,#FF7700,#FF3300);border:5px solid #FFD2A8;box-shadow:0 0 110px rgba(255,69,0,0.9);display:flex;align-items:center;justify-content:center;transform:scale(${easeOutBack(clamp(p20 * 1.8, 0, 1))});">
+                <span class="brutal" style="font-family:'Syne',var(--font-heavy);font-size:160px;font-style:italic;color:#141212;">KATANA</span>
+              </div>
+              <div class="brutal" style="font-size:190px;color:#F5F2E9;margin-top:28px;transform:translateX(${lerp(-180, 0, easeOutExpo(p20))}px);">
+                TURNS
+              </div>
+            </div>
+
+            <!-- BOTTOM SECTION (y = +220): Filmstrip + Video Player + TURNS THAT INTO THE ANIMATION -->
+            <div style="position:absolute;top:540px;transform:translateY(220px);width:1720px;height:880px;display:flex;flex-direction:column;justify-content:space-between;">
+              <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                <!-- Sliding Filmstrip -->
+                <div style="width:760px;height:210px;background:#F5F2E9;border-top:18px dashed #18181b;border-bottom:18px dashed #18181b;display:flex;align-items:center;justify-content:space-around;padding:0 24px;overflow:hidden;">
+                  <div style="display:flex;gap:48px;transform:translateX(${filmShift}px);">
+                    <div style="width:120px;height:120px;background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;">
+                      <div style="width:76px;height:76px;background:#FF4500;border-radius:12px;transform:rotate(12deg);"></div>
+                    </div>
+                    <div style="width:120px;height:120px;background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;">
+                      <div style="width:76px;height:76px;background:#FF4500;border-radius:20px;transform:rotate(45deg);"></div>
+                    </div>
+                    <div style="width:120px;height:120px;background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;">
+                      <div style="width:76px;height:76px;background:#FF4500;border-radius:50%;"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Video Preview Player -->
+                <div style="width:860px;height:540px;background:#1E1E24;border-radius:28px;padding:22px;border:2px solid rgba(255,255,255,0.2);display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 25px 80px rgba(0,0,0,0.9);">
+                  <div style="flex:1;background:#FAF8F5;border-radius:18px;display:flex;align-items:center;justify-content:center;">
+                    <div style="width:230px;height:230px;background:linear-gradient(135deg,#FFB800,#FF4500);border-radius:${radius}%;transform:rotate(${rot}deg) scale(${1 + Math.sin(t * 10) * 0.05});"></div>
+                  </div>
+                  <div style="height:54px;display:flex;align-items:center;gap:20px;padding:8px 16px 0;">
+                    <span style="font-weight:900;font-size:24px;color:#fff;">❚❚</span>
+                    <div style="flex:1;height:10px;background:#3f3f46;border-radius:999px;position:relative;display:flex;align-items:center;">
+                      <div style="width:${lerp(15, 85, p21)}%;height:100%;background:#FF6A00;border-radius:999px;"></div>
+                      <div style="width:22px;height:22px;border-radius:50%;background:#fff;margin-left:-11px;"></div>
+                    </div>
+                    <span style="font-family:var(--font-mono);font-size:20px;color:#d4d4d8;">00:05:${String(Math.floor(lerp(0, 12, p21))).padStart(2, '0')}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bottom Left Vertical Cascade: TURNS THAT -> INTO THE -> ANIMATION -->
+              <div style="display:flex;flex-direction:column;align-items:flex-start;margin-top:-110px;">
+                <div class="brutal" style="font-size:84px;color:#F5F2E9;line-height:0.94;transform:translateY(${lerp(-40, 0, easeOutBack(clamp(p21 * 3, 0, 1)))}px);">TURNS THAT</div>
+                <div class="brutal" style="font-size:84px;color:#F5F2E9;line-height:0.94;transform:translateY(${lerp(-40, 0, easeOutBack(clamp((p21 - 0.12) * 3, 0, 1)))}px);opacity:${clamp((p21 - 0.08) * 4, 0, 1)};">INTO <span class="glow-orange" style="color:#FF4500;">THE</span></div>
+                <div class="brutal" style="font-size:235px;color:#F5F2E9;line-height:0.84;margin-top:8px;transform:translateY(${lerp(80, 0, easeOutBack(clamp((p21 - 0.22) * 2.5, 0, 1)))}px);opacity:${clamp((p21 - 0.18) * 4, 0, 1)};">ANIMATION</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // =======================================================================
+      // SEQUENCE 7 (Shots 22 - 23 | 25.6s - 30.8s | Ref 00:36.0 - 00:40.8)
+      // Top-to-Bottom ALL YOU NEED / IS TO / WRITE:| -> 3D Camera Orbiting Prompt Box
+      // =======================================================================
+      else if (t < 27.3) {
+        // Shot 22: Camera tracks vertically down as ALL YOU NEED -> IS TO -> WRITE:| stack top-to-bottom
+        bgStyle = '#0B0A0E';
+        gridType = 'dots';
+        showEmbers = true;
+        const sp = norm(t, 25.6, 27.3);
+        camY = lerp(-180, 90, easeOutCubic(sp));
+        camScale = lerp(1.15, 1.0, easeOutCubic(sp));
+
+        const r1 = clamp(sp * 3.0, 0, 1);
+        const r2 = clamp((sp - 0.25) * 3.0, 0, 1);
+        const r3 = clamp((sp - 0.48) * 3.0, 0, 1);
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div class="brutal glow-white-red" style="font-size:155px;transform:translateX(${lerp(-220, 0, easeOutExpo(r1))}px);opacity:${r1};">ALL YOU NEED</div>
+            <div class="brutal wireframe-white" style="font-size:115px;margin:12px 0;transform:translateY(${lerp(-50, 0, easeOutBack(r2))}px);opacity:${r2};">IS TO</div>
+            <div class="brutal glow-orange" style="font-size:330px;color:#FF6A00;display:flex;align-items:center;line-height:0.82;transform:translateY(${lerp(90, 0, easeOutBack(r3))}px);opacity:${r3};">
+              <span>WRITE:</span>
+              <span style="width:24px;height:270px;background:#fff;margin-left:24px;box-shadow:0 0 30px #fff;"></span>
+            </div>
+          </div>
+        `;
+      } else if (t < 30.8) {
+        // Shot 23: 3D Camera Orbit & Pan across the typing Prompt Box!
+        bgStyle = '#0B0A0E';
+        gridType = 'dots';
+        showEmbers = true;
+        const sp = norm(t, 27.3, 30.8);
+
+        // Camera orbits from left side of prompt box to right side in 3D perspective
+        camX = lerp(-180, 160, easeInOutCubic(clamp(sp * 1.15, 0, 1)));
+        camY = lerp(-40, 20, Math.sin(sp * Math.PI));
+        camScale = lerp(1.18, 1.02, easeOutCubic(sp));
+        rotY = lerp(14, -12, easeInOutCubic(sp));
+        rotX = lerp(6, -4, easeInOutCubic(sp));
+
+        const s1 = 'Create a ';
+        const s2 = '15-second';
+        const s3 = 'cinematic animation';
+        const total = s1.length + s2.length + s3.length;
+        const count = Math.floor(clamp(sp * 1.45, 0, 1) * total);
+        const t1 = s1.slice(0, count);
+        const t2 = count > s1.length ? s2.slice(0, count - s1.length) : '';
+        const t3 = count > s1.length + s2.length ? s3.slice(0, count - s1.length - s2.length) : '';
+        const hl1 = sp >= 0.42;
+        const hl2 = sp >= 0.68;
+        const enterPressed = sp >= 0.86;
+        if (enterPressed) {
+          const ep = norm(sp, 0.86, 1.0);
+          camX = lerp(160, 680, easeInExpo(ep));
+          blurX = ep * 28;
+        }
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <div style="position:absolute;top:160px;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#FF4500,transparent);box-shadow:0 0 20px #FF4500;"></div>
+            <div style="position:absolute;bottom:160px;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#FF4500,transparent);box-shadow:0 0 20px #FF4500;"></div>
+
+            <div style="width:1460px;min-height:360px;border-radius:32px;background:rgba(38,38,44,0.84);border:2px solid rgba(255,255,255,0.28);padding:56px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 0 120px rgba(255,69,0,0.32);">
+              <div style="font-family:var(--font-mono);font-weight:700;font-size:66px;color:#F5F2E9;line-height:1.38;">
+                <span>${t1}</span>
+                <span style="${hl1 ? 'background:rgba(255,69,0,0.42);border:2px solid #FF5500;padding:4px 16px;border-radius:14px;box-shadow:0 0 30px rgba(255,69,0,0.6);' : ''}">${t2}</span>
+                <br>
+                <span style="${hl2 ? 'background:rgba(255,69,0,0.42);border:2px solid #FF5500;padding:4px 16px;border-radius:14px;box-shadow:0 0 30px rgba(255,69,0,0.6);' : ''}">${t3}</span>
+                <span style="display:inline-block;width:12px;height:68px;background:#FF4500;vertical-align:middle;margin-left:8px;box-shadow:0 0 20px #FF4500;"></span>
+              </div>
+              <div style="width:115px;height:115px;border-radius:22px;background:${enterPressed ? '#FF4500' : 'rgba(255,255,255,0.12)'};border:2px solid rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;font-size:60px;color:#fff;transform:scale(${enterPressed ? 0.86 : 1});box-shadow:0 0 ${enterPressed ? 45 : 0}px #FF4500;">
+                ↵
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // =======================================================================
+      // SEQUENCE 8 (Shots 24 - 27 | 30.8s - 35.8s | Ref 00:41.0 - 00:45.8)
+      // K●NETIC / TYPE -> MORPHING / SHAPES -> 3D / ELEMENTS -> 3D Swoop FLUID CAMERA MOVES
+      // =======================================================================
+      else if (t < 31.8) {
+        // Shot 24: Wavy K●NETIC shifts up as TYPE drops in below (top-to-bottom pair)
+        bgStyle = 'radial-gradient(circle at center, #FF8800 0%, #FF4500 80%)';
+        const sp = norm(t, 30.8, 31.8);
+        const showType = sp >= 0.45;
+        const tp = norm(sp, 0.45, 1.0);
+        camY = showType ? lerp(0, 75, easeOutCubic(tp)) : 0;
+
+        const letters = ['K', '●', 'N', 'E', 'T', 'I', 'C'];
+        const waveHTML = letters.map((ch, i) => {
+          const dy = Math.sin(t * 12 + i * 0.8) * 34;
+          const rot = Math.cos(t * 12 + i * 0.8) * 9;
+          if (ch === '●') {
+            return `<span style="display:inline-flex;align-items:center;justify-content:center;width:155px;height:155px;border-radius:50%;border:28px solid #181414;margin:0 8px;transform:translateY(${dy}px) rotate(${rot}deg);"><span style="width:36px;height:36px;border-radius:50%;background:#181414;"></span></span>`;
+          }
+          return `<span style="display:inline-block;transform:translateY(${dy}px) rotate(${rot}deg);">${ch}</span>`;
+        }).join('');
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div class="brutal" style="font-size:235px;color:#181414;display:flex;align-items:center;gap:8px;">
+              ${waveHTML}
+            </div>
+            ${showType ? `
+              <div class="brutal" style="font-size:205px;color:#FFFDF8;margin-top:20px;transform:translateY(${lerp(90, 0, easeOutBack(tp))}px);">TYPE</div>
+            ` : ''}
+          </div>
+        `;
+      } else if (t < 32.8) {
+        // Shot 25: MORPHING / SHAPES with Circle -> Square -> Triangle shape morph
+        bgStyle = '#0B0808';
+        const sp = norm(t, 31.8, 32.8);
+        camY = sp > 0.45 ? lerp(0, 60, norm(sp, 0.45, 1)) : 0;
+
+        let shapeHTML = '';
+        if (sp < 0.33) {
+          shapeHTML = `<div style="width:520px;height:520px;border-radius:50%;background:#FF4500;box-shadow:0 0 80px #FF4500;transform:scale(${lerp(0.5, 1.05, sp * 3)});"></div>`;
+        } else if (sp < 0.66) {
+          const mp = norm(sp, 0.33, 0.66);
+          shapeHTML = `<div style="width:520px;height:520px;border-radius:${lerp(50, 8, mp)}%;background:#FF4500;box-shadow:0 0 80px #FF4500;transform:rotate(${lerp(0, 45, mp)}deg);"></div>`;
+        } else {
+          const mp = norm(sp, 0.66, 1.0);
+          shapeHTML = `
+            <svg width="680" height="680" viewBox="0 0 200 200" style="color:#FF4500;filter:drop-shadow(0 0 75px rgba(255,69,0,0.85));transform:rotate(${lerp(-18, 12, mp)}deg) scale(${lerp(0.85, 1.1, easeOutBack(mp))});">
+              <polygon points="100,15 190,175 10,175" fill="currentColor" />
+            </svg>
+          `;
+        }
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div style="position:absolute;left:0;right:0;top:50%;height:2px;background:rgba(255,69,0,0.5);"></div>
+            <div style="position:absolute;display:flex;align-items:center;justify-content:center;">${shapeHTML}</div>
+            <div class="brutal" style="position:relative;font-size:235px;color:#F5F2E9;text-shadow:0 12px 35px rgba(0,0,0,0.85);">MORPHING</div>
+            ${sp > 0.45 ? `
+              <div class="brutal wireframe-white" style="position:relative;font-size:175px;margin-top:12px;transform:translateY(${lerp(70, 0, easeOutBack(norm(sp, 0.45, 1)))}px);">SHAPES</div>
+            ` : ''}
+          </div>
+        `;
+      } else if (t < 34.3) {
+        // Shot 26: 3D + Rotating Cube, camera pans down as ELEMENTS rises at bottom
+        bgStyle = '#F6F5EF';
+        const sp = norm(t, 32.8, 34.3);
+        camY = lerp(-120, 40, easeOutCubic(clamp(sp * 1.6, 0, 1)));
+        if (sp > 0.82) {
+          const zp = norm(sp, 0.82, 1.0);
+          camX = lerp(0, 460, easeInCubic(zp));
+          camY = lerp(40, -160, easeInCubic(zp));
+          camScale = lerp(1.0, 5.5, easeInExpo(zp));
+        }
+
+        const elP = clamp((sp - 0.18) / 0.45, 0, 1);
+
+        html = `
+          <div style="position:absolute;inset:0;padding:125px;display:flex;flex-direction:column;justify-content:space-between;">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+              <div class="brutal" style="font-size:460px;color:#1A1919;line-height:0.78;transform:translateX(${lerp(-160, 0, easeOutBack(clamp(sp * 2.5, 0, 1)))}px);">3D</div>
+              <div class="cube-wrap" style="margin-right:90px;">
+                <div class="cube-3d" style="transform:rotateX(${lerp(-35, 38, sp)}deg) rotateY(${lerp(-65, 165, sp)}deg) rotateZ(${lerp(-10, 18, sp)}deg);">
+                  <div class="cube-face cube-front"></div>
+                  <div class="cube-face cube-back"></div>
+                  <div class="cube-face cube-right"></div>
+                  <div class="cube-face cube-left"></div>
+                  <div class="cube-face cube-top"></div>
+                  <div class="cube-face cube-bottom"></div>
+                </div>
+              </div>
+            </div>
+            <div class="brutal" style="font-size:240px;color:#a1a1aa;text-shadow:-10px 10px 0 #1A1919;transform:translateY(${lerp(180, 0, easeOutBack(elP))}px);opacity:${elP};">
+              ELEMENTS
+            </div>
+          </div>
+        `;
+      } else if (t < 35.8) {
+        // Shot 27: TRUE 3D CAMERA SWOOP across FLUID -> CAMERA -> MOVES.
+        bgStyle = 'radial-gradient(circle at center, #5E1400 0%, #090302 75%)';
+        showEmbers = true;
+        const sp = norm(t, 34.3, 35.8);
+
+        // Camera starts zoomed-in & tilted on FLUID (-440, -180), swoops down to CAMERA (-70, 220),
+        // then pulls back to center (0, 0) to frame all 3 words along the red spline!
+        if (sp < 0.45) {
+          const p1 = norm(sp, 0, 0.45);
+          camX = lerp(-440, -70, easeInOutCubic(p1));
+          camY = lerp(-180, 200, easeInOutCubic(p1));
+          camScale = lerp(1.85, 1.55, easeInOutCubic(p1));
+          rotZ = lerp(-14, 14, easeInOutCubic(p1));
+          rotY = lerp(22, -18, easeInOutCubic(p1));
+          blurX = 12;
+        } else {
+          const p2 = norm(sp, 0.45, 1.0);
+          camX = lerp(-70, 0, easeOutCubic(p2));
+          camY = lerp(200, 0, easeOutCubic(p2));
+          camScale = lerp(1.55, 1.0, easeOutCubic(p2));
+          rotZ = lerp(14, 0, easeOutCubic(p2));
+          rotY = lerp(-18, 0, easeOutCubic(p2));
+        }
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <svg width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;inset:0;">
+              <path d="M 150 950 Q 960 400 1780 560" fill="none" stroke="#FF4500" stroke-width="10" style="filter:drop-shadow(0 0 20px #FF4500);" stroke-dasharray="2000" stroke-dashoffset="${lerp(1800, 0, sp)}" />
+            </svg>
+            <div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;transform-style:preserve-3d;">
+              <div class="brutal glow-white-red" style="position:absolute;font-size:185px;transform:translate3d(-440px,-180px,120px) rotateZ(-8deg);">FLUID</div>
+              <div class="brutal glow-orange" style="position:absolute;font-size:185px;color:#FF8800;transform:translate3d(-70px,220px,-60px) rotateZ(-16deg);">CAMERA</div>
+              <div class="brutal glow-white-red" style="position:absolute;font-size:210px;transform:translate3d(380px,-40px,200px) rotateZ(4deg);">MOVES.</div>
+            </div>
+          </div>
+        `;
+      }
+
+      // =======================================================================
+      // SEQUENCE 9 (Shots 28 - 29 | 35.8s - 40.0s | Ref 00:46.0 - 00:50.2)
+      // Glitch NOW -> Vertical Piston Letters THE LETTERS -> STRETCH -> Zoom into 'T'
+      // =======================================================================
+      else if (t < 36.8) {
+        // Shot 28: NOW with scanline glitch displacement + glowing orb inside 'O'
+        bgStyle = '#0A0808';
+        const sp = norm(t, 35.8, 36.8);
+        camScale = lerp(0.84, 1.08, easeOutExpo(sp));
+        const glitchX = sp < 0.35 ? Math.sin(t * 140) * 28 : 0;
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <div style="position:absolute;left:0;right:0;top:50%;height:3px;background:#FF4500;box-shadow:0 0 25px #FF4500;"></div>
+            <!-- Top slice of NOW -->
+            <div class="brutal" style="position:absolute;font-size:490px;color:#F5F2E9;display:flex;align-items:center;clip-path:polygon(0 0, 100% 0, 100% 49%, 0 49%);transform:translateX(${glitchX}px);">
+              <span>N</span>
+              <span style="position:relative;display:inline-flex;align-items:center;justify-content:center;">
+                <span>O</span>
+                <span style="position:absolute;width:142px;height:142px;border-radius:50%;background:radial-gradient(circle,#FFF 0%,#FFB800 40%,#FF3300 100%);box-shadow:0 0 70px 25px #FF4500;"></span>
+              </span>
+              <span>W</span>
+            </div>
+            <!-- Bottom slice of NOW -->
+            <div class="brutal" style="position:absolute;font-size:490px;color:#F5F2E9;display:flex;align-items:center;clip-path:polygon(0 51%, 100% 51%, 100% 100%, 0 100%);transform:translateX(${-glitchX}px);">
+              <span>N</span>
+              <span style="position:relative;display:inline-flex;align-items:center;justify-content:center;">
+                <span>O</span>
+                <span style="position:absolute;width:142px;height:142px;border-radius:50%;background:radial-gradient(circle,#FFF 0%,#FFB800 40%,#FF3300 100%);box-shadow:0 0 70px 25px #FF4500;"></span>
+              </span>
+              <span>W</span>
+            </div>
+          </div>
+        `;
+      } else if (t < 40.0) {
+        // Shot 29: THE LETTERS (vertical piston letter animation) -> STRETCH -> Zoom into 'T'
+        const sp = norm(t, 36.8, 40.0);
+        if (sp < 0.45) {
+          bgStyle = '#F5F4EC';
+          const lp = norm(sp, 0, 0.45);
+          const chars = ['L', 'E', 'T', 'T', 'E', 'R', 'S'];
+          const pistons = chars.map((ch, idx) => {
+            const wave = Math.sin(lp * Math.PI * 2.5 + idx * 0.9);
+            const sy = 1 + Math.max(0, wave) * 1.9 * (1 - lp * 0.5);
+            const ty = wave * -140 * (1 - lp * 0.6);
+            return `<span style="display:inline-block;transform:translateY(${ty}px) scaleY(${sy});filter:${ Math.abs(ty) > 45 ? 'url(#blur-v-med)' : 'none'};">${ch}</span>`;
+          }).join('');
+
+          html = `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 170px;">
+              <div class="brutal" style="font-size:115px;color:#181616;transform:translateY(${lerp(-60, 0, easeOutBack(clamp(lp * 2, 0, 1)))}px);">THE</div>
+              <div class="brutal" style="font-size:290px;color:#181616;display:flex;">${pistons}</div>
+              <div style="width:100%;height:6px;background:#FF4500;margin-top:12px;"></div>
+            </div>
+          `;
+        } else {
+          bgStyle = sp < 0.6 ? '#F5F4EC' : '#F23A00';
+          const stP = norm(sp, 0.45, 1.0);
+          const sx = lerp(0.28, 1.12, easeOutBack(clamp(stP * 1.6, 0, 1)));
+
+          // In final 20% of shot, zoom 12x straight into the vertical black stem of 'T'
+          if (stP > 0.78) {
+            const zp = norm(stP, 0.78, 1.0);
+            camScale = lerp(1.0, 13.0, easeInExpo(zp));
+            camY = lerp(0, -40, zp);
+          }
+
+          html = `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <div class="brutal" style="font-size:235px;color:#141212;transform:scaleX(${sx});filter:${stP < 0.3 ? 'url(#blur-h)' : 'none'};">
+                STRETCH
+              </div>
+              <div style="width:100%;height:8px;background:#141212;margin-top:6px;"></div>
+              <div style="width:1550px;display:flex;flex-direction:column;gap:12px;margin-top:16px;">
+                <div style="height:4px;background:#141212;width:${lerp(20, 100, stP)}%;margin:0 auto;"></div>
+                <div style="height:4px;background:#141212;width:${lerp(15, 80, stP)}%;margin:0 auto;"></div>
+                <div style="height:4px;background:#141212;width:${lerp(10, 60, stP)}%;margin:0 auto;"></div>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      // =======================================================================
+      // SEQUENCE 10 (Shots 30 - 31 | 40.0s - 45.3s | Ref 00:50.5 - 00:58.8)
+      // 3D Z-Space Fly-Through FOLLOW -> THAT -> [ CAMERA ] -> HUD Dial
+      // =======================================================================
+      else if (t < 43.0) {
+        // Shot 30: True 3D Z-Space Fly-Through
+        bgStyle = 'radial-gradient(circle at center, #380D00 0%, #080404 75%)';
+        showEmbers = true;
+        const sp = norm(t, 40.0, 43.0);
+
+        if (sp < 0.45) {
+          const fp = norm(sp, 0, 0.45);
+          const followZ = lerp(0.5, 2.8, easeInCubic(fp));
+          const thatZ = lerp(0.2, 1.6, easeOutCubic(fp));
+          html = `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <svg width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;inset:0;opacity:0.75;transform:scale(${lerp(0.7, 1.9, fp)});">
+                <g stroke="#FFF" stroke-width="2.5">
+                  <line x1="960" y1="540" x2="100" y2="80" /><line x1="960" y1="540" x2="960" y2="0" />
+                  <line x1="960" y1="540" x2="1820" y2="100" /><line x1="960" y1="540" x2="1860" y2="850" />
+                  <line x1="960" y1="540" x2="960" y2="1080" /><line x1="960" y1="540" x2="80" y2="850" />
+                </g>
+              </svg>
+              <div class="brutal glow-white-red" style="position:absolute;font-size:210px;transform:translate(-240px, -90px) scale(${followZ});opacity:${clamp(1.6 - fp * 1.4, 0, 1)};">FOLLOW</div>
+              <div class="brutal glow-white-red" style="position:absolute;font-size:150px;transform:translate(240px, 110px) scale(${thatZ});opacity:${clamp(fp * 2.5, 0, 1)};">THAT</div>
+            </div>
+          `;
+        } else {
+          const cp = norm(sp, 0.45, 1.0);
+          camScale = lerp(0.72, 1.12, easeOutCubic(cp));
+          rotZ = Math.sin(cp * Math.PI * 2) * 2.5;
+          const bPad = lerp(140, 80, easeOutBack(clamp(cp * 2, 0, 1)));
+          html = `
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+              <div style="position:relative;padding:${bPad}px ${bPad * 1.4}px;">
+                <div style="position:absolute;top:0;left:0;width:80px;height:80px;border-top:10px solid #FF4500;border-left:10px solid #FF4500;box-shadow:0 0 20px #FF4500;"></div>
+                <div style="position:absolute;top:0;right:0;width:80px;height:80px;border-top:10px solid #FF4500;border-right:10px solid #FF4500;box-shadow:0 0 20px #FF4500;"></div>
+                <div style="position:absolute;bottom:0;left:0;width:80px;height:80px;border-bottom:10px solid #FF4500;border-left:10px solid #FF4500;box-shadow:0 0 20px #FF4500;"></div>
+                <div style="position:absolute;bottom:0;right:0;width:80px;height:80px;border-bottom:10px solid #FF4500;border-right:10px solid #FF4500;box-shadow:0 0 20px #FF4500;"></div>
+                <div class="brutal glow-white-red" style="font-size:245px;">CAMERA</div>
+              </div>
+            </div>
+          `;
+        }
+      } else if (t < 45.3) {
+        // Shot 31: HUD Dial Push-In + Top-to-Bottom "and wait / for the / transition—"
+        bgStyle = 'radial-gradient(circle at 42% 50%, #9E2A00 0%, #380A00 45%, #0D0402 90%)';
+        const sp = norm(t, 43.0, 45.3);
+        camScale = lerp(0.92, 1.28, easeInOutCubic(sp));
+        const r1 = clamp(sp * 3.5, 0, 1);
+        const r2 = clamp((sp - 0.25) * 3.5, 0, 1);
+        const r3 = clamp((sp - 0.5) * 3.5, 0, 1);
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:64px;">
+            <div style="position:relative;width:460px;height:460px;display:flex;align-items:center;justify-content:center;">
+              <svg width="460" height="460" viewBox="0 0 240 240" style="transform:rotate(${sp * 210}deg);">
+                <circle cx="120" cy="120" r="108" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2" />
+                <path d="M 120 12 A 108 108 0 0 1 228 120" fill="none" stroke="#FFF" stroke-width="5" stroke-linecap="round"/>
+                <circle cx="120" cy="120" r="92" fill="none" stroke="#FF8800" stroke-width="10" stroke-dasharray="3 9" />
+                <circle cx="120" cy="120" r="78" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" />
+              </svg>
+              <div style="position:absolute;width:54px;height:54px;border-radius:50%;background:#FFE600;box-shadow:0 0 50px 20px #FF5500;transform:scale(${1 + sp * 0.6});"></div>
+            </div>
+            <div style="font-size:76px;font-weight:600;color:#FFFDF9;line-height:1.12;width:560px;">
+              <div style="transform:translateY(${lerp(-35, 0, easeOutBack(r1))}px);opacity:${r1};">and wait</div>
+              <div style="transform:translateY(${lerp(-35, 0, easeOutBack(r2))}px);opacity:${r2};">for the</div>
+              <div style="transform:translateY(${lerp(-35, 0, easeOutBack(r3))}px);opacity:${r3};">transition—</div>
+            </div>
+          </div>
+        `;
+      }
+
+      // =======================================================================
+      // SEQUENCE 11 (Shot 32 | 45.3s - 49.0s | Ref 00:59.0 - 01:02.8)
+      // Top-to-Bottom Slam ARE YOU / FUCKING / KIDDING / ME?! -> Morph -> Gravity Drop
+      // =======================================================================
+      else if (t < 49.0) {
+        bgStyle = '#F0EFE4';
+        const sp = norm(t, 45.3, 49.0);
+        if (sp < 0.08) flash = (1 - sp / 0.08) * 0.8;
+
+        // Camera tracks down as the 4 rows slam in top-to-bottom
+        camY = lerp(-220, 0, easeOutCubic(clamp(sp * 2.2, 0, 1)));
+
+        const r1 = clamp(sp * 5.0, 0, 1);
+        const r2 = clamp((sp - 0.08) * 5.0, 0, 1);
+        const r3 = clamp((sp - 0.16) * 5.0, 0, 1);
+        const r4 = clamp((sp - 0.24) * 5.0, 0, 1);
+
+        const isThin = sp >= 0.58;
+        const isFalling = sp >= 0.84;
+        const fallP = norm(sp, 0.84, 1.0);
+        const fallY = isFalling ? easeInCubic(fallP) * 1150 : 0;
+        if (isFalling) blurY = fallP * 32;
+
+        const fontStyle = isThin
+          ? `font-family:var(--font-thin);font-weight:300;text-transform:uppercase;line-height:0.88;`
+          : `font-family:var(--font-heavy);text-transform:uppercase;line-height:0.86;`;
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 130px;transform:translateY(${fallY}px);">
+            <div style="display:flex;flex-direction:column;align-items:flex-start;z-index:10;${fontStyle}">
+              <div style="font-size:175px;color:#181616;transform:translateY(${lerp(-90, 0, easeOutBack(r1))}px);opacity:${r1};">ARE YOU</div>
+              <div style="font-size:215px;color:#181616;transform:translateY(${lerp(-90, 0, easeOutBack(r2))}px) rotate(${isThin ? -2.5 : 0}deg);opacity:${r2};">FUCKING</div>
+              <div style="font-size:205px;color:#181616;transform:translateY(${lerp(-90, 0, easeOutBack(r3))}px);opacity:${r3};">KIDDING</div>
+              <div style="font-size:275px;color:#181616;transform:translateY(${lerp(-90, 0, easeOutBack(r4))}px) rotate(${isThin ? 2.5 : 0}deg);opacity:${r4};">ME?!</div>
+            </div>
+            <div style="position:relative;width:820px;height:820px;display:flex;align-items:center;justify-content:center;margin-left:-120px;">
+              ${!isThin ? `
+                <svg width="920" height="920" viewBox="0 0 300 300" style="color:#FF3B00;transform:rotate(${sp * 55}deg) scale(${easeOutBack(clamp(sp * 3, 0, 1))});">
+                  <polygon fill="currentColor" points="150,5 178,68 238,22 212,92 292,78 235,132 298,168 228,185 275,252 198,225 205,295 152,238 105,292 112,222 35,248 82,182 12,155 78,125 25,65 102,88 85,18 135,68"/>
+                </svg>
+              ` : `
+                <div style="width:620px;height:620px;border-radius:50%;background:#E62800;transform:scale(${easeOutBack(clamp((sp - 0.58) * 4, 0, 1))});"></div>
+              `}
+            </div>
+          </div>
+        `;
+      }
+
+      // =======================================================================
+      // SEQUENCE 12 (Shots 33 - 39 | 49.0s - 61.5s | Ref 01:03.0 - 01:17.2)
+      // THINK / ABOUT MAKING [THIS] / the usual way -> LAYERS -> KEYFRAMES -> GRAPH EDITOR -> STACK -> RENDER.
+      // =======================================================================
+      else if (t < 52.0) {
+        // Shot 33: Continuous Vertical Camera Track down THINK -> ABOUT MAKING [THIS] -> the usual way.
+        bgStyle = '#242424';
+        gridType = 'tech';
+        const sp = norm(t, 49.0, 52.0);
+        camY = lerp(-240, 60, easeOutCubic(sp));
+        if (sp < 0.15) blurY = (1 - sp / 0.15) * 24;
+
+        const r1 = clamp(sp * 3.5, 0, 1);
+        const r2 = clamp((sp - 0.18) * 3.0, 0, 1);
+        const r3 = clamp((sp - 0.42) * 2.5, 0, 1);
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div class="brutal" style="font-size:250px;color:#F5F2E9;line-height:0.82;transform:translateY(${lerp(-90, 0, easeOutBack(r1))}px);opacity:${r1};">THINK</div>
+            <div style="display:flex;align-items:center;gap:24px;margin-top:10px;transform:translateY(${lerp(60, 0, easeOutBack(r2))}px);opacity:${r2};">
+              <span class="brutal" style="font-size:110px;color:#F5F2E9;">ABOUT MAKING</span>
+              <div style="position:relative;padding:6px 24px;border:3px solid #d4d4d8;background:rgba(255,255,255,0.06);">
+                <span class="brutal" style="font-size:110px;color:#F5F2E9;">THIS</span>
+                <svg width="64" height="80" viewBox="0 0 100 120" style="position:absolute;bottom:${lerp(-120, -55, r2)}px;right:${lerp(-120, -45, r2)}px;">
+                  <polygon points="10,10 10,95 34,72 52,110 68,102 50,65 85,65" fill="#FFF" stroke="#000" stroke-width="5"/>
+                </svg>
+              </div>
+            </div>
+            <div style="font-family:var(--font-serif);font-style:italic;font-size:180px;color:#F5F2E9;margin-top:36px;transform:translateY(${lerp(60, 0, easeOutCubic(r3))}px);opacity:${r3};">
+              the usual way.
+            </div>
+          </div>
+        `;
+      } else if (t < 53.2) {
+        // Shot 34: 3D Timeline Layer Bars cascade top-to-bottom + LAYERS.
+        bgStyle = '#1B1B1D';
+        gridType = 'tech';
+        const sp = norm(t, 52.0, 53.2);
+        camY = lerp(-160, 0, easeOutCubic(sp));
+        const bars = [
+          { w: 950, bg: 'rgba(113,113,122,0.6)', txt: '', rot: -2 },
+          { w: 1060, bg: '#a1a1aa', txt: '[x] Title - Text', rot: 1.5 },
+          { w: 1220, bg: '#E5E4DF', txt: '[x] Shape Layer 3', rot: -0.8 },
+          { w: 1160, bg: '#a1a1aa', txt: '[x] Null 1', rot: 0.5 },
+          { w: 1280, bg: '#71717a', txt: '[x] BG Solid', rot: 0 }
+        ];
+
+        html = `
+          <div style="position:absolute;inset:0;padding:85px 0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
+            <div style="width:1400px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+              ${bars.map((b, i) => {
+                const bp = clamp((sp - i * 0.08) / 0.45, 0, 1);
+                return `
+                  <div style="width:${b.w}px;height:62px;background:${b.bg};border-radius:10px;display:flex;align-items:center;padding:0 24px;font-family:var(--font-mono);font-size:24px;font-weight:700;color:#18181b;transform:translateY(${lerp(-220, 0, easeOutBack(bp))}px) rotate(${b.rot}deg);opacity:${bp};">
+                    ${b.txt}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            <div class="brutal" style="font-size:300px;color:#F5F2E9;line-height:0.8;transform:translateY(${lerp(140, 0, easeOutBack(clamp(sp * 2, 0, 1)))}px);">LAYERS.</div>
+          </div>
+        `;
+      } else if (t < 54.4) {
+        // Shot 35: KEYFRAMES. at top + sliding diamond keyframes across 4 tracks
+        bgStyle = '#F0F0ED';
+        const sp = norm(t, 53.2, 54.4);
+        camY = lerp(-180, 0, easeOutExpo(clamp(sp * 2.5, 0, 1)));
+        if (sp < 0.2) blurY = (1 - sp / 0.2) * 24;
+
+        html = `
+          <div style="position:absolute;inset:0;padding:90px 120px;display:flex;flex-direction:column;justify-content:space-between;">
+            <div class="brutal" style="font-size:225px;color:#181616;line-height:0.82;">KEYFRAMES.</div>
+            <div style="display:flex;flex-direction:column;gap:52px;margin-bottom:48px;">
+              ${[0, 1, 2, 3].map(row => `
+                <div style="height:6px;background:#d4d4d8;width:100%;display:flex;align-items:center;gap:85px;padding:0 50px;">
+                  <div style="width:38px;height:38px;background:#27272a;transform:translateX(${lerp(-80, 0, easeOutBack(sp))}px) rotate(45deg);"></div>
+                  <div style="width:38px;height:38px;background:#a1a1aa;transform:translateX(${lerp(-140, 20, easeOutBack(sp))}px) rotate(45deg);"></div>
+                  <div style="width:38px;height:38px;border:5px solid #27272a;background:#fff;transform:translateX(${lerp(-200, 60, easeOutBack(sp))}px) rotate(45deg);"></div>
+                  <div style="width:38px;height:38px;background:#27272a;transform:rotate(45deg);margin-left:${lerp(20, 140 + row * 75, easeOutCubic(sp))}px;"></div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      } else if (t < 55.6) {
+        // Shot 36: GRAPH / EDITOR. with live bending Bezier S-curve
+        bgStyle = '#18181A';
+        gridType = 'tech';
+        const sp = norm(t, 54.4, 55.6);
+        const c1x = lerp(350, 860, easeInOutCubic(sp));
+        const c1y = lerp(350, 730, easeInOutCubic(sp));
+        const c2x = lerp(1450, 760, easeInOutCubic(sp));
+        const c2y = lerp(730, 350, easeInOutCubic(sp));
+
+        html = `
+          <div style="position:absolute;inset:0;padding:110px;display:flex;flex-direction:column;justify-content:space-between;">
+            <div class="brutal" style="font-size:220px;color:#F5F2E9;line-height:0.82;transform:translateX(${lerp(-180, 0, easeOutExpo(sp))}px);">GRAPH</div>
+            <svg width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;inset:0;">
+              <path d="M 180 730 C ${c1x} ${c1y}, ${c2x} ${c2y}, 1720 350" fill="none" stroke="#F5F2E9" stroke-width="12" />
+              <line x1="180" y1="730" x2="1720" y2="350" stroke="rgba(255,255,255,0.45)" stroke-width="5" />
+              <rect x="162" y="712" width="36" height="36" fill="#FFF" transform="rotate(45 180 730)" />
+              <rect x="1702" y="332" width="36" height="36" fill="#FFF" transform="rotate(45 1720 350)" />
+            </svg>
+            <div class="brutal" style="font-size:220px;color:#F5F2E9;line-height:0.82;align-self:flex-end;transform:translateX(${lerp(180, 0, easeOutExpo(sp))}px);">EDITOR.</div>
+          </div>
+        `;
+      } else if (t < 57.0) {
+        // Shot 37: 3D Towering Stack with vertical camera scroll & 3D perspective tilt
+        bgStyle = '#0E0E10';
+        const sp = norm(t, 55.6, 57.0);
+        rotX = lerp(28, 12, sp);
+        camY = lerp(-180, 80, sp);
+
+        const rows = [
+          { t: 'KEYFRAMES.', s: 36, o: 0.4 },
+          { t: 'LAYERS.', s: 48, o: 0.5 },
+          { t: 'GRAPH EDITOR.', s: 62, o: 0.6 },
+          { t: 'KEYFRAMES.', s: 78, o: 0.7 },
+          { t: 'LAYERS.', s: 96, o: 0.8 },
+          { t: 'GRAPH EDITOR.', s: 118, o: 0.9 },
+          { t: 'KEYFRAMES.', s: 142, o: 0.95 },
+          { t: 'LAYERS.', s: 168, o: 1.0 },
+          { t: 'GRAPH EDITOR.', s: 192, o: 1.0 }
+        ];
+        html = `
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:65px;">
+            ${rows.map((r, i) => {
+              const rp = clamp((sp - i * 0.05) / 0.4, 0, 1);
+              return `
+                <div class="brutal" style="font-size:${r.s}px;color:#F5F2E9;opacity:${r.o * rp};line-height:0.88;transform:translateY(${lerp(90, 0, easeOutBack(rp))}px) translateX(${Math.sin(t * 7 + i * 0.6) * 18}px);">
+                  ${r.t}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } else if (t < 58.3) {
+        // Shot 38: Top-to-Bottom THEN -> THE... (sequential dots)
+        bgStyle = '#F4F3EA';
+        const sp = norm(t, 57.0, 58.3);
+        camY = lerp(-120, 40, easeOutCubic(sp));
+        const d1 = sp >= 0.25;
+        const d2 = sp >= 0.48;
+        const d3 = sp >= 0.7;
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 140px;">
+            <div class="brutal" style="font-size:330px;color:#181616;line-height:0.84;transform:translateY(${lerp(-80, 0, easeOutBack(clamp(sp * 3, 0, 1)))}px);">THEN</div>
+            <div class="brutal" style="font-size:330px;color:#181616;line-height:0.84;display:flex;align-items:baseline;transform:translateY(${lerp(80, 0, easeOutBack(clamp((sp - 0.1) * 3, 0, 1)))}px);">
+              <span>THE</span>
+              ${d1 ? `<span style="width:56px;height:56px;border-radius:50%;background:#181616;margin-left:24px;"></span>` : ''}
+              ${d2 ? `<span style="width:56px;height:56px;border-radius:50%;background:#181616;margin-left:20px;"></span>` : ''}
+              ${d3 ? `<span style="width:56px;height:56px;border-radius:50%;background:#181616;margin-left:20px;"></span>` : ''}
+            </div>
+          </div>
+        `;
+      } else if (t < 61.5) {
+        // Shot 39: Vertical Camera Track down Checkerboard RENDER. -> Progress Bar -> ETA + Laser Slash!
+        bgStyle = '#141416';
+        const sp = norm(t, 58.3, 61.5);
+        camY = lerp(-180, 40, easeOutCubic(clamp(sp * 1.8, 0, 1)));
+
+        const isTwoPct = sp >= 0.45;
+        const eta = sp < 0.25 ? '02:59:10' : sp < 0.55 ? '03:09:04' : sp < 0.82 ? '03:37:10' : '04:12:37';
+        const isSlashed = sp >= 0.88;
+        if (isSlashed) {
+          shake = 26;
+          flash = (1 - norm(sp, 0.88, 1.0)) * 0.5;
+        }
+
+        html = `
+          <div style="position:absolute;inset:0;padding:115px;display:flex;flex-direction:column;justify-content:space-between;">
+            <div style="display:flex;align-items:center;">
+              <div style="width:18px;height:260px;background:#fff;box-shadow:0 0 28px #fff;margin-right:24px;opacity:${Math.sin(t * 18) > 0 ? 1 : 0.2};"></div>
+              <div class="brutal checkerboard-text" style="font-size:295px;line-height:0.82;">RENDER.</div>
+            </div>
+            <div style="width:100%;">
+              <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-weight:700;font-size:46px;color:#F5F2E9;margin-bottom:16px;">
+                <span>RENDERING..</span>
+                <span>${isTwoPct ? '2%' : '1%'}</span>
+              </div>
+              <div style="width:100%;height:26px;background:#27272a;border-radius:999px;border:1px solid rgba(255,255,255,0.2);padding:4px;">
+                <div style="width:${isTwoPct ? '3.2%' : '1.6%'};height:100%;background:#F5F2E9;border-radius:999px;box-shadow:0 0 18px #fff;"></div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;">
+              <div style="font-family:var(--font-mono);font-size:36px;color:#a1a1aa;margin-left:165px;margin-bottom:8px;">ETA</div>
+              <div style="display:flex;align-items:center;gap:46px;">
+                <svg width="120" height="140" viewBox="0 0 100 120" fill="none" stroke="#F5F2E9" stroke-width="6" style="transform:rotate(${lerp(-10, -34, sp)}deg);">
+                  <line x1="15" y1="10" x2="85" y2="10" stroke-linecap="round"/>
+                  <line x1="15" y1="110" x2="85" y2="110" stroke-linecap="round"/>
+                  <path d="M22 10 L78 10 L50 60 L78 110 L22 110 L50 60 Z" stroke-linejoin="round"/>
+                  <polygon points="34,98 66,98 50,74" fill="#F5F2E9"/>
+                </svg>
+                <div style="font-family:var(--font-mono);font-weight:800;font-size:195px;color:#F5F2E9;line-height:1;text-shadow:0 0 32px rgba(255,255,255,0.4);">
+                  ${eta}
+                </div>
+              </div>
+            </div>
+            ${isSlashed ? `
+              <div style="position:absolute;left:-200px;right:-200px;top:50%;height:14px;background:#fff;box-shadow:0 0 45px 16px #FF3300;transform:rotate(-14deg);z-index:40;"></div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      // =======================================================================
+      // SEQUENCE 13 (Shots 40 - 44 | 61.5s - 78.0s | Ref 01:17.3 - 01:32.5)
+      // HERE? -> Slot Roll KATANA -> PROMPT / GENERATE / RENDER -> Horizontal Pan IDEA -> FUUUU -> Outro
+      // =======================================================================
+      else if (t < 63.5) {
+        // Shot 40: Tilted HERE? -> Vertical Slot-Machine Roll KATANA
+        bgStyle = 'radial-gradient(circle at center, #701400 0%, #090302 75%)';
+        showEmbers = true;
+        const sp = norm(t, 61.5, 63.5);
+        if (sp < 0.48) {
+          const hp = norm(sp, 0, 0.48);
+          camScale = lerp(1.3, 1.0, easeOutExpo(hp));
+          rotZ = -9;
+          html = `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <div class="brutal glow-white-red" style="font-size:330px;transform:translateY(${lerp(90, 0, easeOutExpo(hp))}px);">HERE?</div>
+              <div style="width:1950px;height:10px;background:#fff;box-shadow:0 0 40px 14px #FF3300;margin-top:8px;"></div>
+            </div>
+          `;
+        } else {
+          const kp = norm(sp, 0.48, 1.0);
+          html = `
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+              ${getKatanaLockupHTML(false, false, 1.05, kp, 0, t)}
+            </div>
+          `;
+        }
+      } else if (t < 66.2) {
+        // Shot 41: Vertical Top-to-Bottom Cascade: >_ PROMPT -> ✦ GENERATE -> RENDER
+        bgStyle = 'radial-gradient(circle at 35% 50%, #9E2400 0%, #140402 75%)';
+        showEmbers = true;
+        const sp = norm(t, 63.5, 66.2);
+        const step2 = sp >= 0.34;
+        const step3 = sp >= 0.68;
+
+        // Camera tracks vertically down as each row activates
+        camY = !step2 ? -140 : !step3 ? 0 : 140;
+        const p2 = norm(sp, 0.34, 0.68);
+        const p3 = norm(sp, 0.68, 1.0);
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 150px;">
+            <div style="position:absolute;left:135px;top:0;bottom:0;width:3px;background:#FF4500;"></div>
+            <div style="position:absolute;left:45px;top:${lerp(32, 68, sp)}%;transform:translateY(-50%);width:180px;height:180px;border-radius:50%;border:2px solid rgba(255,69,0,0.6);"></div>
+
+            <!-- Row 1: PROMPT -->
+            <div style="display:flex;align-items:center;gap:30px;margin-left:48px;">
+              <span style="font-family:var(--font-mono);font-weight:700;font-size:120px;color:#FF4500;">&gt;_</span>
+              <span class="brutal ${step2 ? 'wireframe-white' : ''}" style="font-size:235px;color:${step2 ? 'transparent' : '#FFFDF9'};">PROMPT</span>
+              ${!step2 ? `<span style="width:22px;height:210px;background:#FF4500;box-shadow:0 0 25px #FF4500;"></span>` : ''}
+            </div>
+
+            <!-- Row 2: GENERATE -->
+            ${step2 ? `
+              <div style="display:flex;align-items:center;gap:30px;margin-left:48px;margin-top:-10px;transform:translateY(${lerp(80, 0, easeOutBack(clamp(p2 * 2.5, 0, 1)))}px);">
+                <span style="color:#D9FF38;font-size:125px;text-shadow:0 0 30px #D9FF38;display:inline-block;transform:rotate(${t * 120}deg);">✦</span>
+                <span class="brutal ${step3 ? 'wireframe-white' : 'glow-lime'}" style="font-size:210px;">GENERATE</span>
+              </div>
+            ` : ''}
+
+            <!-- Row 3: RENDER -->
+            ${step3 ? `
+              <div style="display:flex;align-items:center;gap:30px;margin-left:48px;margin-top:8px;transform:translateX(${lerp(-280, 0, easeOutExpo(p3))}px);">
+                <span class="brutal glow-white-red" style="font-size:225px;filter:${p3 < 0.45 ? 'url(#blur-h)' : 'none'};">RENDER</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      } else if (t < 68.5) {
+        // Shot 42: AND THIS [▶] VIDEO + Camera Zoom into Scrubber Dot
+        bgStyle = '#0D0807';
+        showEmbers = true;
+        const sp = norm(t, 66.2, 68.5);
+        const showVideo = sp >= 0.25;
+        const vp = norm(sp, 0.25, 0.75);
+
+        if (sp > 0.78) {
+          const zp = norm(sp, 0.78, 1.0);
+          camX = lerp(0, 420, easeInCubic(zp));
+          camY = lerp(0, 320, easeInCubic(zp));
+          camScale = lerp(1.0, 9.0, easeInExpo(zp));
+        }
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:110px;">
+            <div style="width:1580px;height:820px;border-radius:32px;background:rgba(43,38,39,0.92);border:4px solid #FF8800;box-shadow:0 0 90px rgba(255,100,0,0.3);padding:75px;display:flex;flex-direction:column;justify-content:space-between;">
+              <div class="brutal" style="font-size:110px;color:#F5F2E9;transform:translateY(${lerp(-50, 0, easeOutBack(clamp(sp * 3, 0, 1)))}px);">AND THIS</div>
+              <div style="display:flex;align-items:center;gap:48px;">
+                <svg width="160" height="160" viewBox="0 0 100 100" style="color:#FF5500;filter:drop-shadow(0 0 30px #FF4500);transform:scaleX(${showVideo ? -1 : 1});transition:transform 0.2s;">
+                  <polygon points="15,15 15,85 85,50" fill="currentColor"/>
+                </svg>
+                ${showVideo ? `<div class="brutal" style="font-size:260px;color:#FFFDF9;line-height:0.85;transform:translateX(${lerp(-140, 0, easeOutBack(clamp(vp * 2, 0, 1)))}px);">VIDEO</div>` : ''}
+              </div>
+              <div style="width:100%;display:flex;flex-direction:column;gap:12px;">
+                <div style="font-family:var(--font-mono);font-size:26px;color:#d4d4d8;align-self:flex-end;">0:53 / 1:02</div>
+                <div style="width:100%;height:12px;background:#52525b;border-radius:999px;display:flex;align-items:center;">
+                  <div style="width:${lerp(35, 84, sp)}%;height:100%;background:#FF4500;border-radius:999px;"></div>
+                  <div style="width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 0 20px #FF4500;margin-left:-14px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (t < 71.5) {
+        // Shot 43: TRUE HORIZONTAL CAMERA PAN (Left-to-Right) along the Lightbulb Timeline Ruler!
+        // Camera starts on left (camX = -460, camScale = 1.35) on Lightbulb + FROM THE FIRST IDEA,
+        // then pans right (camX = +260) and pulls back (camScale = 0.98) to frame [KINETIC TYPE] + TO THE FINAL FRAME!
+        bgStyle = '#0D0807';
+        showEmbers = true;
+        const sp = norm(t, 68.5, 71.5);
+
+        camX = lerp(-440, 160, easeInOutCubic(sp));
+        camY = lerp(-40, 30, easeInOutCubic(sp));
+        camScale = lerp(1.38, 0.96, easeInOutCubic(sp));
+        if (sp > 0.25 && sp < 0.65) blurX = 12;
+
+        const rulerW = lerp(15, 100, easeOutCubic(sp));
+
+        html = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 80px;">
+            <div style="width:2100px;height:680px;display:flex;flex-direction:column;justify-content:space-between;">
+              <div style="display:flex;align-items:flex-end;gap:40px;">
+                <svg width="190" height="240" viewBox="0 0 120 150" fill="none" stroke="#FF6A00" stroke-width="5" style="filter:drop-shadow(0 0 40px #FF4500);margin-bottom:-30px;">
+                  <path d="M35 100 C20 80, 20 40, 60 40 C100 40, 100 80, 85 100 L78 120 L42 120 Z" fill="rgba(255,106,0,0.35)"/>
+                  <line x1="45" y1="130" x2="75" y2="130" stroke-width="6"/>
+                  <line x1="50" y1="140" x2="70" y2="140" stroke-width="6"/>
+                  <circle cx="60" cy="70" r="14" fill="#FFF"/>
+                </svg>
+                <div>
+                  <div class="brutal" style="font-size:56px;color:#F5F2E9;">FROM THE FIRST</div>
+                  <div class="brutal" style="font-size:210px;color:#F5F2E9;line-height:0.82;">IDEA</div>
+                </div>
+                <div style="margin-left:auto;width:620px;height:280px;background:#F5F2E9;border-radius:22px;border:4px solid #FF8800;display:flex;align-items:center;justify-content:center;transform:scale(${easeOutBack(clamp((sp - 0.35) * 2.5, 0, 1))});">
+                  <span class="brutal" style="font-size:68px;color:#FF4500;">KINETIC TYPE</span>
+                </div>
+              </div>
+              <div style="width:${rulerW}%;height:6px;background:linear-gradient(90deg,#FF4500,#FFE600,#FFF);box-shadow:0 0 25px #FF4500;"></div>
+              <div style="align-self:flex-end;text-align:right;transform:translateY(${lerp(80, 0, easeOutBack(clamp((sp - 0.45) * 2.5, 0, 1)))}px);opacity:${clamp((sp - 0.4) * 3, 0, 1)};">
+                <div class="brutal" style="font-size:56px;color:#F5F2E9;">TO THE</div>
+                <div class="brutal" style="font-size:150px;color:#F5F2E9;line-height:0.85;">FINAL FRAME</div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        // Shot 44 (71.5s - 78.0s): MADE WITH ONE PROMPT. -> FUUUUUUUU Horizontal Pan -> KATANA Outro
+        const local = t - 71.5;
+        if (local < 1.7) {
+          // 71.5s - 73.2s: Top-to-Bottom MADE WITH -> ONE -> PROMPT.
+          bgStyle = 'radial-gradient(circle at center, #FF8800 0%, #FF4500 80%)';
+          const sp = norm(local, 0, 1.7);
+          camY = lerp(-150, 0, easeOutCubic(clamp(sp * 2, 0, 1)));
+          const r1 = clamp(sp * 4, 0, 1);
+          const r2 = clamp((sp - 0.12) * 4, 0, 1);
+          const r3 = clamp((sp - 0.25) * 4, 0, 1);
+
+          html = `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 130px;">
+              <div style="font-family:var(--font-mono);font-weight:700;font-size:52px;color:#181414;margin-bottom:8px;transform:translateY(${lerp(-40, 0, easeOutBack(r1))}px);opacity:${r1};">MADE WITH</div>
+              <div class="brutal" style="font-size:410px;color:#181414;line-height:0.8;transform:translateY(${lerp(90, 0, easeOutBack(r2))}px);opacity:${r2};">ONE</div>
+              <div class="brutal" style="font-size:255px;color:#181414;line-height:0.86;display:flex;align-items:baseline;transform:translateY(${lerp(90, 0, easeOutBack(r3))}px);opacity:${r3};">
+                <span>PROMPT</span>
+                <span style="width:48px;height:48px;border-radius:50%;background:#FF2200;margin-left:18px;"></span>
+              </div>
+            </div>
+          `;
+        } else if (local < 2.2) {
+          // 73.2s - 73.7s: Dark crimson Vertical Ghost F streak + ONE PROMPT.
+          bgStyle = '#1A0400';
+          const sp = norm(local, 1.7, 2.2);
+          blurY = 20;
+          html = `
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 140px;">
+              <div style="position:relative;">
+                <div class="brutal glow-white-red" style="position:absolute;font-size:460px;opacity:0.45;transform:translateY(${lerp(0, -240, sp)}px);filter:url(#blur-v);">F</div>
+                <div class="brutal glow-white-red" style="font-size:460px;transform:translateY(${lerp(120, 0, easeOutExpo(sp))}px);">F</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="brutal" style="font-size:190px;color:#E5E0D8;line-height:0.84;">ONE</div>
+                <div class="brutal" style="font-size:150px;color:#E5E0D8;line-height:0.84;">PROMPT.</div>
+              </div>
+            </div>
+          `;
+        } else if (local < 3.5) {
+          // 73.7s - 75.0s: Horizontal Camera Pan along FUUUUUUUUUUU!
+          bgStyle = 'radial-gradient(circle at center, #FF8800 0%, #FF4500 80%)';
+          const sp = norm(local, 2.2, 3.5);
+          camX = lerp(-240, 480, easeInCubic(sp));
+          shake = 32;
+          blurX = 24;
+          html = `
+            <div style="position:absolute;inset:0;display:flex;align-items:center;padding-left:130px;">
+              <div class="brutal" style="font-size:430px;color:#141212;display:flex;align-items:center;">
+                <span>F</span>
+                <span style="filter:url(#blur-h);letter-spacing:-0.02em;">UUUUUUUUU</span>
+              </div>
+            </div>
+          `;
+        } else {
+          // 75.0s - 78.0s: Final Higgsfield KATANA / Claude Motion Hero Lockup
+          bgStyle = 'radial-gradient(circle at center, #611B00 0%, #160500 58%, #060200 100%)';
+          showEmbers = true;
+          const sp = norm(local, 3.5, 6.5);
+          camScale = lerp(1.18, 1.0, easeOutCubic(sp));
+          const slotP = clamp(sp * 2.5, 0, 1);
+          const claudeP = clamp((sp - 0.25) * 2.5, 0, 1);
+
+          html = `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <div style="position:absolute;left:0;right:0;top:50%;height:5px;background:linear-gradient(90deg,#FF4500,#FFF,#FF4500);box-shadow:0 0 45px 12px #FF4500;"></div>
+              ${getKatanaLockupHTML(true, true, 1.0, slotP, claudeP, t)}
+              <div style="margin-top:46px;padding:12px 32px;border-radius:14px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.28);font-family:var(--font-mono);font-size:30px;color:#FDE68A;z-index:10;opacity:${clamp((sp - 0.4) * 2.5, 0, 1)};">
+                higgsfield.ai/mcp
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      // =======================================================================
+      // APPLY CONTINUOUS CAMERA RIG, HANDHELD BREATHING & VELOCITY BLUR
+      // =======================================================================
+      if (shot.id !== prevShotId) {
+        prevCamX = camX;
+        prevCamY = camY;
+        prevShotId = shot.id;
+      }
+
+      const vx = Math.min(36, Math.abs(camX - prevCamX) * 0.35 + blurX);
+      const vy = Math.min(36, Math.abs(camY - prevCamY) * 0.35 + blurY);
+      prevCamX = camX;
+      prevCamY = camY;
+
+      if (vx > 1.5 || vy > 1.5) {
+        camBlurNode.setAttribute('stdDeviation', `${vx.toFixed(1)} ${vy.toFixed(1)}`);
+        rig.style.filter = 'url(#cam-blur)';
+      } else {
+        rig.style.filter = 'none';
+      }
+
+      // Subtle continuous handheld camera drift + high-energy impact shake
+      const driftX = Math.sin(t * 2.4) * 5;
+      const driftY = Math.cos(t * 1.9) * 4;
+      const shakeX = shake > 0 ? Math.sin(t * 135) * shake : 0;
+      const shakeY = shake > 0 ? Math.cos(t * 110) * shake * 0.75 : 0;
+
+      // Apply full-bleed background & grid
+      screenBg.style.background = bgStyle;
+      if (gridType === 'dots') {
+        bgGrid.style.opacity = '1';
+        bgGrid.style.backgroundImage = 'radial-gradient(rgba(255,255,255,0.18) 2px, transparent 2px)';
+        bgGrid.style.backgroundSize = '40px 40px';
+      } else if (gridType === 'tech') {
+        bgGrid.style.opacity = '1';
+        bgGrid.style.backgroundImage = 'linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)';
+        bgGrid.style.backgroundSize = '110px 110px';
+      } else {
+        bgGrid.style.opacity = '0';
+      }
+
+      drawEmbers(t, showEmbers);
+      flashOverlay.style.opacity = String(clamp(flash, 0, 0.9));
+
+      // Transform the 1920x1080 3D camera rig opposite to (camX, camY)
+      rig.style.transform = `
+        translate3d(${(-camX + driftX + shakeX).toFixed(1)}px, ${(-camY + driftY + shakeY).toFixed(1)}px, 0)
+        scale(${camScale.toFixed(4)})
+        rotateX(${rotX.toFixed(2)}deg)
+        rotateY(${rotY.toFixed(2)}deg)
+        rotateZ(${rotZ.toFixed(2)}deg)
+      `;
+      rig.innerHTML = html;
+    }
+
+    /***************************************************************************
+     * 8. TRANSPORT, SCRUBBER, SPEED & SHOT-STEPPING CONTROLS
+     ***************************************************************************/
+    let currentTime = 0;
+    let isPlaying = true;
+    let lastNow = performance.now();
+
+    const scrubber = document.getElementById('scrubber');
+    const timeReadout = document.getElementById('time-readout');
+    const playIcon = document.getElementById('play-icon');
+    const hudBar = document.getElementById('hud-bar');
+
+    function syncHUD() {
+      scrubber.value = currentTime.toFixed(2);
+      timeReadout.textContent = `${currentTime.toFixed(1).padStart(4, '0')}s / ${TOTAL_DURATION.toFixed(1)}s`;
+      playIcon.textContent = isPlaying ? '❚❚' : '▶';
+      hudBar.classList.toggle('paused', !isPlaying);
+    }
+
+    function togglePlay() {
+      audio.init();
+      isPlaying = !isPlaying;
+      lastNow = performance.now();
+      syncHUD();
+    }
+
+    function stepShot(dir) {
+      audio.init();
+      isPlaying = false;
+      const cur = getActiveShot(currentTime);
+      let nextIdx = SHOTS.findIndex(s => s.id === cur.id) + dir;
+      if (nextIdx < 0) nextIdx = SHOTS.length - 1;
+      if (nextIdx >= SHOTS.length) nextIdx = 0;
+      currentTime = SHOTS[nextIdx].s + 0.02;
+      syncHUD();
+      renderFrame(currentTime);
+    }
+
+    document.getElementById('btn-play').addEventListener('click', togglePlay);
+    screenBg.addEventListener('click', togglePlay);
+    document.getElementById('btn-prev').addEventListener('click', () => stepShot(-1));
+    document.getElementById('btn-next').addEventListener('click', () => stepShot(1));
+
+    scrubber.addEventListener('input', (e) => {
+      audio.init();
+      currentTime = parseFloat(e.target.value);
+      syncHUD();
+      renderFrame(currentTime);
+    });
+
+    document.getElementById('btn-speed').addEventListener('click', (e) => {
+      playbackSpeed = playbackSpeed === 1.0 ? 0.5 : playbackSpeed === 0.5 ? 0.25 : 1.0;
+      e.currentTarget.textContent = `${playbackSpeed}x`;
+    });
+
+    document.getElementById('btn-fit').addEventListener('click', (e) => {
+      stretchMode = !stretchMode;
+      e.currentTarget.textContent = stretchMode ? 'Fit: Stretch' : 'Fit: Contain';
+      updateViewportScale();
+    });
+
+    document.getElementById('btn-sfx').addEventListener('click', (e) => {
+      audio.init();
+      audio.enabled = !audio.enabled;
+      e.currentTarget.textContent = audio.enabled ? '🔊 SFX' : '🔇 Muted';
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        stepShot(1);
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        stepShot(-1);
+      }
+    });
+
+    function loop(now) {
+      const dt = ((now - lastNow) / 1000) * playbackSpeed;
+      lastNow = now;
+
+      if (isPlaying) {
+        currentTime += dt;
+        if (currentTime >= TOTAL_DURATION) currentTime = 0;
+        syncHUD();
+        const activeShot = getActiveShot(currentTime);
+        audio.update(currentTime, activeShot.id, isPlaying);
+      }
+
+      renderFrame(currentTime);
+      requestAnimationFrame(loop);
+    }
+
+    window.onload = () => {
+      updateViewportScale();
+      syncHUD();
+      renderFrame(0);
+      lastNow = performance.now();
+      requestAnimationFrame(loop);
+    };
+  </script>
+</body>
+</html>

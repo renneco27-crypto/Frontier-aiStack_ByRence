@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">StudyUp</string>
+    <string name="title_activity_main">StudyUp</string>
+    <string name="package_name">com.studyup.app</string>
+    <string name="custom_url_scheme">com.studyup.app</string>
+    <string name="server_client_id">869014472748-tdp7e3dopp51i74e4d01g0cv84sk5ujo.apps.googleusercontent.com</string>
+</resources>

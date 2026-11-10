@@ -1,0 +1,4573 @@
+{
+  "viewport": {
+    "width": 1256,
+    "height": 708
+  },
+  "timestamp": "2026-11-07T14:05:53.710Z",
+  "totalElements": 123,
+  "anomaliesCount": 44,
+  "anomalies": [
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "#menu",
+      "path": "button#menu",
+      "rect": {
+        "x": 454,
+        "y": 14,
+        "w": 40,
+        "h": 40
+      },
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because #page-title renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "svg",
+      "path": "button#menu > svg",
+      "rect": {
+        "x": 463,
+        "y": 23,
+        "w": 22,
+        "h": 22
+      },
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because #page-title renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "path",
+      "path": "button#menu > svg > path",
+      "rect": {
+        "x": 467,
+        "y": 30,
+        "w": 15,
+        "h": 7
+      },
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because #page-title renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "#seg-upcat",
+      "path": "button#seg-upcat",
+      "rect": {
+        "x": 528,
+        "y": 20,
+        "w": 60,
+        "h": 28
+      },
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because #page-title renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "#seg-pro",
+      "path": "button#seg-pro",
+      "rect": {
+        "x": 591,
+        "y": 20,
+        "w": 69,
+        "h": 28
+      },
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because #page-title renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "#seg-subpro",
+      "path": "button#seg-subpro",
+      "rect": {
+        "x": 661,
+        "y": 20,
+        "w": 67,
+        "h": 28
+      },
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because #page-title renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "#quick-rev",
+      "path": "button#quick-rev",
+      "rect": {
+        "x": 762,
+        "y": 14,
+        "w": 40,
+        "h": 40
+      },
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because #page-title renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "svg",
+      "path": "button#quick-rev > svg",
+      "rect": {
+        "x": 771,
+        "y": 23,
+        "w": 22,
+        "h": 22
+      },
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because #page-title renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "path",
+      "path": "button#quick-rev > svg > path",
+      "rect": {
+        "x": 774,
+        "y": 25,
+        "w": 17,
+        "h": 18
+      },
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because #page-title renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "b",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > b",
+      "rect": {
+        "x": 470,
+        "y": 669,
+        "w": 135,
+        "h": 18
+      },
+      "blocker": {
+        "tag": "button",
+        "selector": "#nav-folders",
+        "path": "button#nav-folders",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because #nav-folders renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "span.bar",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > span.bar",
+      "rect": {
+        "x": 651,
+        "y": 648,
+        "w": 135,
+        "h": 3
+      },
+      "blocker": {
+        "tag": "button",
+        "selector": "#nav-analytics",
+        "path": "button#nav-analytics",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because #nav-analytics renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "path",
+      "path": "button#nav-folders > svg > path",
+      "rect": {
+        "x": 495,
+        "y": 651,
+        "w": 15,
+        "h": 12
+      },
+      "blocker": {
+        "tag": "svg",
+        "selector": "svg",
+        "path": "button#nav-folders > svg",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because svg renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "path",
+      "path": "button#nav-flashcards > svg > path",
+      "rect": {
+        "x": 662,
+        "y": 650,
+        "w": 15,
+        "h": 15
+      },
+      "blocker": {
+        "tag": "svg",
+        "selector": "svg",
+        "path": "button#nav-flashcards > svg",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because svg renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "#list",
+      "path": "div#list",
+      "rect": {
+        "x": 154,
+        "y": 85,
+        "w": 255,
+        "h": 148
+      },
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because body renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "button.row",
+      "path": "div#list > button.row",
+      "rect": {
+        "x": 154,
+        "y": 85,
+        "w": 255,
+        "h": 49
+      },
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because body renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 154,
+        "y": 99,
+        "w": 88,
+        "h": 20
+      },
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because body renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 350,
+        "y": 99,
+        "w": 59,
+        "h": 20
+      },
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because body renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "button.row",
+      "path": "div#list > button.row",
+      "rect": {
+        "x": 154,
+        "y": 134,
+        "w": 255,
+        "h": 49
+      },
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because body renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 154,
+        "y": 148,
+        "w": 118,
+        "h": 20
+      },
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because body renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 353,
+        "y": 148,
+        "w": 56,
+        "h": 20
+      },
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because body renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "button.row",
+      "path": "div#list > button.row",
+      "rect": {
+        "x": 154,
+        "y": 183,
+        "w": 255,
+        "h": 49
+      },
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because body renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 154,
+        "y": 197,
+        "w": 150,
+        "h": 20
+      },
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because body renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 353,
+        "y": 197,
+        "w": 56,
+        "h": 20
+      },
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because body renders on top."
+    },
+    {
+      "severity": "P0",
+      "type": "OCCLUDED_INTERACTIVE",
+      "target": "summary",
+      "path": "aside#side > details > summary",
+      "rect": {
+        "x": 154,
+        "y": 644,
+        "w": 55,
+        "h": 36
+      },
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "detail": "Button/Link cannot receive direct clicks because body renders on top."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_TRUNCATED",
+      "target": "#ph",
+      "path": "div#ph",
+      "rect": {
+        "x": 438,
+        "y": 0,
+        "w": 380,
+        "h": 708
+      },
+      "detail": "Content overflowing box and being clipped by overflow: hidden"
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "#seg-upcat",
+      "elementB": "#page-title",
+      "overlapRect": {
+        "x": 528,
+        "y": 20,
+        "w": 60,
+        "h": 28
+      },
+      "detail": "Text elements \"UPCAT...\" and \"UPCAT 2026...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "#seg-pro",
+      "elementB": "#page-title",
+      "overlapRect": {
+        "x": 591,
+        "y": 20,
+        "w": 69,
+        "h": 28
+      },
+      "detail": "Text elements \"CSC Pro...\" and \"UPCAT 2026...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "#seg-subpro",
+      "elementB": "#page-title",
+      "overlapRect": {
+        "x": 661,
+        "y": 20,
+        "w": 67,
+        "h": 28
+      },
+      "detail": "Text elements \"Sub-Pro...\" and \"UPCAT 2026...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "#page-title",
+      "elementB": "#rcount",
+      "overlapRect": {
+        "x": 765,
+        "y": 23,
+        "w": 33,
+        "h": 18
+      },
+      "detail": "Text elements \"UPCAT 2026...\" and \"1 of 4...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span.paper",
+      "elementB": "span",
+      "overlapRect": {
+        "x": 483,
+        "y": 670,
+        "w": 40,
+        "h": 15
+      },
+      "detail": "Text elements \"Mathematics 3 cards...\" and \"Folders...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span.paper",
+      "elementB": "span",
+      "overlapRect": {
+        "x": 560,
+        "y": 670,
+        "w": 53,
+        "h": 15
+      },
+      "detail": "Text elements \"Mathematics 3 cards...\" and \"Exam Sim...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span.paper",
+      "elementB": "#rgo",
+      "overlapRect": {
+        "x": 456,
+        "y": 648,
+        "w": 165,
+        "h": 44
+      },
+      "detail": "Text elements \"Mathematics 3 cards...\" and \"Select an answer...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span.tab",
+      "elementB": "#dt",
+      "overlapRect": {
+        "x": 468,
+        "y": 756,
+        "w": 74,
+        "h": 24
+      },
+      "detail": "Text elements \"Module 5...\" and \"Subject Name...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span.paper",
+      "elementB": "#dd",
+      "overlapRect": {
+        "x": 458,
+        "y": 786,
+        "w": 163,
+        "h": 18
+      },
+      "detail": "Text elements \"Language Proficiency...\" and \"Folder Details...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span.paper",
+      "elementB": "#go",
+      "overlapRect": {
+        "x": 458,
+        "y": 844,
+        "w": 163,
+        "h": 44
+      },
+      "detail": "Text elements \"Language Proficiency...\" and \"Start Practice...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span.paper",
+      "elementB": "#reset",
+      "overlapRect": {
+        "x": 458,
+        "y": 896,
+        "w": 163,
+        "h": 44
+      },
+      "detail": "Text elements \"Language Proficiency...\" and \"Reset progress...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span.paper",
+      "elementB": "#dt",
+      "overlapRect": {
+        "x": 635,
+        "y": 756,
+        "w": 163,
+        "h": 24
+      },
+      "detail": "Text elements \"Reading Comprehensio...\" and \"Subject Name...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span.paper",
+      "elementB": "#dd",
+      "overlapRect": {
+        "x": 635,
+        "y": 786,
+        "w": 163,
+        "h": 18
+      },
+      "detail": "Text elements \"Reading Comprehensio...\" and \"Folder Details...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span.paper",
+      "elementB": "#go",
+      "overlapRect": {
+        "x": 635,
+        "y": 844,
+        "w": 163,
+        "h": 44
+      },
+      "detail": "Text elements \"Reading Comprehensio...\" and \"Start Practice...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span.paper",
+      "elementB": "#reset",
+      "overlapRect": {
+        "x": 635,
+        "y": 896,
+        "w": 163,
+        "h": 24
+      },
+      "detail": "Text elements \"Reading Comprehensio...\" and \"Reset progress...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span",
+      "elementB": "#rgo",
+      "overlapRect": {
+        "x": 483,
+        "y": 670,
+        "w": 40,
+        "h": 15
+      },
+      "detail": "Text elements \"Folders...\" and \"Select an answer...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span",
+      "elementB": "#rgo",
+      "overlapRect": {
+        "x": 560,
+        "y": 670,
+        "w": 53,
+        "h": 15
+      },
+      "detail": "Text elements \"Exam Sim...\" and \"Select an answer...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span",
+      "elementB": "#rgo",
+      "overlapRect": {
+        "x": 654,
+        "y": 670,
+        "w": 31,
+        "h": 15
+      },
+      "detail": "Text elements \"Cards...\" and \"Select an answer...\" overlap in the rendered viewport."
+    },
+    {
+      "severity": "P1",
+      "type": "TEXT_COLLISION",
+      "elementA": "span",
+      "elementB": "#rgo",
+      "overlapRect": {
+        "x": 740,
+        "y": 670,
+        "w": 27,
+        "h": 15
+      },
+      "detail": "Text elements \"Stats...\" and \"Select an answer...\" overlap in the rendered viewport."
+    }
+  ],
+  "elements": [
+    {
+      "id": null,
+      "tag": "html",
+      "selector": "html",
+      "path": "html",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1256,
+        "h": 708
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "UPCAT CSC Pro Sub-Pro UPCAT 2026 University of the Philippin",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "body",
+      "selector": "body",
+      "path": "body",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1256,
+        "h": 708
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "UPCAT CSC Pro Sub-Pro UPCAT 2026 University of the Philippin",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "ph",
+      "tag": "div",
+      "selector": "#ph",
+      "path": "div#ph",
+      "rect": {
+        "x": 438,
+        "y": 0,
+        "w": 380,
+        "h": 708
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "UPCAT CSC Pro Sub-Pro UPCAT 2026 University of the Philippin",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_TRUNCATION",
+          "severity": "P1",
+          "detail": "Content clipped: scroll 417x964px vs client 380x708px"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.bgimg",
+      "path": "div#bg > div.bgimg",
+      "rect": {
+        "x": 401,
+        "y": -47,
+        "w": 454,
+        "h": 801
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.dim",
+      "path": "div#ph > div.dim",
+      "rect": {
+        "x": 438,
+        "y": 0,
+        "w": 380,
+        "h": 708
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "page",
+      "tag": "div",
+      "selector": "#page",
+      "path": "div#page",
+      "rect": {
+        "x": 438,
+        "y": 0,
+        "w": 380,
+        "h": 708
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "UPCAT CSC Pro Sub-Pro UPCAT 2026 University of the Philippin",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.top",
+      "path": "div#page > div.top",
+      "rect": {
+        "x": 438,
+        "y": 0,
+        "w": 380,
+        "h": 54
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "UPCAT CSC Pro Sub-Pro",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "menu",
+      "tag": "button",
+      "selector": "#menu",
+      "path": "button#menu",
+      "rect": {
+        "x": 454,
+        "y": 14,
+        "w": 40,
+        "h": 40
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by #page-title (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "svg",
+      "selector": "svg",
+      "path": "button#menu > svg",
+      "rect": {
+        "x": 463,
+        "y": 23,
+        "w": 22,
+        "h": 22
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by #page-title (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "path",
+      "selector": "path",
+      "path": "button#menu > svg > path",
+      "rect": {
+        "x": 467,
+        "y": 30,
+        "w": 15,
+        "h": 7
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "inline",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by #page-title (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.exam-seg",
+      "path": "div#page > div.top > div.exam-seg",
+      "rect": {
+        "x": 524,
+        "y": 16,
+        "w": 208,
+        "h": 36
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "UPCAT CSC Pro Sub-Pro",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "seg-upcat",
+      "tag": "button",
+      "selector": "#seg-upcat",
+      "path": "button#seg-upcat",
+      "rect": {
+        "x": 528,
+        "y": 20,
+        "w": 60,
+        "h": 28
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "UPCAT",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by #page-title (z-index: auto)"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #page-title (overlap: 60x28px)"
+        }
+      ]
+    },
+    {
+      "id": "seg-pro",
+      "tag": "button",
+      "selector": "#seg-pro",
+      "path": "button#seg-pro",
+      "rect": {
+        "x": 591,
+        "y": 20,
+        "w": 69,
+        "h": 28
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "CSC Pro",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by #page-title (z-index: auto)"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #page-title (overlap: 69x28px)"
+        }
+      ]
+    },
+    {
+      "id": "seg-subpro",
+      "tag": "button",
+      "selector": "#seg-subpro",
+      "path": "button#seg-subpro",
+      "rect": {
+        "x": 661,
+        "y": 20,
+        "w": 67,
+        "h": 28
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Sub-Pro",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by #page-title (z-index: auto)"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #page-title (overlap: 67x28px)"
+        }
+      ]
+    },
+    {
+      "id": "quick-rev",
+      "tag": "button",
+      "selector": "#quick-rev",
+      "path": "button#quick-rev",
+      "rect": {
+        "x": 762,
+        "y": 14,
+        "w": 40,
+        "h": 40
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by #page-title (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "svg",
+      "selector": "svg",
+      "path": "button#quick-rev > svg",
+      "rect": {
+        "x": 771,
+        "y": 23,
+        "w": 22,
+        "h": 22
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by #page-title (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "path",
+      "selector": "path",
+      "path": "button#quick-rev > svg > path",
+      "rect": {
+        "x": 774,
+        "y": 25,
+        "w": 17,
+        "h": 18
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "inline",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "h1",
+        "selector": "#page-title",
+        "path": "h1#page-title",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by #page-title (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": "panel-folders",
+      "tag": "div",
+      "selector": "#panel-folders",
+      "path": "div#panel-folders",
+      "rect": {
+        "x": 438,
+        "y": 0,
+        "w": 380,
+        "h": 708
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "UPCAT 2026 University of the Philippines Admission Test • 42",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.scroll",
+      "path": "div#panel-folders > div.scroll",
+      "rect": {
+        "x": 438,
+        "y": 0,
+        "w": 380,
+        "h": 708
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "auto",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "UPCAT 2026 University of the Philippines Admission Test • 42",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "page-title",
+      "tag": "h1",
+      "selector": "#page-title",
+      "path": "h1#page-title",
+      "rect": {
+        "x": 458,
+        "y": 16,
+        "w": 340,
+        "h": 39
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "UPCAT 2026",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #seg-upcat"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #seg-pro"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #seg-subpro"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #rcount (overlap: 33x18px)"
+        }
+      ]
+    },
+    {
+      "id": "sub",
+      "tag": "p",
+      "selector": "#sub",
+      "path": "p#sub",
+      "rect": {
+        "x": 458,
+        "y": 61,
+        "w": 340,
+        "h": 38
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "University of the Philippines Admission Test • 42 days remai",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "cols",
+      "tag": "div",
+      "selector": "#cols",
+      "path": "div#cols",
+      "rect": {
+        "x": 438,
+        "y": 119,
+        "w": 380,
+        "h": 928
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Module 1 Science (Bio & Chem) 3 cards Module 3 Mathematics 3",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.col",
+      "path": "div#cols > div.col",
+      "rect": {
+        "x": 454,
+        "y": 119,
+        "w": 167,
+        "h": 928
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "Module 1 Science (Bio & Chem) 3 cards Module 3 Mathematics 3",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "button",
+      "selector": "button.folder",
+      "path": "div#cols > div.col > button.folder",
+      "rect": {
+        "x": 454,
+        "y": 119,
+        "w": 167,
+        "h": 284
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Module 1 Science (Bio & Chem) 3 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.tab",
+      "path": "div#cols > div.col > button.folder > span.tab",
+      "rect": {
+        "x": 468,
+        "y": 119,
+        "w": 74,
+        "h": 28
+      },
+      "computed": {
+        "zIndex": "1",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 1,
+      "interactive": true,
+      "text": "Module 1",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.paper",
+      "path": "div#cols > div.col > button.folder > span.paper",
+      "rect": {
+        "x": 454,
+        "y": 143,
+        "w": 167,
+        "h": 260
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Science (Bio & Chem) 3 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.pocket",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket",
+      "rect": {
+        "x": 455,
+        "y": 208,
+        "w": 165,
+        "h": 194
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Science (Bio & Chem) 3 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "b",
+      "selector": "b",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > b",
+      "rect": {
+        "x": 470,
+        "y": 319,
+        "w": 135,
+        "h": 36
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flow-root",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Science (Bio & Chem)",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "small",
+      "selector": "small",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > small",
+      "rect": {
+        "x": 470,
+        "y": 361,
+        "w": 135,
+        "h": 16
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "3 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.bar",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > span.bar",
+      "rect": {
+        "x": 470,
+        "y": 384,
+        "w": 135,
+        "h": 3
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "button",
+      "selector": "button.folder",
+      "path": "div#cols > div.col > button.folder",
+      "rect": {
+        "x": 454,
+        "y": 421,
+        "w": 167,
+        "h": 314
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "0.998948",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Module 3 Mathematics 3 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.tab",
+      "path": "div#cols > div.col > button.folder > span.tab",
+      "rect": {
+        "x": 468,
+        "y": 421,
+        "w": 74,
+        "h": 28
+      },
+      "computed": {
+        "zIndex": "1",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 101,
+      "interactive": true,
+      "text": "Module 3",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.paper",
+      "path": "div#cols > div.col > button.folder > span.paper",
+      "rect": {
+        "x": 454,
+        "y": 445,
+        "w": 167,
+        "h": 290
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Mathematics 3 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span (overlap: 40x15px)"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span (overlap: 53x15px)"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #rgo (overlap: 165x44px)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.pocket",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket",
+      "rect": {
+        "x": 455,
+        "y": 518,
+        "w": 165,
+        "h": 216
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Mathematics 3 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "b",
+      "selector": "b",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > b",
+      "rect": {
+        "x": 470,
+        "y": 669,
+        "w": 135,
+        "h": 18
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flow-root",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Mathematics",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "button",
+        "selector": "#nav-folders",
+        "path": "button#nav-folders",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by #nav-folders (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "small",
+      "selector": "small",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > small",
+      "rect": {
+        "x": 470,
+        "y": 693,
+        "w": 135,
+        "h": 16
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "3 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.bar",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > span.bar",
+      "rect": {
+        "x": 470,
+        "y": 716,
+        "w": 135,
+        "h": 3
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "button",
+      "selector": "button.folder",
+      "path": "div#cols > div.col > button.folder",
+      "rect": {
+        "x": 454,
+        "y": 753,
+        "w": 167,
+        "h": 294
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "0.9748",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Module 5 Language Proficiency 2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.tab",
+      "path": "div#cols > div.col > button.folder > span.tab",
+      "rect": {
+        "x": 468,
+        "y": 753,
+        "w": 74,
+        "h": 28
+      },
+      "computed": {
+        "zIndex": "1",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 101,
+      "interactive": true,
+      "text": "Module 5",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #dt (overlap: 74x24px)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.paper",
+      "path": "div#cols > div.col > button.folder > span.paper",
+      "rect": {
+        "x": 454,
+        "y": 777,
+        "w": 167,
+        "h": 270
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Language Proficiency 2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #dd (overlap: 163x18px)"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #go (overlap: 163x44px)"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #reset (overlap: 163x44px)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.pocket",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket",
+      "rect": {
+        "x": 455,
+        "y": 845,
+        "w": 165,
+        "h": 201
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Language Proficiency 2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "b",
+      "selector": "b",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > b",
+      "rect": {
+        "x": 470,
+        "y": 964,
+        "w": 135,
+        "h": 36
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flow-root",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Language Proficiency",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "small",
+      "selector": "small",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > small",
+      "rect": {
+        "x": 470,
+        "y": 1006,
+        "w": 135,
+        "h": 16
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.bar",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > span.bar",
+      "rect": {
+        "x": 470,
+        "y": 1028,
+        "w": 135,
+        "h": 3
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.col",
+      "path": "div#cols > div.col",
+      "rect": {
+        "x": 635,
+        "y": 119,
+        "w": 167,
+        "h": 928
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": false,
+      "text": "Module 2 Physics & Earth Sci 2 cards Module 4 Abstract Reaso",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "button",
+      "selector": "button.folder",
+      "path": "div#cols > div.col > button.folder",
+      "rect": {
+        "x": 635,
+        "y": 151,
+        "w": 167,
+        "h": 244
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Module 2 Physics & Earth Sci 2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.tab",
+      "path": "div#cols > div.col > button.folder > span.tab",
+      "rect": {
+        "x": 649,
+        "y": 151,
+        "w": 74,
+        "h": 28
+      },
+      "computed": {
+        "zIndex": "1",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 1,
+      "interactive": true,
+      "text": "Module 2",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.paper",
+      "path": "div#cols > div.col > button.folder > span.paper",
+      "rect": {
+        "x": 635,
+        "y": 175,
+        "w": 167,
+        "h": 220
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Physics & Earth Sci 2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.pocket",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket",
+      "rect": {
+        "x": 636,
+        "y": 230,
+        "w": 165,
+        "h": 164
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Physics & Earth Sci 2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "b",
+      "selector": "b",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > b",
+      "rect": {
+        "x": 651,
+        "y": 311,
+        "w": 135,
+        "h": 36
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flow-root",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Physics & Earth Sci",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "small",
+      "selector": "small",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > small",
+      "rect": {
+        "x": 651,
+        "y": 353,
+        "w": 135,
+        "h": 16
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.bar",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > span.bar",
+      "rect": {
+        "x": 651,
+        "y": 376,
+        "w": 135,
+        "h": 3
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "button",
+      "selector": "button.folder",
+      "path": "div#cols > div.col > button.folder",
+      "rect": {
+        "x": 635,
+        "y": 413,
+        "w": 167,
+        "h": 254
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "0.992076",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Module 4 Abstract Reasoning 2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.tab",
+      "path": "div#cols > div.col > button.folder > span.tab",
+      "rect": {
+        "x": 649,
+        "y": 413,
+        "w": 74,
+        "h": 28
+      },
+      "computed": {
+        "zIndex": "1",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 101,
+      "interactive": true,
+      "text": "Module 4",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.paper",
+      "path": "div#cols > div.col > button.folder > span.paper",
+      "rect": {
+        "x": 635,
+        "y": 437,
+        "w": 167,
+        "h": 230
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Abstract Reasoning 2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.pocket",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket",
+      "rect": {
+        "x": 636,
+        "y": 495,
+        "w": 165,
+        "h": 171
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Abstract Reasoning 2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "b",
+      "selector": "b",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > b",
+      "rect": {
+        "x": 651,
+        "y": 583,
+        "w": 135,
+        "h": 36
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flow-root",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Abstract Reasoning",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "small",
+      "selector": "small",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > small",
+      "rect": {
+        "x": 651,
+        "y": 625,
+        "w": 135,
+        "h": 16
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "2 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.bar",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > span.bar",
+      "rect": {
+        "x": 651,
+        "y": 648,
+        "w": 135,
+        "h": 3
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "button",
+        "selector": "#nav-analytics",
+        "path": "button#nav-analytics",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by #nav-analytics (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "button",
+      "selector": "button.folder",
+      "path": "div#cols > div.col > button.folder",
+      "rect": {
+        "x": 635,
+        "y": 685,
+        "w": 167,
+        "h": 234
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "0.937922",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 0,
+      "interactive": true,
+      "text": "Module 6 Reading Comprehension 1 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.tab",
+      "path": "div#cols > div.col > button.folder > span.tab",
+      "rect": {
+        "x": 649,
+        "y": 685,
+        "w": 74,
+        "h": 28
+      },
+      "computed": {
+        "zIndex": "1",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 101,
+      "interactive": true,
+      "text": "Module 6",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.paper",
+      "path": "div#cols > div.col > button.folder > span.paper",
+      "rect": {
+        "x": 635,
+        "y": 709,
+        "w": 167,
+        "h": 210
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Reading Comprehension 1 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #dt (overlap: 163x24px)"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #dd (overlap: 163x18px)"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #go (overlap: 163x44px)"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #reset (overlap: 163x24px)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.pocket",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket",
+      "rect": {
+        "x": 636,
+        "y": 762,
+        "w": 165,
+        "h": 156
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Reading Comprehension 1 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "b",
+      "selector": "b",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > b",
+      "rect": {
+        "x": 651,
+        "y": 836,
+        "w": 135,
+        "h": 36
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flow-root",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Reading Comprehension",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "small",
+      "selector": "small",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > small",
+      "rect": {
+        "x": 651,
+        "y": 878,
+        "w": 135,
+        "h": 16
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "1 cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span.bar",
+      "path": "div#cols > div.col > button.folder > span.paper > span.pocket > span.bar",
+      "rect": {
+        "x": 651,
+        "y": 900,
+        "w": 135,
+        "h": 3
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "nav",
+      "selector": "nav.bnav",
+      "path": "div#page > nav.bnav",
+      "rect": {
+        "x": 454,
+        "y": 638,
+        "w": 348,
+        "h": 56
+      },
+      "computed": {
+        "zIndex": "9",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 9,
+      "interactive": false,
+      "text": "Folders Exam Sim Cards Stats",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "nav-folders",
+      "tag": "button",
+      "selector": "#nav-folders",
+      "path": "button#nav-folders",
+      "rect": {
+        "x": 461,
+        "y": 641,
+        "w": 84,
+        "h": 50
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Folders",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "svg",
+      "selector": "svg",
+      "path": "button#nav-folders > svg",
+      "rect": {
+        "x": 493,
+        "y": 647,
+        "w": 20,
+        "h": 20
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "path",
+      "selector": "path",
+      "path": "button#nav-folders > svg > path",
+      "rect": {
+        "x": 495,
+        "y": 651,
+        "w": 15,
+        "h": 12
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "inline",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "svg",
+        "selector": "svg",
+        "path": "button#nav-folders > svg",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by svg (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "button#nav-folders > span",
+      "rect": {
+        "x": 483,
+        "y": 670,
+        "w": 40,
+        "h": 15
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Folders",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span.paper"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #rgo (overlap: 40x15px)"
+        }
+      ]
+    },
+    {
+      "id": "nav-mock",
+      "tag": "button",
+      "selector": "#nav-mock",
+      "path": "button#nav-mock",
+      "rect": {
+        "x": 545,
+        "y": 641,
+        "w": 84,
+        "h": 50
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Exam Sim",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "svg",
+      "selector": "svg",
+      "path": "button#nav-mock > svg",
+      "rect": {
+        "x": 576,
+        "y": 647,
+        "w": 20,
+        "h": 20
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "path",
+      "selector": "path",
+      "path": "button#nav-mock > svg > path",
+      "rect": {
+        "x": 578,
+        "y": 649,
+        "w": 17,
+        "h": 17
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "inline",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "button#nav-mock > span",
+      "rect": {
+        "x": 560,
+        "y": 670,
+        "w": 53,
+        "h": 15
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Exam Sim",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span.paper"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #rgo (overlap: 53x15px)"
+        }
+      ]
+    },
+    {
+      "id": "nav-flashcards",
+      "tag": "button",
+      "selector": "#nav-flashcards",
+      "path": "button#nav-flashcards",
+      "rect": {
+        "x": 628,
+        "y": 641,
+        "w": 84,
+        "h": 50
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "svg",
+      "selector": "svg",
+      "path": "button#nav-flashcards > svg",
+      "rect": {
+        "x": 660,
+        "y": 647,
+        "w": 20,
+        "h": 20
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "path",
+      "selector": "path",
+      "path": "button#nav-flashcards > svg > path",
+      "rect": {
+        "x": 662,
+        "y": 650,
+        "w": 15,
+        "h": 15
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "inline",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "svg",
+        "selector": "svg",
+        "path": "button#nav-flashcards > svg",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by svg (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "button#nav-flashcards > span",
+      "rect": {
+        "x": 654,
+        "y": 670,
+        "w": 31,
+        "h": 15
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Cards",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #rgo (overlap: 31x15px)"
+        }
+      ]
+    },
+    {
+      "id": "nav-analytics",
+      "tag": "button",
+      "selector": "#nav-analytics",
+      "path": "button#nav-analytics",
+      "rect": {
+        "x": 712,
+        "y": 641,
+        "w": 84,
+        "h": 50
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Stats",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "svg",
+      "selector": "svg",
+      "path": "button#nav-analytics > svg",
+      "rect": {
+        "x": 743,
+        "y": 647,
+        "w": 20,
+        "h": 20
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "path",
+      "selector": "path",
+      "path": "button#nav-analytics > svg > path",
+      "rect": {
+        "x": 748,
+        "y": 650,
+        "w": 10,
+        "h": 13
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "inline",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "button#nav-analytics > span",
+      "rect": {
+        "x": 740,
+        "y": 670,
+        "w": 27,
+        "h": 15
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Stats",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #rgo (overlap: 27x15px)"
+        }
+      ]
+    },
+    {
+      "id": "scrim",
+      "tag": "div",
+      "selector": "#scrim",
+      "path": "div#scrim",
+      "rect": {
+        "x": 438,
+        "y": 0,
+        "w": 380,
+        "h": 708
+      },
+      "computed": {
+        "zIndex": "11",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "none"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 11,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "side",
+      "tag": "aside",
+      "selector": "#side",
+      "path": "aside#side",
+      "rect": {
+        "x": 132,
+        "y": 0,
+        "w": 300,
+        "h": 708
+      },
+      "computed": {
+        "zIndex": "12",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 12,
+      "interactive": false,
+      "text": "Exams UPCAT 2026 160 items CSC Professional 170 items CSC Su",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "h2",
+      "selector": "h2",
+      "path": "aside#side > h2",
+      "rect": {
+        "x": 154,
+        "y": 40,
+        "w": 255,
+        "h": 31
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "Exams",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "list",
+      "tag": "div",
+      "selector": "#list",
+      "path": "div#list",
+      "rect": {
+        "x": 154,
+        "y": 85,
+        "w": 255,
+        "h": 148
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "UPCAT 2026 160 items CSC Professional 170 items CSC Sub-Prof",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by body (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "button",
+      "selector": "button.row",
+      "path": "div#list > button.row",
+      "rect": {
+        "x": 154,
+        "y": 85,
+        "w": 255,
+        "h": 49
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "UPCAT 2026 160 items",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by body (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 154,
+        "y": 99,
+        "w": 88,
+        "h": 20
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "UPCAT 2026",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by body (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 350,
+        "y": 99,
+        "w": 59,
+        "h": 20
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "160 items",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by body (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "button",
+      "selector": "button.row",
+      "path": "div#list > button.row",
+      "rect": {
+        "x": 154,
+        "y": 134,
+        "w": 255,
+        "h": 49
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "CSC Professional 170 items",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by body (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 154,
+        "y": 148,
+        "w": 118,
+        "h": 20
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "CSC Professional",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by body (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 353,
+        "y": 148,
+        "w": 56,
+        "h": 20
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "170 items",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by body (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "button",
+      "selector": "button.row",
+      "path": "div#list > button.row",
+      "rect": {
+        "x": 154,
+        "y": 183,
+        "w": 255,
+        "h": 49
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "CSC Sub-Professional 165 items",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by body (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 154,
+        "y": 197,
+        "w": 150,
+        "h": 20
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "CSC Sub-Professional",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by body (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "div#list > button.row > span",
+      "rect": {
+        "x": 353,
+        "y": 197,
+        "w": 56,
+        "h": 20
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "165 items",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by body (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "details",
+      "selector": "details",
+      "path": "aside#side > details",
+      "rect": {
+        "x": 154,
+        "y": 644,
+        "w": 255,
+        "h": 36
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "Archive",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "summary",
+      "selector": "summary",
+      "path": "aside#side > details > summary",
+      "rect": {
+        "x": 154,
+        "y": 644,
+        "w": 55,
+        "h": 36
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "inline-block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Archive",
+      "isBlocked": true,
+      "blocker": {
+        "tag": "body",
+        "selector": "body",
+        "path": "body",
+        "zIndex": "auto",
+        "pointerEvents": "auto"
+      },
+      "issues": [
+        {
+          "type": "CLICK_TARGET_OCCLUDED",
+          "severity": "P0",
+          "detail": "Center hit intercepted by body (z-index: auto)"
+        }
+      ]
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.arch",
+      "path": "aside#side > details > div.arch",
+      "rect": {
+        "x": 154,
+        "y": 680,
+        "w": 255,
+        "h": 39
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "UPCAT Batch 2025Passed",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "aside#side > details > div.arch > span",
+      "rect": {
+        "x": 154,
+        "y": 690,
+        "w": 112,
+        "h": 18
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "UPCAT Batch 2025",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "aside#side > details > div.arch > span",
+      "rect": {
+        "x": 366,
+        "y": 690,
+        "w": 43,
+        "h": 18
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "Passed",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.arch",
+      "path": "aside#side > details > div.arch",
+      "rect": {
+        "x": 154,
+        "y": 719,
+        "w": 255,
+        "h": 39
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "CSE-PPT March 2025Passed",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "aside#side > details > div.arch > span",
+      "rect": {
+        "x": 154,
+        "y": 729,
+        "w": 128,
+        "h": 18
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "CSE-PPT March 2025",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "span",
+      "selector": "span",
+      "path": "aside#side > details > div.arch > span",
+      "rect": {
+        "x": 366,
+        "y": 729,
+        "w": 43,
+        "h": 18
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "Passed",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "sheet",
+      "tag": "section",
+      "selector": "#sheet",
+      "path": "section#sheet",
+      "rect": {
+        "x": 438,
+        "y": 713,
+        "w": 380,
+        "h": 251
+      },
+      "computed": {
+        "zIndex": "15",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "hidden",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 0,
+      "calculatedZ": 15,
+      "interactive": false,
+      "text": "Subject Name Folder Details Start Practice Reset progress",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "grab",
+      "tag": "div",
+      "selector": "#grab",
+      "path": "div#grab",
+      "rect": {
+        "x": 438,
+        "y": 714,
+        "w": 380,
+        "h": 28
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.dh",
+      "path": "section#sheet > div.dh",
+      "rect": {
+        "x": 438,
+        "y": 742,
+        "w": 380,
+        "h": 66
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "Subject Name Folder Details",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "dt",
+      "tag": "h3",
+      "selector": "#dt",
+      "path": "h3#dt",
+      "rect": {
+        "x": 458,
+        "y": 756,
+        "w": 340,
+        "h": 24
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "Subject Name",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span.tab"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span.paper"
+        }
+      ]
+    },
+    {
+      "id": "dd",
+      "tag": "p",
+      "selector": "#dd",
+      "path": "p#dd",
+      "rect": {
+        "x": 458,
+        "y": 786,
+        "w": 340,
+        "h": 18
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "Folder Details",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span.paper"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span.paper"
+        }
+      ]
+    },
+    {
+      "id": "sbody",
+      "tag": "div",
+      "selector": "#sbody",
+      "path": "div#sbody",
+      "rect": {
+        "x": 438,
+        "y": 808,
+        "w": 380,
+        "h": 24
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "auto",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.df",
+      "path": "section#sheet > div.df",
+      "rect": {
+        "x": 438,
+        "y": 832,
+        "w": 380,
+        "h": 120
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "Start Practice Reset progress",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "go",
+      "tag": "button",
+      "selector": "#go",
+      "path": "button#go",
+      "rect": {
+        "x": 458,
+        "y": 844,
+        "w": 340,
+        "h": 44
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Start Practice",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span.paper"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span.paper"
+        }
+      ]
+    },
+    {
+      "id": "reset",
+      "tag": "button",
+      "selector": "#reset",
+      "path": "button#reset",
+      "rect": {
+        "x": 458,
+        "y": 896,
+        "w": 340,
+        "h": 44
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "auto"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Reset progress",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span.paper"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span.paper"
+        }
+      ]
+    },
+    {
+      "id": "rbg",
+      "tag": "div",
+      "selector": "#rbg",
+      "path": "div#rbg",
+      "rect": {
+        "x": 401,
+        "y": -47,
+        "w": 454,
+        "h": 801
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "none"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.dim",
+      "path": "section#rev > div.dim",
+      "rect": {
+        "x": 438,
+        "y": 0,
+        "w": 380,
+        "h": 708
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "absolute",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "none"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.rtop",
+      "path": "section#rev > div.rtop",
+      "rect": {
+        "x": 438,
+        "y": 0,
+        "w": 380,
+        "h": 52
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "none"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "1 of 4",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "rclose",
+      "tag": "button",
+      "selector": "#rclose",
+      "path": "button#rclose",
+      "rect": {
+        "x": 450,
+        "y": 12,
+        "w": 40,
+        "h": 40
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "none"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "svg",
+      "selector": "svg",
+      "path": "button#rclose > svg",
+      "rect": {
+        "x": 459,
+        "y": 21,
+        "w": 22,
+        "h": 22
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "hidden",
+        "pointerEvents": "none"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "path",
+      "selector": "path",
+      "path": "button#rclose > svg > path",
+      "rect": {
+        "x": 465,
+        "y": 27,
+        "w": 11,
+        "h": 11
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "inline",
+        "overflow": "visible",
+        "pointerEvents": "none"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "rcount",
+      "tag": "span",
+      "selector": "#rcount",
+      "path": "span#rcount",
+      "rect": {
+        "x": 765,
+        "y": 23,
+        "w": 33,
+        "h": 18
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "block",
+        "overflow": "visible",
+        "pointerEvents": "none"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "1 of 4",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in #page-title"
+        }
+      ]
+    },
+    {
+      "id": "fc",
+      "tag": "div",
+      "selector": "#fc",
+      "path": "div#fc",
+      "rect": {
+        "x": 456,
+        "y": 64,
+        "w": 344,
+        "h": 572
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "auto",
+        "pointerEvents": "none"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": null,
+      "tag": "div",
+      "selector": "div.rfoot",
+      "path": "section#rev > div.rfoot",
+      "rect": {
+        "x": 438,
+        "y": 648,
+        "w": 380,
+        "h": 60
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "relative",
+        "opacity": "1",
+        "display": "grid",
+        "overflow": "visible",
+        "pointerEvents": "none"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": false,
+      "text": "Select an answer",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": []
+    },
+    {
+      "id": "rgo",
+      "tag": "button",
+      "selector": "#rgo",
+      "path": "button#rgo",
+      "rect": {
+        "x": 456,
+        "y": 648,
+        "w": 344,
+        "h": 44
+      },
+      "computed": {
+        "zIndex": "auto",
+        "position": "static",
+        "opacity": "1",
+        "display": "flex",
+        "overflow": "visible",
+        "pointerEvents": "none"
+      },
+      "stackingDepth": 1,
+      "calculatedZ": 100,
+      "interactive": true,
+      "text": "Select an answer",
+      "isBlocked": false,
+      "blocker": null,
+      "issues": [
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span.paper"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span"
+        },
+        {
+          "type": "TEXT_COLLISION",
+          "severity": "P1",
+          "detail": "Colliding with text in span"
+        }
+      ]
+    }
+  ]
+}

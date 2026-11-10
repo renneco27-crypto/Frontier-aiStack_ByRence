@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>StudyUp — Minimalist Interactive Mobile App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <style>
+    @font-face {
+      font-family: 'LexendLocal';
+      src: url('./assets/fonts/Lexend-Medium.ttf') format('truetype');
+      font-weight: 500;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'LexendLocal';
+      src: url('./assets/fonts/Poppins-700.ttf') format('truetype');
+      font-weight: 700;
+      font-display: swap;
+    }
+
+    :root {
+      /* LIGHT THEME (White Background default) */
+      --bg-desktop: #ececf3;
+      --bg-phone: #fafafe;
+      --wave-divider-fill: #fafafe;
+      --text-main: #141124;
+      --text-muted: #5e5975;
+      --text-secondary: #74708c;
+      --card-bg: #ffffff;
+      --card-border: #eceaf4;
+      --card-shadow: 0 4px 16px -2px rgba(25, 18, 52, 0.06);
+      --nav-bg: #ffffff;
+      --nav-stroke: #eceaf4;
+      --nav-text: #6b6782;
+      --nav-text-active: #150c2e;
+      --nav-fab-bg: #6226c9;
+      --home-indicator-bg: #141124;
+      --home-indicator-opacity: 0.35;
+      --drawer-bg: #ffffff;
+      --drawer-border: #eceaf4;
+      --pill-bg: #f1ebff;
+      --btn-primary-bg: #141124;
+      --btn-primary-text: #ffffff;
+      --purple-brand: #6226c9;
+      --purple-card: #1f1147;
+      --purple-card-border: #352269;
+    }
+
+    body.theme-dark {
+      /* DARK OBSIDIAN THEME */
+      --bg-desktop: #06070b;
+      --bg-phone: #0b0c14;
+      --wave-divider-fill: #0b0c14;
+      --text-main: #ffffff;
+      --text-muted: #8e92a8;
+      --text-secondary: #6e7285;
+      --card-bg: #151722;
+      --card-border: #222536;
+      --card-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      --nav-bg: #14141D;
+      --nav-stroke: rgba(165, 117, 255, 0.24);
+      --nav-text: #94A3B8;
+      --nav-text-active: #FFFFFF;
+      --nav-fab-bg: #6226c9;
+      --home-indicator-bg: #ffffff;
+      --home-indicator-opacity: 0.24;
+      --drawer-bg: #0b0c14;
+      --drawer-border: #1c1e2a;
+      --pill-bg: #201833;
+      --btn-primary-bg: #ffffff;
+      --btn-primary-text: #0b0c14;
+      --purple-brand: #8e65f7;
+      --purple-card: #1f1147;
+      --purple-card-border: #352269;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-desktop);
+      font-family: 'LexendLocal', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* Typographic Hierarchy */
+    h1 { font-size: 26px; line-height: 1.3; font-weight: 800; margin: 0; }
+    h2 { font-size: 20px; line-height: 1.35; font-weight: 700; margin: 0; }
+    h3 { font-size: 15px; line-height: 1.4; font-weight: 600; margin: 0; }
+    h4 { font-size: 13px; line-height: 1.4; font-weight: 600; margin: 0; }
+
+    /* Main Mobile Viewport Frame (Velvety Obsidian like in Settings) */
+    .phone-viewport {
+      width: 100%;
+      max-width: 412px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background-color: #0b0b0e !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.55);
+      overflow-x: hidden;
+    }
+
+    /* Hide Scrollbars */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* 3D Flashcard Flip Mechanics matching reference */
+    .perspective-1000 {
+      perspective: 1200px;
+    }
+
+    .flashcard-3d-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .flashcard-3d-wrapper.is-flipped {
+      transform: rotateY(180deg);
+    }
+
+    .flashcard-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 28px;
+      background-color: #1f1147;
+      color: #ffffff;
+      border: 2px solid #352269;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 26px 24px 22px 24px;
+    }
+
+    .flashcard-back {
+      transform: rotateY(180deg);
+    }
+
+    .flashcard-question-text {
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.4;
+    }
+
+    /* Mascot Animations matching reference */
+    @keyframes mascotRise {
+      0% { transform: translateY(100%) scale(1.8); }
+      55% { transform: translateY(15%) scale(1.75); }
+      100% { transform: translateY(0%) scale(1); }
+    }
+    .mascot-rise-anim {
+      animation: mascotRise 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes peekFromRight {
+      0% { transform: translateX(90px) rotate(-12deg); opacity: 0; }
+      100% { transform: translateX(0) rotate(-8deg); opacity: 1; }
+    }
+    .peek-right-anim {
+      animation: peekFromRight 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* Toggle Switch matching reference */
+    .ios-switch {
+      width: 48px;
+      height: 28px;
+      border-radius: 999px;
+      background-color: #ffffff;
+      position: relative;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      padding: 3px;
+    }
+    .ios-switch.off {
+      background-color: #2c2f42;
+    }
+    .ios-switch-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background-color: #20222f;
+      transform: translateX(20px);
+      transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease;
+    }
+    .ios-switch.off .ios-switch-thumb {
+      transform: translateX(0);
+      background-color: #8e92a8;
+    }
+
+    /* Wavy Deep Purple Header Art Spec from Reference (Pushed strictly to back behind elements) */
+    .base-header-art {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 200px;
+      pointer-events: none;
+      z-index: 0; /* Behind all UI elements and buttons */
+      overflow: hidden;
+      background-color: transparent;
+    }
+
+    .tab-pane {
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Notched Obsidian Bottom Navigation Bar Spec (#14141D) */
+    .notched-navbar-wrap {
+      position: relative;
+      width: 100%;
+      height: 82px;
+      flex-shrink: 0;
+      z-index: 45;
+      margin-top: auto;
+      user-select: none;
+    }
+
+    .notched-navbar-svg {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 70px;
+      filter: drop-shadow(0 -4px 18px rgba(13, 13, 18, 0.12));
+      pointer-events: none;
+    }
+
+    /* Minimalistic Sleek Soft-Glow Cards (Zero Outlines, Zero Borders) */
+    .edu-card,
+    .syllabus-card {
+      background: var(--card-bg, #FFFFFF);
+      border: none !important;
+      outline: none !important;
+      border-width: 0 !important;
+      border-radius: 20px;
+      box-shadow:
+        0 10px 30px -5px rgba(105, 41, 212, 0.08),
+        0 4px 12px -2px rgba(105, 41, 212, 0.04);
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
+    }
+
+    .edu-card:hover,
+    .syllabus-card:hover {
+      border: none !important;
+      outline: none !important;
+      box-shadow:
+        0 16px 36px -6px rgba(105, 41, 212, 0.12),
+        0 4px 14px -2px rgba(159, 103, 255, 0.06);
+    }
+
+    /* Preserve clean white card aesthetic for My Library ("i never told you to change the div colors. in my library.", "dont give any cards an outline") */
+    #tab-library .edu-card {
+      background: #FFFFFF !important;
+      border: none !important;
+      outline: none !important;
+      border-width: 0 !important;
+      color: #141124 !important;
+      box-shadow: 0 10px 30px -5px rgba(105, 41, 212, 0.08), 0 4px 12px -2px rgba(105, 41, 212, 0.04) !important;
+    }
+
+    #tab-library .edu-card h3,
+    #tab-library .edu-card #homeActiveDeckTitle,
+    #tab-library .edu-card .text-\[\#141124\],
+    #tab-library .edu-card div.font-bold {
+      color: #141124 !important;
+    }
+
+    #tab-library .edu-card .text-\[\#5e5975\] {
+      color: #5e5975 !important;
+    }
+
+    #tab-library .edu-card .text-\[\#6226c9\] {
+      color: #6226c9 !important;
+    }
+
+    /* Cardless Animated Flame Metric */
+    .flame-badge {
+      filter: drop-shadow(0 2px 14px rgba(249, 115, 22, 0.65));
+    }
+    .flame-svg {
+      animation: flameFlicker 1.8s ease-in-out infinite alternate;
+      transform-origin: 50% 90%;
+    }
+    .flame-inner {
+      animation: flameCorePulse 1.2s ease-in-out infinite alternate;
+      transform-origin: 50% 80%;
+    }
+    @keyframes flameFlicker {
+      0% {
+        transform: scale(1) rotate(-1.5deg);
+        filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.6));
+      }
+      50% {
+        transform: scale(1.06, 0.96) rotate(1.8deg);
+        filter: drop-shadow(0 0 14px rgba(249, 115, 22, 0.85));
+      }
+      100% {
+        transform: scale(0.97, 1.04) rotate(-1deg);
+        filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.7));
+      }
+    }
+    @keyframes flameCorePulse {
+      0% {
+        opacity: 0.85;
+        transform: scale(0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1.08);
+      }
+    }
+
+    /* Senthora Soft Velvety Bottom Glow (Rising strictly from the bottom) */
+    .senthora-bottom-glow {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 420px;
+      background: 
+        radial-gradient(120% 65% at 50% 100%, 
+          rgba(165, 142, 232, 0.58) 0%, 
+          rgba(140, 114, 219, 0.38) 28%, 
+          rgba(75, 40, 168, 0.24) 55%, 
+          rgba(11, 11, 14, 0) 88%),
+        linear-gradient(180deg, 
+          transparent 0%, 
+          rgba(19, 13, 42, 0.35) 25%, 
+          rgba(30, 17, 71, 0.6) 50%, 
+          rgba(59, 31, 140, 0.75) 75%, 
+          rgba(92, 56, 189, 0.85) 90%, 
+          rgba(163, 139, 230, 0.9) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Knowunity Picture 2 Syllabus & Feed Card (Zero Outlines) */
+    .syllabus-card {
+      background: var(--card-bg, #FFFFFF);
+      border: none !important;
+      outline: none !important;
+      border-width: 0 !important;
+      border-radius: 20px;
+      padding: 16px 18px;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      cursor: pointer;
+    }
+
+    .syllabus-card:hover {
+      transform: translateY(-1.5px);
+      border: none !important;
+      outline: none !important;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+    }
+
+    .syllabus-card:active {
+      transform: scale(0.99);
+    }
+
+    body.theme-dark .syllabus-card {
+      background: #151722 !important;
+      border: none !important;
+      outline: none !important;
+      border-width: 0 !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    /* Astryx Design System Core Card Primitive (@astryxdesign/core/Card) */
+    .astryx-card {
+      background: var(--card-bg, #151722);
+      border: none !important;
+      outline: none !important;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+      transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), background-color 0.18s ease, box-shadow 0.18s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .astryx-card:hover {
+      background-color: #1a1d2c;
+      transform: translateY(-1.5px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
+    }
+
+    .astryx-card:active {
+      transform: scale(0.985);
+    }
+
+    /* Cards Top and Bottom Gradient Fade-In / Fade-Out Mask (Ultra-Smooth, Zero Cut-Off, Fades out near Create button) */
+    .cards-fade-scroll-container {
+      max-height: 440px;
+      overflow-y: auto;
+      padding-top: 14px;
+      padding-bottom: 36px;
+      padding-left: 4px;
+      padding-right: 4px;
+      margin-left: -4px;
+      margin-right: -4px;
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.08) 12px,
+        rgba(0, 0, 0, 0.3) 28px,
+        rgba(0, 0, 0, 0.65) 44px,
+        rgba(0, 0, 0, 0.92) 60px,
+        rgba(0, 0, 0, 1) 75px,
+        rgba(0, 0, 0, 1) calc(100% - 120px),
+        rgba(0, 0, 0, 0.9) calc(100% - 95px),
+        rgba(0, 0, 0, 0.6) calc(100% - 68px),
+        rgba(0, 0, 0, 0.28) calc(100% - 40px),
+        rgba(0, 0, 0, 0.08) calc(100% - 16px),
+        rgba(0, 0, 0, 0) 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.08) 12px,
+        rgba(0, 0, 0, 0.3) 28px,
+        rgba(0, 0, 0, 0.65) 44px,
+        rgba(0, 0, 0, 0.92) 60px,
+        rgba(0, 0, 0, 1) 75px,
+        rgba(0, 0, 0, 1) calc(100% - 120px),
+        rgba(0, 0, 0, 0.9) calc(100% - 95px),
+        rgba(0, 0, 0, 0.6) calc(100% - 68px),
+        rgba(0, 0, 0, 0.28) calc(100% - 40px),
+        rgba(0, 0, 0, 0.08) calc(100% - 16px),
+        rgba(0, 0, 0, 0) 100%
+      );
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .cards-fade-scroll-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Dual-Layer Progress Track */
+    .progress-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: 14px;
+    }
+
+    .progress-fill-indigo {
+      height: 6.5px;
+      border-radius: 999px;
+      background-color: #211048;
+      transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    body.theme-dark .progress-fill-indigo {
+      background-color: #9B6BFF;
+    }
+
+    .progress-track-slate {
+      width: 100%;
+      height: 6.5px;
+      border-radius: 999px;
+      background-color: #CED7E4;
+    }
+
+    body.theme-dark .progress-track-slate {
+      background-color: #25283c;
+    }
+
+    body.theme-dark .edu-card h3,
+    body.theme-dark .syllabus-card h3,
+    body.theme-dark .syllabus-card h4,
+    body.theme-dark .syllabus-card strong,
+    body.theme-dark .syllabus-card span.font-bold,
+    body.theme-dark #tab-search h2,
+    body.theme-dark #tab-search h3,
+    body.theme-dark #tab-android h2,
+    body.theme-dark #tab-android h3 {
+      color: #FFFFFF !important;
+    }
+
+    body.theme-dark .syllabus-card .text-\[\#0F172A\] {
+      color: #FFFFFF !important;
+    }
+
+    body.theme-dark .syllabus-card .text-\[\#64748B\] {
+      color: #94A3B8 !important;
+    }
+
+    body.theme-dark .syllabus-card .bg-slate-100 {
+      background-color: #222536 !important;
+    }
+
+    body.theme-dark .syllabus-card .h-\[1px\] {
+      background-color: #222536 !important;
+    }
+
+    body.theme-dark .wave-divider-path,
+    body.theme-dark .wave-bottom-blend {
+      fill: #0B0C14 !important;
+    }
+
+    .purple-wave-header {
+      background: linear-gradient(135deg, #11052C 0%, #240B59 45%, #4815AA 82%, #5C20C7 100%);
+      position: relative;
+      overflow: hidden;
+      color: #FFFFFF;
+    }
+
+    /* Leader Board Pointed Chevron Banner Header (Matching Reference Image) */
+    .leaderboard-shield-header {
+      background: linear-gradient(155deg, #9333EA 0%, #A855F7 45%, #7E22CE 100%);
+      clip-path: polygon(0 0, 100% 0, 100% calc(100% - 30px), 50% 100%, 0 calc(100% - 30px));
+      filter: drop-shadow(0 8px 18px rgba(147, 51, 234, 0.35));
+    }
+
+    .notched-fab {
+      position: absolute;
+      left: 50% !important;
+      top: 0px !important;
+      transform: translateX(-50%) !important;
+      width: 58px !important;
+      height: 58px !important;
+      border-radius: 9999px !important;
+      background: linear-gradient(165deg, #67B8F7 0%, #9B6BFF 45%, #E879F9 80%, #F472B6 100%) !important;
+      box-shadow:
+        0 6px 24px rgba(192, 132, 252, 0.65),
+        0 3px 14px rgba(236, 72, 153, 0.45),
+        0 0 0 3.5px #14141D !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      color: #ffffff !important;
+      cursor: pointer !important;
+      z-index: 40 !important;
+      transition: box-shadow 0.25s ease !important;
+    }
+
+    .notched-fab:active {
+      transform: translateX(-50%) scale(0.95) !important;
+    }
+
+    @keyframes spinOrbIcon {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .notched-fab.spinning svg {
+      animation: spinOrbIcon 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .notched-nav-items {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 66px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 64px 1fr 1fr;
+      align-items: center;
+      padding: 0 2px 10px 2px;
+      z-index: 35;
+    }
+
+    .nav-tab-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5px;
+      min-width: 0;
+      width: 100%;
+      padding: 4px 2px;
+      border-radius: 9999px;
+      color: #8E92A8;
+      transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .nav-tab-btn:hover {
+      color: #FFFFFF;
+    }
+
+    /* Cutout Aperture: Digs through navbar to expose background underneath; NO added white layer */
+    .nav-tab-btn:active,
+    .nav-tab-btn.active {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .nav-tab-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* In light mode: background visible through cutout is light, so active icon & text are dark */
+    body:not(.theme-dark) .nav-tab-btn.active svg,
+    body:not(.theme-dark) .nav-tab-btn:active svg {
+      stroke: #0F172A !important;
+    }
+
+    body:not(.theme-dark) .nav-tab-btn.active .nav-tab-label,
+    body:not(.theme-dark) .nav-tab-btn:active .nav-tab-label {
+      color: #0F172A !important;
+      font-weight: 800 !important;
+    }
+
+    /* In dark mode: background visible through cutout is dark obsidian, so active icon is lavender */
+    body.theme-dark .nav-tab-btn.active svg,
+    body.theme-dark .nav-tab-btn:active svg {
+      stroke: #C4B5FD !important;
+    }
+
+    body.theme-dark .nav-tab-btn.active .nav-tab-label,
+    body.theme-dark .nav-tab-btn:active .nav-tab-label {
+      color: #FFFFFF !important;
+      font-weight: 800 !important;
+    }
+
+    .nav-tab-label {
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.1;
+      margin-top: 1px;
+      letter-spacing: -0.01em;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    /* Home Indicator Bar */
+    .home-indicator {
+      position: absolute;
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 112px;
+      height: 4px;
+      background-color: var(--home-indicator-bg);
+      opacity: var(--home-indicator-opacity);
+      border-radius: 9999px;
+      z-index: 50;
+      pointer-events: none;
+      transition: background-color 0.25s ease, opacity 0.25s ease;
+    }
+
+    /* White Background Adaptive Card & Text Styles */
+    body:not(.theme-dark) .bg-\[\#151722\] {
+      background-color: var(--card-bg) !important;
+      border: 1px solid var(--card-border) !important;
+      box-shadow: var(--card-shadow) !important;
+    }
+    body:not(.theme-dark) .bg-\[\#151722\] .text-white {
+      color: var(--text-main) !important;
+    }
+    body:not(.theme-dark) .bg-\[\#151722\] .text-\[\#8e92a8\] {
+      color: var(--text-muted) !important;
+    }
+    body:not(.theme-dark) .bg-\[\#151722\] .text-\[\#6e7285\] {
+      color: var(--text-secondary) !important;
+    }
+    body:not(.theme-dark) .bg-\[\#151722\] .bg-\[\#201833\] {
+      background-color: var(--pill-bg) !important;
+      color: #6226c9 !important;
+    }
+
+    body:not(.theme-dark) #tab-plan h2,
+    body:not(.theme-dark) #tab-league h1,
+    body:not(.theme-dark) #settingsView h1,
+    body:not(.theme-dark) #settingsView h2,
+    body:not(.theme-dark) #drawerOverlay .text-white {
+      color: var(--text-main) !important;
+    }
+
+    body:not(.theme-dark) #tab-plan p,
+    body:not(.theme-dark) #tab-league p,
+    body:not(.theme-dark) #settingsView .text-\[\#8e92a8\] {
+      color: var(--text-muted) !important;
+    }
+
+    body:not(.theme-dark) #deckDrawerOverlay > div:last-child,
+    body:not(.theme-dark) #drawerOverlay > div:first-child {
+      background-color: var(--drawer-bg) !important;
+      border-color: var(--drawer-border) !important;
+    }
+
+    body:not(.theme-dark) #deckDrawerOverlay h3,
+    body:not(.theme-dark) #drawerOverlay h3 {
+      color: var(--text-main) !important;
+    }
+
+    body:not(.theme-dark) #settingsView {
+      background-color: var(--bg-phone) !important;
+    }
+
+    body:not(.theme-dark) #tab-schedule .bg-\[\#0e1018\] {
+      background-color: var(--card-bg) !important;
+      border-color: var(--card-border) !important;
+    }
+    body:not(.theme-dark) #tab-schedule .text-white {
+      color: var(--text-main) !important;
+    }
+    body:not(.theme-dark) #tab-schedule .text-\[\#8e92a8\] {
+      color: var(--text-muted) !important;
+    }
+  </style>
+</head>
+<body class="theme-dark">
+
+  <!-- MAIN PHONE VIEWPORT CONTAINER -->
+  <div id="phoneViewport" class="phone-viewport">
+
+    <!-- Senthora Purple-Violet Rising Bottom Glow (Entire Background just like in Settings) -->
+    <div class="senthora-bottom-glow"></div>
+
+    <!-- Base Header Art (Hidden: each tab now manages its own header with exact wave alignment) -->
+    <div class="base-header-art hidden" aria-hidden="true">
+      <div class="w-full h-full purple-wave-header relative overflow-hidden">
+        <!-- Internal Deep Indigo S-Curve Wave Overlay -->
+        <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 356 222" preserveAspectRatio="none">
+          <path d="M0,0 L356,0 L356,92 C285,112 235,42 140,26 C65,14 25,38 0,52 Z" fill="#0B0320" fill-opacity="0.52"/>
+        </svg>
+        <!-- Signature Wavy Fill Divider at Header Base -->
+        <svg class="absolute -bottom-[1px] left-0 w-full h-[38px] pointer-events-none z-10" viewBox="0 0 356 38" fill="none" preserveAspectRatio="none">
+          <path d="M0,18 C38,0 78,0 118,18 C158,36 198,36 238,18 C278,0 318,0 356,18 L356,38 L0,38 Z" fill="#DDD6FE" fill-opacity="0.32"/>
+          <path class="wave-bottom-blend" d="M0,23 C38,5 78,5 118,23 C158,41 198,41 238,23 C278,5 318,5 356,23 L356,38 L0,38 Z" fill="#0b0b0e"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ==================== 1. ANDROID STATUS BAR ==================== -->
+    <div id="statusBar" class="w-full h-9 px-5 flex items-center justify-between text-[13px] font-semibold tracking-tight z-30 shrink-0 select-none bg-transparent">
+      <div class="flex items-center gap-1.5">
+        <span id="statusTime">9:41</span>
+        <svg class="w-3.5 h-3.5 opacity-90" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-4H8l4-4 4 4h-3v4z"/>
+        </svg>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5 opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="12" cy="13" r="7"/>
+          <path d="M12 10v3l2 1.5M5 4L2 7M19 4l3 3"/>
+        </svg>
+        <div class="border border-current rounded-[3px] px-1 py-[0.5px] text-[8px] leading-tight font-extrabold tracking-tighter opacity-90">
+          Vo<br>LTE
+        </div>
+        <svg class="w-3.5 h-3.5 opacity-95" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73-1.89 5.5-4 11-4s9.27 2.11 11 4c-1.73-4.39-6-7.5-11-7.5zM12 9.5c-3.5 0-6.58 1.85-8 4.5 1.42-1.2 4.5-2.5 8-2.5s6.58 1.3 8 2.5c-1.42-2.65-4.5-4.5-8-4.5zm0 5c-1.93 0-3.5 1.57-3.5 3.5S10.07 21.5 12 21.5s3.5-1.57 3.5-3.5-1.57-3.5-3.5-3.5z"/>
+        </svg>
+        <div class="flex items-end gap-[1.5px] h-3">
+          <span class="w-[2px] h-1.5 bg-current rounded-sm"></span>
+          <span class="w-[2px] h-2 bg-current rounded-sm"></span>
+          <span class="w-[2px] h-2.5 bg-current rounded-sm"></span>
+          <span class="w-[2px] h-3 bg-current opacity-35 rounded-sm"></span>
+        </div>
+        <div class="flex items-center gap-1 ml-0.5">
+          <div class="w-[10px] h-[13px] border border-current rounded-[2px] relative flex items-center justify-center">
+            <div class="w-1 h-[2px] bg-current absolute -top-[2.5px] rounded-t-sm"></div>
+            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66l4.88-8.34h1l-1 7h3.5c.49 0 .56.33.47.51l-5 8.49z"/>
+            </svg>
+          </div>
+          <span class="text-[12px] font-bold">24%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MAIN APP CONTENT AREA ==================== -->
+    <div class="flex-1 relative overflow-hidden flex flex-col">
+
+      <!-- ==================== OVERLAY 1: FULL STUDY FLOW ==================== -->
+      <div id="flashcardsModal" class="hidden absolute inset-0 z-50 bg-[#0b0c14] flex flex-col justify-between">
+        
+        <!-- Step 1: Active 3D Flashcard Deck View -->
+        <div id="fcDeckStep" class="flex-1 flex flex-col justify-between px-4 pt-2 pb-4">
+          <div class="flex items-center justify-between gap-4 px-1 py-2">
+            <button onclick="closeStudyRunner()" class="w-8 h-8 flex items-center justify-center text-white active:scale-90 transition" title="Close">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+
+            <!-- Duolingo/Knowie Style 3D Purple Progress Bar -->
+            <div class="flex-1 h-[14px] bg-[#252736] rounded-full overflow-hidden relative">
+              <div id="fcProgressBar" class="h-full bg-[#7e57ff] rounded-full transition-all duration-300 relative" style="width: 25%;">
+                <div class="absolute top-[2.5px] left-2 right-2 h-[3.5px] bg-[#9d7eff] rounded-full opacity-80"></div>
+              </div>
+            </div>
+
+            <button onclick="shuffleCurrentDeck()" class="w-8 h-8 flex items-center justify-center text-white opacity-90" title="Shuffle">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Center Interactive 3D Flashcard Stack -->
+          <div class="flex-1 flex items-center justify-center my-3 px-2 relative">
+            <!-- Background Stack Card Preview -->
+            <div id="fcBackStackCard" class="absolute inset-x-2 inset-y-0 rounded-[28px] bg-[#1b0e3e] border-2 border-[#2f1e5e] flex flex-col justify-between p-6 opacity-90 pointer-events-none">
+              <div class="h-4"></div>
+              <div id="fcNextCardText" class="flashcard-question-text text-[21px] text-center text-white px-2">
+                What does time complexity measure?
+              </div>
+              <div class="flex items-center justify-between text-[#8b82a8] text-[14px] font-semibold">
+                <span class="w-6"></span>
+                <span id="fcNextCardIndex">2 of 4</span>
+                <svg class="w-5 h-5 opacity-75" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Foreground Active Card -->
+            <div id="fcActiveContainer" onclick="flipActiveCard()" class="w-full h-full perspective-1000 cursor-pointer relative select-none">
+              <div id="fc3DWrapper" class="flashcard-3d-wrapper">
+                <!-- FRONT FACE -->
+                <div class="flashcard-face">
+                  <div class="h-4"></div>
+                  <div id="fcFrontText" class="flashcard-question-text text-[22px] text-center text-white px-1 select-none">
+                    How does framerate impact animation fluidity?
+                  </div>
+                  <div class="flex items-center justify-between text-[#9d94ba] text-[14.5px] font-semibold">
+                    <span class="w-6"></span>
+                    <span id="fcCardCountBadge">1 of 4</span>
+                    <button onclick="event.stopPropagation(); starActiveCard();" class="text-[#9d94ba] hover:text-white transition" title="Star card">
+                      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- BACK FACE -->
+                <div class="flashcard-face flashcard-back">
+                  <div class="h-4"></div>
+                  <div id="fcBackText" class="flashcard-question-text text-[20px] text-center text-white px-1 select-none leading-relaxed">
+                    Higher framerate (60fps vs 30fps) shortens delta time between frames, creating perceptually continuous motion without jitter.
+                  </div>
+                  <div class="flex items-center justify-between text-[#9d94ba] text-[14.5px] font-semibold">
+                    <span class="w-6"></span>
+                    <span>Verified Answer</span>
+                    <span class="w-6"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Actions: Undo + Red/Green Score Pills -->
+          <div class="h-16 flex items-center justify-between px-4">
+            <button onclick="undoLastCard()" class="w-10 h-10 flex items-center justify-center text-[#d8dbe8] hover:text-white active:scale-90 transition" title="Undo previous card">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 10h11a5 5 0 0 1 0 10H9"/><path d="M7 6L3 10l4 4"/>
+              </svg>
+            </button>
+
+            <!-- Center Score Pills -->
+            <div class="flex items-center gap-3">
+              <!-- Red Pill (Still Learning) -->
+              <button onclick="submitStudyScore('left')" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#381622] border-2 border-[#ff5252] active:scale-95 transition">
+                <svg class="w-4 h-4 text-[#ff5a5a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                  <circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/>
+                </svg>
+                <span id="scoreRed" class="text-[14px] font-bold text-white">0</span>
+              </button>
+
+              <!-- Green Pill (Know) -->
+              <button onclick="submitStudyScore('right')" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#102e22] border-2 border-[#1ed760] active:scale-95 transition">
+                <svg class="w-4 h-4 text-[#1ed760]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                  <circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.2 2.2 4.8-4.8"/>
+                </svg>
+                <span id="scoreGreen" class="text-[14px] font-bold text-white">0</span>
+              </button>
+            </div>
+
+            <div class="w-10"></div>
+          </div>
+        </div>
+
+        <!-- Step 2: Post-Deck Missed Prompt with Peeking Mascot -->
+        <div id="fcMissedStep" class="hidden flex-1 flex flex-col justify-between px-4 pt-2 pb-5 relative overflow-hidden">
+          <div class="flex items-center justify-between gap-4 px-1 py-2">
+            <button onclick="closeStudyRunner()" class="w-8 h-8 flex items-center justify-center text-white">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+            <div class="flex-1 h-[14px] bg-[#252736] rounded-full overflow-hidden relative">
+              <div class="h-full bg-[#7e57ff] rounded-full relative" style="width: 50%;">
+                <div class="absolute top-[2.5px] left-2 right-2 h-[3.5px] bg-[#9d7eff] rounded-full opacity-80"></div>
+              </div>
+            </div>
+            <div class="w-8"></div>
+          </div>
+
+          <div class="flex-1 flex items-center justify-center relative">
+            <div class="flex items-center w-full pl-8 pr-0 relative">
+              <div class="bg-[#232533] text-white px-5 py-4 rounded-[20px] max-w-[215px] text-[15.5px] font-medium leading-snug relative shadow-lg">
+                Let's correct the questions you missed!
+                <div class="w-3.5 h-3.5 bg-[#232533] rotate-45 absolute -right-1.5 top-1/2 -translate-y-1/2"></div>
+              </div>
+
+              <!-- Peeking Mascot -->
+              <div class="absolute -right-4 top-1/2 -translate-y-1/2 peek-right-anim">
+                <img src="./assets/images/mascot.png" alt="StudyUp Mascot" class="w-28 h-28 object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]" />
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2.5">
+            <button onclick="showResultsStep()" class="w-full py-3.5 rounded-full bg-white text-[#0b0c14] font-bold text-[16px] active:scale-[0.98] transition">
+              Continue
+            </button>
+            <button onclick="showResultsStep()" class="w-full py-3.5 rounded-full bg-[#191b26] text-white font-bold text-[16px] active:scale-[0.98] transition">
+              Skip
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Results Screen "It's a start..." -->
+        <div id="fcResultsStep" class="hidden flex-1 flex flex-col justify-between px-4 pt-8 pb-5">
+          <div class="h-4"></div>
+          <div class="flex flex-col items-center">
+            <div class="mascot-rise-anim mb-4 flex justify-center">
+              <img src="./assets/images/mascot_with_hat.png" alt="StudyUp Mascot with Hat" class="w-36 h-36 object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.55)]" />
+            </div>
+
+            <h2 class="text-[28px] font-extrabold text-white tracking-tight mb-1">It's a start...</h2>
+            <p class="text-[14.5px] font-semibold text-[#b4b8c8] text-center mb-8">
+              Every expert was once a beginner. Keep going!
+            </p>
+
+            <!-- Stat Cards Row -->
+            <div class="w-full flex items-center gap-3.5 justify-center px-1">
+              <div class="w-[112px] h-[68px] rounded-[18px] bg-[#0e1b33] border-2 border-[#2b7fff] relative flex items-center justify-center pt-2">
+                <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#2b7fff] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full tracking-wider">
+                  XP
+                </div>
+                <div class="flex items-center gap-1.5 text-white font-extrabold text-[19px]">
+                  <svg class="w-5 h-5 text-[#2b7fff]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                  </svg>
+                  <span>+15</span>
+                </div>
+              </div>
+
+              <div class="w-[112px] h-[68px] rounded-[18px] bg-[#0c291e] border-2 border-[#1ed760] relative flex items-center justify-center">
+                <div class="flex items-center gap-1.5 text-white font-extrabold text-[19px]">
+                  <svg class="w-5 h-5 text-[#1ed760]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M19 5l-7 7"/>
+                  </svg>
+                  <span id="fcAccuracyPercent">100%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button onclick="closeStudyRunner()" class="w-[52px] h-[52px] rounded-full bg-[#191b26] flex items-center justify-center text-white shrink-0 active:scale-95 transition">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+              </svg>
+            </button>
+            <button onclick="showFreezeStep()" class="flex-1 h-[52px] rounded-full bg-white text-[#0b0c14] font-bold text-[16px] active:scale-[0.98] transition">
+              Continue
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 4: Streak Freeze Screen -->
+        <div id="fcFreezeStep" onclick="restartStudySession()" class="hidden flex-1 flex flex-col items-center justify-center px-6 bg-[#59afff] text-[#0c1829] cursor-pointer relative overflow-hidden">
+          <div class="relative z-10 mb-5">
+            <svg class="w-40 h-40" viewBox="0 0 160 160" fill="none">
+              <rect x="34" y="30" width="92" height="92" rx="22" transform="rotate(-6 80 76)" fill="#8ecaff" stroke="white" stroke-width="3"/>
+              <path d="M44 42 L112 35 L104 54 L48 58 Z" fill="white" opacity="0.45"/>
+              <path d="M83 50 C83 50 102 68 96 90 C93 102 82 108 73 105 C62 101 59 88 66 76 C66 76 68 84 74 83 C70 73 75 59 83 50 Z" fill="#3b9eff" stroke="#0d1b2e" stroke-width="4.5" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h2 class="relative z-10 text-[29px] font-extrabold text-[#0c1829] text-center leading-tight mb-2">
+            You earned a<br>streak freeze
+          </h2>
+          <p class="relative z-10 text-[15px] font-medium text-[#162c4a] text-center max-w-[270px] leading-snug">
+            Freezes keep your streak alive if you miss a day
+          </p>
+        </div>
+
+      </div>
+
+      <!-- ==================== OVERLAY 2: DECK SELECTION (NOW PERMANENT IN MY LIBRARY) ==================== -->
+      <!-- Permanent Edge-to-Edge shelf inside My Library (Never closes, no top blur) -->
+
+      <!-- ==================== OVERLAY 3: LEFT SIDE DRAWER ==================== -->
+      <div id="drawerOverlay" class="hidden absolute inset-0 z-50 flex">
+        <div class="w-[82%] h-full bg-[#0b0c14] border-r border-[#1c1e2a] flex flex-col justify-between p-4 z-10 shadow-2xl">
+          <div>
+            <!-- User Profile Row -->
+            <div class="flex items-center justify-between mb-6 pt-1">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full bg-[#171925] flex items-end justify-center overflow-hidden border border-[#25283a]">
+                  <svg class="w-10 h-10" viewBox="0 0 100 100" fill="none">
+                    <path d="M25 25 C20 12 12 25 10 45 C5 68 5 95 10 100 L90 100 C95 95 95 68 90 45 C88 25 80 12 75 25 C60 30 40 30 25 25 Z" fill="#06070b"/>
+                    <ellipse cx="37" cy="65" rx="9" ry="13" fill="white"/>
+                    <ellipse cx="37" cy="66" rx="5.5" ry="8.5" fill="#06070b"/>
+                    <ellipse cx="63" cy="65" rx="9" ry="13" fill="white"/>
+                    <ellipse cx="63" cy="66" rx="5.5" ry="8.5" fill="#06070b"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-[16px] font-bold text-white leading-tight">Lawrence Cortes</div>
+                  <div class="text-[13px] text-[#8e92a8]">@lawrencecortes</div>
+                </div>
+              </div>
+
+              <button onclick="openSettingsView()" class="w-9 h-9 rounded-full flex items-center justify-center text-[#d5d8e6] hover:bg-[#191b26] active:scale-90 transition" title="Settings">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Menu Links -->
+            <div class="space-y-4 mb-5 px-1">
+              <button onclick="closeDrawer(); switchTab('library');" class="flex items-center gap-3.5 text-white font-semibold text-[15.5px] w-full text-left">
+                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>My Library</span>
+              </button>
+              <button onclick="closeDrawer(); switchTab('league');" class="flex items-center gap-3.5 text-white font-semibold text-[15.5px] w-full text-left">
+                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>
+                </svg>
+                <span>Leaderboard</span>
+              </button>
+              <button onclick="closeDrawer(); openApkModal();" class="flex items-center gap-3.5 text-white font-semibold text-[15.5px] w-full text-left">
+                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Download Android APK</span>
+              </button>
+            </div>
+
+            <div class="h-[1px] bg-[#1c1e2a] -mx-4 mb-4"></div>
+
+            <div class="p-4 rounded-[18px] bg-[#151722]">
+              <div class="text-[11px] font-bold text-[#8e92a8] uppercase">Selected Deck</div>
+              <div id="drawerDeckName" class="text-[15.5px] font-bold text-white mt-0.5 truncate">
+                Motion Basics &amp; Loops
+              </div>
+              <div class="text-[12.5px] text-[#8e65f7] mt-0.5">17 cards · Ready offline</div>
+            </div>
+          </div>
+
+          <button onclick="closeDrawer(); launchStudy(currentDeckKey);" class="w-full py-3.5 rounded-full bg-white text-[#0b0c14] font-bold text-[15.5px] flex items-center justify-center gap-2 active:scale-[0.98] transition">
+            <span>Start Review</span>
+            <span>→</span>
+          </button>
+        </div>
+        <div onclick="closeDrawer()" class="flex-1 h-full bg-black/60"></div>
+      </div>
+
+      <!-- ==================== OVERLAY 4: SETTINGS (SENTHORA PURPLE BOTTOM GLOW) ==================== -->
+      <div id="settingsModal" class="hidden absolute inset-0 z-50 bg-[#0b0b0e] flex flex-col relative overflow-hidden">
+        <!-- Senthora Vibrant Purple-Violet-Lavender Rising Glow -->
+        <div class="senthora-bottom-glow"></div>
+
+        <div class="relative z-10 h-14 px-4 flex items-center justify-between shrink-0 bg-transparent border-b border-white/10">
+          <button onclick="closeSettingsView()" class="w-9 h-9 flex items-center justify-center text-white active:scale-90 transition">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+            </svg>
+          </button>
+          <span class="text-[17px] font-bold text-white tracking-tight">Settings</span>
+          <div class="w-9"></div>
+        </div>
+
+        <div class="relative z-10 flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-6 space-y-6">
+          <!-- YOU section (matching Image 1 uploaded by user) -->
+          <div>
+            <div class="text-[11px] font-bold text-purple-300/80 tracking-wider uppercase mb-2 px-1">YOU</div>
+            <div class="space-y-2.5">
+              <div class="p-4 rounded-[18px] bg-[#151722] border border-[#222536] flex items-center justify-between cursor-pointer active:scale-[0.99] transition">
+                <div class="flex items-center gap-3.5">
+                  <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                  <div>
+                    <div class="text-[15.5px] font-bold text-white">Edit profile</div>
+                    <div class="text-[12.5px] text-[#8e92a8]">Name, photo, bio</div>
+                  </div>
+                </div>
+                <svg class="w-5 h-5 text-[#8e92a8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+
+              <div class="p-4 rounded-[18px] bg-[#151722] border border-[#222536] flex items-center justify-between cursor-pointer active:scale-[0.99] transition">
+                <div class="flex items-center gap-3.5">
+                  <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <div>
+                    <div class="text-[15.5px] font-bold text-white">Account settings</div>
+                    <div class="text-[12.5px] text-[#8e92a8]">Year, school, language, privacy</div>
+                  </div>
+                </div>
+                <svg class="w-5 h-5 text-[#8e92a8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- APP section -->
+          <div>
+            <div class="text-[11px] font-bold text-purple-300/80 tracking-wider uppercase mb-2 px-1">APP</div>
+            <div class="space-y-2.5">
+              <div class="p-4 rounded-[18px] bg-[#151722] border border-[#222536] flex items-center justify-between">
+                <div class="flex items-center gap-3.5">
+                  <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="10" x2="4" y2="14"/><line x1="8" y1="7" x2="8" y2="17"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="16" y1="7" x2="16" y2="17"/><line x1="20" y1="10" x2="20" y2="14"/></svg>
+                  <div class="text-[15.5px] font-bold text-white">Haptic feedback</div>
+                </div>
+                <div onclick="this.classList.toggle('off')" class="ios-switch"><div class="ios-switch-thumb"></div></div>
+              </div>
+
+              <div class="p-4 rounded-[18px] bg-[#151722] border border-[#222536] flex items-center justify-between">
+                <div class="flex items-center gap-3.5">
+                  <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                  <div class="text-[15.5px] font-bold text-white">Sound effects</div>
+                </div>
+                <div onclick="this.classList.toggle('off')" class="ios-switch off"><div class="ios-switch-thumb"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STANDALONE APP section -->
+          <div>
+            <div class="text-[11px] font-bold text-purple-300/80 tracking-wider uppercase mb-2 px-1">STANDALONE APP</div>
+            <div onclick="openApkModal()" class="p-4 rounded-[18px] bg-[#151722] border border-[#222536] flex items-center justify-between cursor-pointer active:scale-[0.99] transition">
+              <div class="flex items-center gap-3.5">
+                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <div>
+                  <div class="text-[15.5px] font-bold text-white">Android APK Download</div>
+                  <div class="text-[12.5px] text-[#8e92a8]">Install for full offline usage</div>
+                </div>
+              </div>
+              <svg class="w-5 h-5 text-[#8e92a8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 1: LIBRARY (HICK'S LAW: 1 OBVIOUS ACTION) ==================== -->
+      <div id="tab-library" class="tab-pane flex-1 flex flex-col justify-between overflow-y-auto no-scrollbar pb-3 relative z-10">
+        
+        <div>
+          <!-- Purple Wavy Header Block (Brought down to 245px height) -->
+          <div class="purple-wave-header min-h-[245px] pb-[95px] pt-3 px-5 relative overflow-hidden">
+            <!-- Internal Deep Indigo S-Curve Wave Overlay -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none -z-10" viewBox="0 0 356 250" preserveAspectRatio="none">
+              <path d="M0,0 L356,0 L356,110 C285,135 235,50 140,32 C65,16 25,42 0,60 Z" fill="#0B0320" fill-opacity="0.48"/>
+            </svg>
+
+            <!-- Topbar Row: Menu / Brand / Profile -->
+            <div class="h-10 flex items-center justify-between relative z-20 mb-2 text-white">
+              <button onclick="openDrawer()" class="w-8 h-8 flex items-center justify-center text-white active:scale-90 transition" title="Open Menu">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <line x1="4" y1="6" x2="20" y2="6"/>
+                  <line x1="4" y1="12" x2="16" y2="12"/>
+                  <line x1="4" y1="18" x2="20" y2="18"/>
+                </svg>
+              </button>
+
+              <span class="text-[13px] font-extrabold text-white tracking-widest uppercase">STUDYUP</span>
+
+              <button onclick="openSettingsView()" class="w-8 h-8 rounded-full overflow-hidden border border-white/20 active:scale-90 transition" title="Profile Settings">
+                <img src="./assets/avatars/01.png" class="w-full h-full object-cover" alt="Lawrence" />
+              </button>
+            </div>
+
+            <!-- Header Row: "My Library" Title on Left -->
+            <div class="relative z-20 pt-1 pb-2">
+              <h1 class="font-display text-[27px] font-extrabold text-white tracking-tight leading-tight mb-1">My Library</h1>
+              
+              <!-- Fire Streak transferred directly below My Library (Raw / Unboxed, No wrapper div styling) -->
+              <div class="relative flex items-center justify-start w-fit select-none">
+                <img src="./assets/images/fire-transparent.gif" alt="Fire Streak" class="object-contain drop-shadow-[0_2px_14px_rgba(249,115,22,0.55)]" style="width: 44px; height: 44px;" />
+                <span class="absolute inset-0 flex items-center justify-center pt-2 text-[12px] font-black text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.85)] tracking-tighter">2</span>
+              </div>
+              <span class="text-[12.5px] font-black text-[#FB923C] tracking-wide block drop-shadow-[0_2px_8px_rgba(249,115,22,0.35)]">
+                Day Streak
+              </span>
+            </div>
+
+            <!-- Mascot Peeking over the wave line (3x bigger, exactly half of body submerged) -->
+            <div onclick="launchStudy(currentDeckKey)" class="absolute right-2 -bottom-[58px] w-[180px] h-[180px] z-0 cursor-pointer active:scale-95 transition" title="Start Study with Mascot">
+              <img src="./assets/images/mascot_with_hat.png" alt="StudyUp Mascot" class="w-full h-full object-contain drop-shadow-[0_10px_22px_rgba(0,0,0,0.6)]" />
+            </div>
+
+            <!-- Signature Wavy Fill Divider at Header Base (Rendered at z-10 over the mascot, hiding its lower half) -->
+            <svg class="absolute -bottom-[1px] left-0 w-full h-[40px] pointer-events-none z-10" viewBox="0 0 356 40" fill="none" preserveAspectRatio="none">
+              <path d="M0,19 C38,0 78,0 118,19 C158,38 198,38 238,19 C278,0 318,0 356,19 L356,40 L0,40 Z" fill="#DDD6FE" fill-opacity="0.32"/>
+              <path class="wave-bottom-blend" d="M0,24 C38,5 78,5 118,24 C158,43 198,43 238,24 C278,5 318,5 356,24 L356,40 L0,40 Z" fill="#0b0b0e"/>
+            </svg>
+          </div>
+
+          <!-- Below the Wiggly Line (Pure Black Canvas Area) -->
+          <div class="px-2.5 pt-3">
+            <!-- Active Study Deck: UP NEXT -->
+            <div class="mb-3.5 relative z-20 px-1.5">
+              <span class="block text-[11px] font-extrabold text-[#A78BFA] tracking-wider uppercase mb-1">UP NEXT</span>
+              <h2 id="homeActiveDeckTitle" class="text-[22px] font-extrabold text-white tracking-tight leading-tight mb-2">
+                Motion Basics &amp; Loops
+              </h2>
+
+              <div class="flex items-center justify-between text-[12.5px] font-semibold text-white/80 mb-2">
+                <span id="homeActiveCardCount">17 cards due</span>
+                <span class="text-[#C4B5FD] font-bold">68% mastered</span>
+              </div>
+
+              <div class="w-full h-1.5 rounded-full bg-white/20 overflow-hidden mb-3.5">
+                <div class="h-full rounded-full bg-[#7C3AED]" style="width: 68%;"></div>
+              </div>
+
+              <button onclick="launchStudy(currentDeckKey)" class="w-full py-3.5 rounded-full bg-[#6226c9] hover:bg-[#702fe3] text-white font-extrabold text-[15px] shadow-lg shadow-[#6226c9]/40 active:scale-98 transition flex items-center justify-center">
+                Start review
+              </button>
+            </div>
+
+            <!-- "Choose Deck to Study" Section (Matching Public Feed Cards with Top & Bottom Fade) -->
+            <div id="deckSelectSection" class="w-full mt-1 mb-3 relative z-20">
+              <div class="flex items-center justify-between px-2 mb-1.5">
+                <span class="text-[14px] font-extrabold text-white tracking-tight">Choose Deck to Study</span>
+                <span class="text-[11px] font-bold text-[#A78BFA] tracking-wider uppercase">Tap to Select</span>
+              </div>
+
+              <!-- Scrolling Deck Cards Container with Top and Bottom Gradient Fade -->
+              <div class="cards-fade-scroll-container space-y-3.5 w-full">
+                <!-- Card 1: Motion Basics & Loops (Matching Public Feed syllabus-card) -->
+                <article onclick="selectDeck('motion')" class="syllabus-card gsap-btn w-full">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-1.5 text-[#64748B] text-[12px] font-medium">
+                      <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+                      <span>1.5 hours to review</span>
+                    </div>
+                    <span id="check-motion" class="deck-check text-[11px] font-extrabold text-[#A78BFA] tracking-wide uppercase px-2 py-0.5 rounded-full bg-[#7C3AED]/20">Active Deck ✓</span>
+                  </div>
+                  <h3 class="font-display text-[15px] font-extrabold text-[#0F172A] tracking-tight mb-3">
+                    Motion Basics &amp; Loops
+                  </h3>
+                  <div class="flex items-center justify-between text-[12.5px] text-[#64748B] pr-2">
+                    <span><strong class="font-bold text-[#0F172A]">17</strong> cards due</span>
+                    <span><strong class="font-bold text-[#0F172A]">5</strong> Sheets</span>
+                    <span><strong class="font-bold text-[#0F172A]">68%</strong> mastered</span>
+                  </div>
+                  <div class="progress-stack">
+                    <div class="progress-fill-indigo" style="width: 68%;"></div>
+                    <div class="progress-track-slate"></div>
+                  </div>
+                </article>
+
+                <!-- Card 2: HCI Midterms Heuristics (Matching Public Feed syllabus-card) -->
+                <article onclick="selectDeck('hci')" class="syllabus-card gsap-btn w-full">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-1.5 text-[#64748B] text-[12px] font-medium">
+                      <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+                      <span>2 hours to review</span>
+                    </div>
+                    <span id="check-hci" class="deck-check text-[11px] font-extrabold text-[#A78BFA] tracking-wide uppercase px-2 py-0.5 rounded-full bg-[#7C3AED]/20 hidden">Active Deck ✓</span>
+                  </div>
+                  <h3 class="font-display text-[15px] font-extrabold text-[#0F172A] tracking-tight mb-3">
+                    HCI Midterms Heuristics
+                  </h3>
+                  <div class="flex items-center justify-between text-[12.5px] text-[#64748B] pr-2">
+                    <span><strong class="font-bold text-[#0F172A]">155</strong> cards due</span>
+                    <span><strong class="font-bold text-[#0F172A]">8</strong> Sheets</span>
+                    <span><strong class="font-bold text-[#0F172A]">42%</strong> mastered</span>
+                  </div>
+                  <div class="progress-stack">
+                    <div class="progress-fill-indigo" style="width: 42%;"></div>
+                    <div class="progress-track-slate"></div>
+                  </div>
+                </article>
+
+                <!-- Card 3: Elementary Sciences (Matching Public Feed syllabus-card) -->
+                <article onclick="selectDeck('sciences')" class="syllabus-card gsap-btn w-full">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-1.5 text-[#64748B] text-[12px] font-medium">
+                      <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+                      <span>45 mins to review</span>
+                    </div>
+                    <span id="check-sciences" class="deck-check text-[11px] font-extrabold text-[#A78BFA] tracking-wide uppercase px-2 py-0.5 rounded-full bg-[#7C3AED]/20 hidden">Active Deck ✓</span>
+                  </div>
+                  <h3 class="font-display text-[15px] font-extrabold text-[#0F172A] tracking-tight mb-3">
+                    Elementary Sciences
+                  </h3>
+                  <div class="flex items-center justify-between text-[12.5px] text-[#64748B] pr-2">
+                    <span><strong class="font-bold text-[#0F172A]">24</strong> cards due</span>
+                    <span><strong class="font-bold text-[#0F172A]">4</strong> Sheets</span>
+                    <span><strong class="font-bold text-[#0F172A]">85%</strong> mastered</span>
+                  </div>
+                  <div class="progress-stack">
+                    <div class="progress-fill-indigo" style="width: 85%;"></div>
+                    <div class="progress-track-slate"></div>
+                  </div>
+                </article>
+
+                <!-- Card 4: JavaScript DSA (Matching Public Feed syllabus-card) -->
+                <article onclick="selectDeck('dsa')" class="syllabus-card gsap-btn w-full">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-1.5 text-[#64748B] text-[12px] font-medium">
+                      <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+                      <span>2.5 hours to review</span>
+                    </div>
+                    <span id="check-dsa" class="deck-check text-[11px] font-extrabold text-[#A78BFA] tracking-wide uppercase px-2 py-0.5 rounded-full bg-[#7C3AED]/20 hidden">Active Deck ✓</span>
+                  </div>
+                  <h3 class="font-display text-[15px] font-extrabold text-[#0F172A] tracking-tight mb-3">
+                    JavaScript DSA &amp; Trees
+                  </h3>
+                  <div class="flex items-center justify-between text-[12.5px] text-[#64748B] pr-2">
+                    <span><strong class="font-bold text-[#0F172A]">59</strong> cards due</span>
+                    <span><strong class="font-bold text-[#0F172A]">6</strong> Sheets</span>
+                    <span><strong class="font-bold text-[#0F172A]">25%</strong> mastered</span>
+                  </div>
+                  <div class="progress-stack">
+                    <div class="progress-fill-indigo" style="width: 25%;"></div>
+                    <div class="progress-track-slate"></div>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ==================== TAB 2: STUDY PLAN ==================== -->
+      <div id="tab-plan" class="tab-pane hidden flex-1 flex flex-col justify-between px-4 pt-8 pb-4 relative overflow-hidden">
+        <div class="h-4"></div>
+
+        <div class="flex flex-col items-center z-10">
+          <div class="relative mb-6 flex flex-col items-center">
+            <img src="./assets/images/mascot_with_hat.png" alt="StudyUp Mascot with Hat" class="w-36 h-36 object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.5)]" />
+            <div class="-mt-4 px-6 py-1.5 rounded-full bg-[#ec68c4] border-b-4 border-[#b5378f] text-[#1a0916] font-extrabold text-[20px] tracking-tight shadow-lg">
+              Grade 100
+            </div>
+          </div>
+
+          <h2 class="text-[28px] font-extrabold text-white tracking-tight mb-1">Now it's your turn</h2>
+          <p class="text-[15px] text-[#8e92a8] font-medium text-center">
+            Review 20 cards today to lock in your mastery
+          </p>
+        </div>
+
+        <div class="relative z-10 pt-8">
+          <button onclick="launchStudy(currentDeckKey)" class="w-full py-3.5 rounded-full bg-white text-[#0b0c14] font-bold text-[16px] shadow-lg active:scale-[0.98] transition">
+            Let's go!
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 3: SCHEDULE ==================== -->
+      <div id="tab-schedule" class="tab-pane hidden flex-1 flex flex-col justify-between px-4 pt-2 pb-4 overflow-hidden">
+        <div class="flex-1 flex flex-col items-center justify-center relative mt-1">
+          <div class="-mb-3 z-10">
+            <img src="./assets/images/mascot.png" alt="StudyUp Mascot" class="w-24 h-24 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.4)]" />
+          </div>
+
+          <div class="w-[90%] rounded-t-[34px] bg-[#0e1018] border-[5px] border-b-0 border-[#1e2130] p-3.5 pb-2 shadow-2xl overflow-hidden relative">
+            <div class="text-[13px] font-bold text-white mb-2.5 flex items-center gap-1">
+              <span>November 2026</span>
+              <span class="text-[10px] opacity-70">⌄</span>
+            </div>
+
+            <div class="grid grid-cols-6 gap-1 text-center items-center mb-2 text-[10px] text-[#8e92a8]">
+              <div></div>
+              <div><div>Mon</div><div class="text-white font-bold text-[12px] mt-0.5">2</div></div>
+              <div>
+                <div>Tue</div>
+                <div class="w-5 h-5 rounded-full bg-white text-[#0b0c14] font-extrabold text-[11px] flex items-center justify-center mx-auto mt-0.5">3</div>
+              </div>
+              <div><div>Wed</div><div class="text-white font-bold text-[12px] mt-0.5">4</div></div>
+              <div><div>Thu</div><div class="text-white font-bold text-[12px] mt-0.5">5</div></div>
+              <div><div>Fri</div><div class="text-white font-bold text-[12px] mt-0.5">6</div></div>
+            </div>
+
+            <div class="space-y-1.5 text-[8.5px] font-bold text-[#0b0c14]">
+              <div class="grid grid-cols-6 gap-1 items-center">
+                <div class="text-[#8e92a8] text-[8px] font-medium text-right pr-1">10 am</div>
+                <div class="bg-[#ff7eb6] rounded-[6px] py-1.5 px-1 truncate">Motion</div>
+                <div class="bg-[#6ec8ff] rounded-[6px] py-1.5 px-1 truncate">Python</div>
+                <div class="bg-[#9b7bff] rounded-[6px] py-1.5 px-1 truncate text-white">Loops</div>
+                <div class="bg-[#ff6b6b] rounded-[6px] py-1.5 px-1 truncate">HCI</div>
+                <div class="bg-[#c06eff] rounded-[6px] py-1.5 px-1 truncate">Science</div>
+              </div>
+              <div class="grid grid-cols-6 gap-1 items-center">
+                <div class="text-[#8e92a8] text-[8px] font-medium text-right pr-1">2 pm</div>
+                <div class="bg-[#ff6b6b] rounded-[6px] py-1.5 px-1 truncate">DSA</div>
+                <div class="bg-[#ff9248] rounded-[6px] py-1 px-1 leading-tight">Trees</div>
+                <div class="bg-[#5cd68d] rounded-[6px] py-1.5 px-1 truncate">Big-O</div>
+                <div class="bg-[#ffd147] rounded-[6px] py-1.5 px-1 truncate">Review</div>
+                <div class="bg-[#ff7eb6] rounded-[6px] py-1 px-1 leading-tight">Exam</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-center pt-2">
+          <div class="flex items-center gap-1.5 text-[#9368f7] font-extrabold text-[11.5px] tracking-wider uppercase mb-1">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+            <span>SPACED REPETITION</span>
+          </div>
+          <h2 class="text-[24px] font-extrabold text-white tracking-tight mb-0.5">Study Schedule</h2>
+          <p class="text-[14px] text-[#8e92a8] font-medium mb-3">Planned review times keep retention high</p>
+
+          <button onclick="launchStudy(currentDeckKey)" class="w-full py-3.5 rounded-full bg-white text-[#0b0c14] font-bold text-[15.5px] flex items-center justify-center gap-2 active:scale-[0.98] transition">
+            <span>Start Scheduled Review</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 4: PUBLIC FEED (REUSED FROM KNOWUNITY REFERENCE) ==================== -->
+      <div id="tab-search" class="tab-pane hidden flex-1 flex flex-col overflow-y-auto no-scrollbar pb-4 relative z-10">
+        <div class="purple-wave-header pb-7 relative overflow-hidden">
+          <svg class="absolute inset-0 w-full h-full pointer-events-none -z-10" viewBox="0 0 356 200" preserveAspectRatio="none">
+            <path d="M0,0 L356,0 L356,86 C285,106 235,38 140,24 C65,12 25,34 0,48 Z" fill="#0B0320" fill-opacity="0.48"/>
+          </svg>
+          <div class="relative z-20 flex items-center justify-between px-6 pt-3 pb-1 text-white">
+            <span class="text-[13px] font-bold tracking-tight">9:41</span>
+            <div class="w-16"></div>
+          </div>
+          <div class="relative z-20 px-6 pt-1.5 pb-4">
+            <h1 class="font-display text-white text-[23px] font-extrabold tracking-tight leading-tight">Public Feed</h1>
+            <p class="text-[#C4B5FD] text-[12.5px] font-medium mt-0.5">Peer-verified course syllabi &amp; sheets</p>
+          </div>
+          <svg class="absolute -bottom-[1px] left-0 w-full h-[36px] pointer-events-none z-10" viewBox="0 0 356 36" fill="none" preserveAspectRatio="none">
+            <path d="M0,16 C38,0 78,0 118,16 C158,32 198,32 238,16 C278,0 318,0 356,16 L356,36 L0,36 Z" fill="#DDD6FE" fill-opacity="0.32"/>
+            <path class="wave-bottom-blend" d="M0,21 C38,5 78,5 118,21 C158,37 198,37 238,21 C278,5 318,5 356,21 L356,36 L0,36 Z" fill="#FAFAFE"/>
+          </svg>
+        </div>
+
+        <div class="px-5 pt-2.5 space-y-3.5 relative z-20">
+          <h2 class="font-display text-[17.5px] font-extrabold text-[#0F172A] tracking-tight">Trending Modules</h2>
+
+          <article onclick="launchStudy('motion')" class="syllabus-card gsap-btn">
+            <div class="flex items-center gap-1.5 text-[#64748B] text-[12px] font-medium mb-1.5">
+              <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+              <span>1.5 hours to complete</span>
+            </div>
+            <h3 class="font-display text-[15px] font-extrabold text-[#0F172A] tracking-tight mb-3">
+              Language Concepts — KomPan Q1M1
+            </h3>
+            <div class="flex items-center justify-between text-[12.5px] text-[#64748B] pr-2">
+              <span><strong class="font-bold text-[#0F172A]">2</strong> videos</span>
+              <span><strong class="font-bold text-[#0F172A]">5</strong> Sheets</span>
+              <span><strong class="font-bold text-[#0F172A]">2</strong> Test</span>
+            </div>
+            <div class="progress-stack">
+              <div class="progress-fill-indigo" style="width: 45%;"></div>
+              <div class="progress-track-slate"></div>
+            </div>
+          </article>
+
+          <article onclick="launchStudy('hci')" class="syllabus-card gsap-btn">
+            <div class="flex items-center gap-1.5 text-[#64748B] text-[12px] font-medium mb-1.5">
+              <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+              <span>2 hours to complete</span>
+            </div>
+            <h3 class="font-display text-[15px] font-extrabold text-[#0F172A] tracking-tight mb-3">
+              Discrete Structures — Graph Theory
+            </h3>
+            <div class="flex items-center justify-between text-[12.5px] text-[#64748B] pr-2">
+              <span><strong class="font-bold text-[#0F172A]">4</strong> videos</span>
+              <span><strong class="font-bold text-[#0F172A]">3</strong> Sheets</span>
+              <span><strong class="font-bold text-[#0F172A]">3</strong> Test</span>
+            </div>
+            <div class="progress-stack">
+              <div class="progress-fill-indigo" style="width: 60%;"></div>
+              <div class="progress-track-slate"></div>
+            </div>
+          </article>
+
+          <article onclick="launchStudy('sciences')" class="syllabus-card gsap-btn">
+            <div class="flex items-center gap-1.5 text-[#64748B] text-[12px] font-medium mb-1.5">
+              <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+              <span>3 hours to complete</span>
+            </div>
+            <h3 class="font-display text-[15px] font-extrabold text-[#0F172A] tracking-tight mb-3">
+              Algorithms, Data Structures &amp; Heuristics
+            </h3>
+            <div class="flex items-center justify-between text-[12.5px] text-[#64748B] pr-2">
+              <span><strong class="font-bold text-[#0F172A]">6</strong> videos</span>
+              <span><strong class="font-bold text-[#0F172A]">8</strong> Sheets</span>
+              <span><strong class="font-bold text-[#0F172A]">4</strong> Test</span>
+            </div>
+            <div class="progress-stack">
+              <div class="progress-fill-indigo" style="width: 80%;"></div>
+              <div class="progress-track-slate"></div>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 5: LEAGUE / LEADERBOARD (MATCHING REFERENCE IMAGE) ==================== -->
+      <div id="tab-league" class="tab-pane hidden flex-1 flex flex-col overflow-y-auto no-scrollbar pb-3 relative z-10">
+        <!-- Top Pointed Shield Banner Header (Matching Reference Image) -->
+        <div class="leaderboard-shield-header pt-3 pb-9 px-4 relative overflow-hidden select-none">
+          <!-- Top Bar: Back / Title / Menu -->
+          <div class="h-10 flex items-center justify-between relative z-20 mb-2 text-white">
+            <button onclick="switchTab('library')" class="w-8 h-8 flex items-center justify-center text-white active:scale-90 transition" title="Back to Library">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+
+            <h2 class="text-[18px] font-extrabold text-white tracking-tight">Leader Board</h2>
+
+            <button class="w-8 h-8 flex items-center justify-center text-white active:scale-90 transition" title="Options">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="5" r="2"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+                <circle cx="12" cy="19" r="2"></circle>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Top 3 Podium (John #2, David #1, Merry #3) -->
+          <div class="flex items-end justify-center gap-5 pt-1 pb-1 px-1 relative z-20">
+            <!-- Rank 2: John (Left) -->
+            <div class="flex flex-col items-center">
+              <div class="relative mb-1.5">
+                <div class="w-[66px] h-[66px] rounded-full overflow-hidden border-2 border-white/60 shadow-md">
+                  <img src="./assets/avatars/02.png" alt="John" class="w-full h-full object-cover" />
+                </div>
+                <!-- Rank 2 Badge -->
+                <div class="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white text-black font-extrabold text-[11px] flex items-center justify-center shadow-md">
+                  2
+                </div>
+              </div>
+              <span class="text-[14px] font-extrabold text-white tracking-tight leading-tight">John</span>
+              <span class="text-[11.5px] font-semibold text-white/80 tracking-wide mt-0.5">4235</span>
+            </div>
+
+            <!-- Rank 1: David (Center, Elevated & Larger) -->
+            <div class="flex flex-col items-center -mt-4">
+              <div class="relative mb-1.5">
+                <div class="w-[82px] h-[82px] rounded-full overflow-hidden border-[2.5px] border-white shadow-lg ring-4 ring-white/20">
+                  <img src="./assets/avatars/01.png" alt="David" class="w-full h-full object-cover" />
+                </div>
+                <!-- Rank 1 Badge -->
+                <div class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-white text-black font-extrabold text-[12px] flex items-center justify-center shadow-md">
+                  1
+                </div>
+              </div>
+              <span class="text-[15.5px] font-extrabold text-white tracking-tight leading-tight">David</span>
+              <span class="text-[12px] font-semibold text-white/85 tracking-wide mt-0.5">4578</span>
+            </div>
+
+            <!-- Rank 3: Merry (Right) -->
+            <div class="flex flex-col items-center">
+              <div class="relative mb-1.5">
+                <div class="w-[66px] h-[66px] rounded-full overflow-hidden border-2 border-white/60 shadow-md">
+                  <img src="./assets/avatars/03.png" alt="Merry" class="w-full h-full object-cover" />
+                </div>
+                <!-- Rank 3 Badge -->
+                <div class="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white text-black font-extrabold text-[11px] flex items-center justify-center shadow-md">
+                  3
+                </div>
+              </div>
+              <span class="text-[14px] font-extrabold text-white tracking-tight leading-tight">Merry</span>
+              <span class="text-[11.5px] font-semibold text-white/80 tracking-wide mt-0.5">3967</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ranks 4+ List Container -->
+        <div class="px-4 pt-3 flex-1">
+          <div id="leaderboardList" class="space-y-2.5 pb-3"></div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 5: ANDROID APP (REUSED FROM KNOWUNITY REFERENCE) ==================== -->
+      <div id="tab-android" class="tab-pane hidden flex-1 flex flex-col overflow-y-auto no-scrollbar pb-4 relative z-10">
+        <div class="purple-wave-header pb-7 relative overflow-hidden">
+          <svg class="absolute inset-0 w-full h-full pointer-events-none -z-10" viewBox="0 0 356 200" preserveAspectRatio="none">
+            <path d="M0,0 L356,0 L356,86 C285,106 235,38 140,24 C65,12 25,34 0,48 Z" fill="#0B0320" fill-opacity="0.48"/>
+          </svg>
+          <div class="relative z-20 flex items-center justify-between px-6 pt-3 pb-1 text-white">
+            <span class="text-[13px] font-bold tracking-tight">9:41</span>
+            <div class="w-16"></div>
+          </div>
+          <div class="relative z-20 px-6 pt-1.5 pb-4 flex items-center gap-3.5">
+            <img src="./assets/avatars/01.png" alt="Lawrence Cortes" class="w-12 h-12 rounded-full object-cover border-2 border-white/40 shadow-md"/>
+            <div>
+              <h1 class="font-display text-white text-[19px] font-extrabold tracking-tight">Lawrence Cortes</h1>
+              <p class="text-[#C4B5FD] text-[12px] font-medium">@lawrencecortes • Android Sync Active</p>
+            </div>
+          </div>
+          <svg class="absolute -bottom-[1px] left-0 w-full h-[36px] pointer-events-none z-10" viewBox="0 0 356 36" fill="none" preserveAspectRatio="none">
+            <path d="M0,16 C38,0 78,0 118,16 C158,32 198,32 238,16 C278,0 318,0 356,16 L356,36 L0,36 Z" fill="#DDD6FE" fill-opacity="0.32"/>
+            <path class="wave-bottom-blend" d="M0,21 C38,5 78,5 118,21 C158,37 198,37 238,21 C278,5 318,5 356,21 L356,36 L0,36 Z" fill="#FAFAFE"/>
+          </svg>
+        </div>
+
+        <div class="px-5 pt-2.5 space-y-3.5 relative z-20">
+          <h2 class="font-display text-[17px] font-extrabold text-[#0F172A] tracking-tight">Preferences</h2>
+          <div class="syllabus-card space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[14px] font-bold text-[#0F172A]">Offline Syllabus Cache</span>
+              <span class="text-[12px] font-semibold text-[#64748B]">Enabled</span>
+            </div>
+            <div class="h-[1px] bg-slate-100"></div>
+            <div class="flex items-center justify-between">
+              <span class="text-[14px] font-bold text-[#0F172A]">Haptic Feedback</span>
+              <span class="text-[12px] font-semibold text-[#64748B]">On</span>
+            </div>
+          </div>
+
+          <h2 class="font-display text-[17px] font-extrabold text-[#0F172A] tracking-tight pt-1">Client &amp; Settings</h2>
+          <div class="syllabus-card space-y-3">
+            <div onclick="openApkModal()" class="flex items-center justify-between cursor-pointer">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-[#f5f3ff] text-[#7c3aed] flex items-center justify-center shrink-0">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </div>
+                <div>
+                  <div class="text-[14px] font-bold text-[#0F172A]">Download StudyUp.apk</div>
+                  <div class="text-[11px] text-[#64748B]">Offline package for Android</div>
+                </div>
+              </div>
+              <span class="text-[12px] font-extrabold text-[#6226c9]">Download</span>
+            </div>
+
+            <div class="h-[1px] bg-slate-100"></div>
+
+            <div onclick="openSettingsView()" class="flex items-center justify-between cursor-pointer">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-[#f1ebff] text-[#6226c9] flex items-center justify-center shrink-0">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </div>
+                <div>
+                  <div class="text-[14px] font-bold text-[#0F172A]">Detailed App Settings</div>
+                  <div class="text-[11px] text-[#64748B]">Sound, haptics, theme &amp; account</div>
+                </div>
+              </div>
+              <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 2. WAVY NOTCHED BOTTOM NAVIGATION BAR ==================== -->
+      <div id="bottomAppNav" class="notched-navbar-wrap">
+        <svg class="notched-navbar-svg" viewBox="0 0 356 70" preserveAspectRatio="none" fill="none" aria-hidden="true">
+          <defs>
+            <!-- Cutout Mask: Literally cuts out a hole in the navbar layer, revealing the background underneath -->
+            <mask id="navbarCutoutMask">
+              <rect width="356" height="70" fill="white" />
+              <!-- Black U-shaped pocket cuts through navbar from above, revealing background seamlessly -->
+              <path id="navCutoutHole" d="M 14,-15 L 14,35 A 28,28 0 0,0 70,35 L 70,-15 Z" fill="black" />
+            </mask>
+          </defs>
+
+          <!-- Main Navbar Body with Cutout Mask applied (digs through to background, straight across behind Create) -->
+          <path d="M 0,22 Q 0,0 22,0 L 334,0 Q 356,0 356,22 L 356,70 L 0,70 Z" fill="#14141D" mask="url(#navbarCutoutMask)"></path>
+
+          <!-- Carved U-Pocket Rim Outline (Glowing boundary where layer was cut through) -->
+          <path id="navCutoutRim" d="M 14,0 L 14,35 A 28,28 0 0,0 70,35 L 70,0" fill="none" stroke="rgba(165, 117, 255, 0.45)" stroke-width="1.3" />
+
+          <!-- Top Straight Rim Stroke (Masked so it breaks open cleanly at the U-notch) -->
+          <path d="M 0,22 Q 0,0 22,0 L 334,0 Q 356,0 356,22" stroke="rgba(165, 117, 255, 0.22)" stroke-width="1.2" fill="none" mask="url(#navbarCutoutMask)"></path>
+        </svg>
+
+        <!-- Center Glowing Create Orb (Exact Reference: Gradient fill & 360° spin, NO side movement) -->
+        <button type="button" id="mainCreateFab" onclick="openDeckDrawer()" aria-label="Create new study deck" class="notched-fab" title="Create New Study Set">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path><path d="M12 5v14"></path>
+          </svg>
+          <span class="text-[11px] font-extrabold tracking-tight leading-none mt-0.5">Create</span>
+        </button>
+
+        <div class="notched-nav-items">
+          <button type="button" onclick="switchTab('library')" data-tab="library" class="nav-tab-btn active" aria-current="page" title="My Library">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path>
+              <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            </svg>
+            <span class="nav-tab-label">My Library</span>
+          </button>
+
+          <button type="button" onclick="switchTab('search')" data-tab="search" class="nav-tab-btn" title="Public Feed">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+              <path d="M2 12h20"></path>
+            </svg>
+            <span class="nav-tab-label">Public Feed</span>
+          </button>
+
+          <!-- Center Notch Clearance -->
+          <div class="w-16 shrink-0"></div>
+
+          <button type="button" onclick="switchTab('league')" data-tab="league" class="nav-tab-btn" title="Ranks">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978"></path>
+              <path d="M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978"></path>
+              <path d="M18 9h1.5a1 1 0 0 0 0-5H18"></path>
+              <path d="M4 22h16"></path>
+              <path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"></path>
+              <path d="M6 9H4.5a1 1 0 0 1 0-5H6"></path>
+            </svg>
+            <span class="nav-tab-label">Ranks</span>
+          </button>
+
+          <button type="button" onclick="switchTab('android')" data-tab="android" class="nav-tab-btn" title="Android App • Lawrence">
+            <div class="relative">
+              <img src="./assets/avatars/01.png" alt="Lawrence" class="w-5 h-5 rounded-full object-cover border border-[#9d62f7]" />
+              <span class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#9d62f7] ring-1 ring-[#14141D]"></span>
+            </div>
+            <span class="nav-tab-label">Android App</span>
+          </button>
+        </div>
+
+        <!-- System Home Pill Bar -->
+        <div class="home-indicator"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- APK DOWNLOAD MODAL -->
+  <div id="apkModal" class="hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
+    <div class="w-full max-w-[340px] rounded-[24px] bg-[#151722] p-6 text-center">
+      <div class="w-14 h-14 rounded-full bg-[#1e2030] text-[#8e65f7] flex items-center justify-center mx-auto mb-3">
+        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <h2 class="text-[18px] font-bold text-white">StudyUp for Android</h2>
+      <p class="text-[13px] text-[#8e92a8] mt-1 mb-4">
+        Download the APK release for offline study on your mobile phone or tablet.
+      </p>
+
+      <div class="space-y-2.5">
+        <a href="./assets/StudyUp.apk" download class="block w-full py-3 rounded-full bg-white text-[#0b0c14] font-bold text-[14px]">
+          Download StudyUp.apk
+        </a>
+        <button onclick="closeApkModal()" class="w-full py-2.5 rounded-full bg-[#191b26] text-white text-[13.5px] font-medium">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    const DECKS = {
+      motion: {
+        title: "Motion Basics & Loops",
+        countText: "17 due",
+        cards: [
+          { q: "How does framerate impact animation fluidity?", a: "Higher framerates shorten interval deltas between frames, eliminating perceptual jitter and ensuring continuous motion." },
+          { q: "What does cubic-bezier easing govern?", a: "The rate of acceleration and deceleration over time along a cubic spline curve." },
+          { q: "What is the key purpose of Python for-loops?", a: "Iterating deterministically over elements in a sequence (lists, tuples, ranges) without manual counter index variables." },
+          { q: "How do you achieve 60fps transform animations?", a: "By animating only composite-thread properties: transform (translate, scale, rotate) and opacity." }
+        ]
+      },
+      hci: {
+        title: "HCI Midterms Heuristics",
+        countText: "155 due",
+        cards: [
+          { q: "What is Jakob Nielsen's #1 Heuristic?", a: "Visibility of system status: the design should always keep users informed through timely, relevant feedback." },
+          { q: "What is Fitts's Law in UI interaction?", a: "The time required to rapidly move to a target is a function of the ratio between distance and target width." }
+        ]
+      },
+      sciences: {
+        title: "Elementary Sciences",
+        countText: "24 due",
+        cards: [
+          { q: "What are the stages of butterfly metamorphosis?", a: "Egg, caterpillar (larva), chrysalis (pupa), and adult butterfly (imago)." }
+        ]
+      },
+      dsa: {
+        title: "JavaScript DSA",
+        countText: "59 due",
+        cards: [
+          { q: "What is the average time complexity of Hash Map lookup?", a: "O(1) constant time, assuming an efficient hash function that minimizes collisions." }
+        ]
+      }
+    };
+
+    const LEADERBOARD_DATA = [
+      { rank: 1, name: "David", xp: "4578", avatar: "./assets/avatars/01.png" },
+      { rank: 2, name: "John", xp: "4235", avatar: "./assets/avatars/02.png" },
+      { rank: 3, name: "Merry", xp: "3967", avatar: "./assets/avatars/03.png" },
+      { rank: 4, name: "Devon Lane", xp: "3768", trend: "up", avatar: "./assets/avatars/04.png" },
+      { rank: 5, name: "Ronald", xp: "3578", trend: "down", avatar: "./assets/avatars/05.png" },
+      { rank: 6, name: "Eleanor Pena", xp: "3476", trend: "up", avatar: "./assets/avatars/06.png" },
+      { rank: 7, name: "Rejean Indong", xp: "3120", trend: "up", avatar: "./assets/avatars/07.png" },
+      { rank: 8, name: "Lawrence Cortes", xp: "2950", trend: "up", currentUser: true, avatar: "./assets/avatars/01.png" },
+      { rank: 9, name: "Vince Justine", xp: "2800", trend: "down", avatar: "./assets/avatars/08.png" }
+    ];
+
+    let currentDeckKey = 'motion';
+    let currentCardIndex = 0;
+    let isFlipped = false;
+    let scoreRed = 0;
+    let scoreGreen = 0;
+
+    function renderLeaderboard() {
+      const container = document.getElementById('leaderboardList');
+      if (!container) return;
+      const listItems = LEADERBOARD_DATA.filter(item => item.rank >= 4 || item.divider);
+      container.innerHTML = listItems.map(item => {
+        if (item.divider) {
+          return `
+            <div class="py-2 flex items-center justify-center gap-3 text-[#6c7cff] font-extrabold text-[11.5px] tracking-widest uppercase">
+              <span>⌃⌃</span>
+              <span>PROMOTION ZONE</span>
+              <span>⌃⌃</span>
+            </div>
+          `;
+        }
+
+        const borderClass = item.currentUser ? 'ring-2 ring-[#9333EA] bg-[#1e2130]' : 'bg-[#151722]';
+        const trendEl = item.trend === 'up'
+          ? '<span class="text-[11px] font-black text-[#10B981] ml-1">▲</span>'
+          : '<span class="text-[11px] font-black text-[#EF4444] ml-1">▼</span>';
+
+        return `
+          <div class="p-3 px-3.5 rounded-[16px] ${borderClass} flex items-center justify-between cursor-pointer active:scale-[0.99] transition shadow-sm">
+            <div class="flex items-center gap-3.5 min-w-0">
+              <span class="w-4 text-center text-[14px] font-bold text-[#9ca0b5]">${item.rank}</span>
+              <img src="${item.avatar || './assets/avatars/01.png'}" class="w-9 h-9 rounded-full object-cover shrink-0 border border-white/10" alt="${item.name}" />
+              <span class="text-[14.5px] font-bold text-white truncate">${item.name}</span>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <span class="text-[14px] font-extrabold text-white">${item.xp}</span>
+              ${trendEl}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    let currentNavTab = 'library';
+    let navCutoutState = { left: 0, right: 72 };
+
+    function getUPath(left, right, isHole = false) {
+      const rx = Math.max(1, (right - left) / 2);
+      const ry = 28;
+      const top = isHole ? -15 : 0;
+      const cy = 35;
+      if (isHole) {
+        return `M ${left},${top} L ${left},${cy} A ${rx},${ry} 0 0,0 ${right},${cy} L ${right},${top} Z`;
+      } else {
+        if (left <= 1) {
+          return `M 0,${cy} A ${rx},${ry} 0 0,0 ${right},${cy} L ${right},${top}`;
+        }
+        if (right >= 355) {
+          return `M ${left},${top} L ${left},${cy} A ${rx},${ry} 0 0,0 356,${cy}`;
+        }
+        return `M ${left},${top} L ${left},${cy} A ${rx},${ry} 0 0,0 ${right},${cy} L ${right},${top}`;
+      }
+    }
+
+    function updateNavCutout(tabId) {
+      if (tabId) currentNavTab = tabId;
+      const activeBtn = document.querySelector(`.nav-tab-btn[data-tab="${currentNavTab}"]`);
+      const navWrap = document.getElementById('bottomAppNav');
+      const hole = document.getElementById('navCutoutHole');
+      const rim = document.getElementById('navCutoutRim');
+      if (!activeBtn || !navWrap || !hole) return;
+
+      const btnRect = activeBtn.getBoundingClientRect();
+      const wrapRect = navWrap.getBoundingClientRect();
+      if (!wrapRect.width) return;
+      const scaleX = 356 / wrapRect.width;
+      const cx = (btnRect.left + btnRect.width / 2 - wrapRect.left) * scaleX;
+      let targetLeft = cx - 30;
+      let targetRight = cx + 30;
+
+      if (currentNavTab === 'library') {
+        targetLeft = 0;
+        targetRight = Math.max(70, (btnRect.right - wrapRect.left) * scaleX);
+      } else if (currentNavTab === 'android') {
+        targetLeft = Math.min(356 - 70, (btnRect.left - wrapRect.left) * scaleX);
+        targetRight = 356;
+      }
+
+      if (window.gsap) {
+        gsap.to(navCutoutState, {
+          left: targetLeft,
+          right: targetRight,
+          duration: 0.32,
+          ease: 'power2.out',
+          overwrite: 'auto',
+          onUpdate: () => {
+            hole.setAttribute('d', getUPath(navCutoutState.left, navCutoutState.right, true));
+            if (rim) rim.setAttribute('d', getUPath(navCutoutState.left, navCutoutState.right, false));
+          }
+        });
+      } else {
+        navCutoutState.left = targetLeft;
+        navCutoutState.right = targetRight;
+        hole.setAttribute('d', getUPath(targetLeft, targetRight, true));
+        if (rim) rim.setAttribute('d', getUPath(targetLeft, targetRight, false));
+      }
+    }
+
+    function switchTab(tabId) {
+      closeDeckDrawer();
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      const activePane = document.getElementById(`tab-${tabId}`);
+      if (activePane) {
+        activePane.classList.remove('hidden');
+        if (window.gsap) {
+          gsap.fromTo(
+            activePane.querySelectorAll('.edu-card, h1, h2, #leaderboardList > div'),
+            { opacity: 0, y: 16 },
+            { opacity: 1, y: 0, duration: 0.38, stagger: 0.05, ease: 'power2.out', clearProps: 'transform,opacity' }
+          );
+        }
+      }
+
+      const baseHeader = document.querySelector('.base-header-art');
+      if (baseHeader) {
+        baseHeader.style.display = 'none';
+      }
+
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabId) {
+          btn.classList.add('active');
+          btn.setAttribute('aria-current', 'page');
+        } else {
+          btn.classList.remove('active');
+          btn.removeAttribute('aria-current');
+        }
+      });
+
+      updateNavCutout(tabId);
+
+      if (tabId === 'league') renderLeaderboard();
+    }
+
+    // Decks Bottom Sheet Drawer
+    // Study Deck Selection (Permanently open in Library, never closes, zero top blur)
+    function selectDeck(deckKey) {
+      currentDeckKey = deckKey;
+      const deck = DECKS[deckKey];
+      if (deck) {
+        const titleEl = document.getElementById('homeActiveDeckTitle');
+        const countEl = document.getElementById('homeActiveCardCount');
+        const drawerTitleEl = document.getElementById('drawerDeckName');
+        if (titleEl) titleEl.textContent = deck.title;
+        if (countEl) countEl.textContent = deck.countText;
+        if (drawerTitleEl) drawerTitleEl.textContent = deck.title;
+      }
+      ['motion', 'hci', 'sciences', 'dsa'].forEach(k => {
+        const el = document.getElementById(`check-${k}`);
+        if (el) {
+          if (k === deckKey) el.classList.remove('hidden');
+          else el.classList.add('hidden');
+        }
+      });
+      const clickedCard = document.querySelector(`[onclick*="selectDeck('${deckKey}')"]`);
+      if (clickedCard && window.gsap) {
+        gsap.fromTo(clickedCard, { scale: 0.985 }, { scale: 1, duration: 0.22, ease: 'back.out(2)' });
+      }
+    }
+
+    function selectDeckAndClose(deckKey) {
+      selectDeck(deckKey);
+    }
+
+    function openDeckDrawer() {
+      const section = document.getElementById('deckSelectSection');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function closeDeckDrawer() {
+      // Intentionally kept empty: Deck list never closes
+    }
+
+    function launchStudy(deckKey) {
+      currentDeckKey = deckKey || currentDeckKey || 'motion';
+      currentCardIndex = 0;
+      scoreRed = 0;
+      scoreGreen = 0;
+      document.getElementById('scoreRed').textContent = '0';
+      document.getElementById('scoreGreen').textContent = '0';
+      document.getElementById('flashcardsModal').classList.remove('hidden');
+      document.getElementById('fcDeckStep').classList.remove('hidden');
+      document.getElementById('fcMissedStep').classList.add('hidden');
+      document.getElementById('fcResultsStep').classList.add('hidden');
+      document.getElementById('fcFreezeStep').classList.add('hidden');
+      updateStudyCard();
+    }
+
+    function closeStudyRunner() {
+      document.getElementById('flashcardsModal').classList.add('hidden');
+    }
+
+    function flipActiveCard() {
+      isFlipped = !isFlipped;
+      const wrap = document.getElementById('fc3DWrapper');
+      if (isFlipped) wrap.classList.add('is-flipped');
+      else wrap.classList.remove('is-flipped');
+      if (window.gsap) {
+        gsap.fromTo('#fcFrontText, #fcBackText', { scale: 0.96 }, { scale: 1, duration: 0.28, ease: 'back.out(1.5)' });
+      }
+    }
+
+    function updateStudyCard() {
+      isFlipped = false;
+      document.getElementById('fc3DWrapper').classList.remove('is-flipped');
+      const deck = DECKS[currentDeckKey] || DECKS.motion;
+      const total = deck.cards.length;
+
+      if (currentCardIndex >= total) {
+        showMissedStep();
+        return;
+      }
+
+      const card = deck.cards[currentCardIndex];
+      document.getElementById('fcFrontText').textContent = card.q;
+      document.getElementById('fcBackText').textContent = card.a;
+      document.getElementById('fcCardCountBadge').textContent = `${currentCardIndex + 1} of ${total}`;
+
+      const progress = Math.round(((currentCardIndex + 1) / total) * 100);
+      document.getElementById('fcProgressBar').style.width = `${progress}%`;
+
+      if (currentCardIndex + 1 < total) {
+        document.getElementById('fcNextCardText').textContent = deck.cards[currentCardIndex + 1].q;
+        document.getElementById('fcNextCardIndex').textContent = `${currentCardIndex + 2} of ${total}`;
+      } else {
+        document.getElementById('fcNextCardText').textContent = "Session Complete";
+        document.getElementById('fcNextCardIndex').textContent = "End of deck";
+      }
+
+      if (window.gsap) {
+        gsap.fromTo('#fc3DWrapper',
+          { scale: 0.93, opacity: 0.8, y: 10 },
+          { scale: 1, opacity: 1, y: 0, duration: 0.3, ease: 'power2.out', clearProps: 'transform,opacity' }
+        );
+      }
+    }
+
+    function submitStudyScore(dir) {
+      if (dir === 'left') {
+        scoreRed++;
+        document.getElementById('scoreRed').textContent = scoreRed;
+      } else {
+        scoreGreen++;
+        document.getElementById('scoreGreen').textContent = scoreGreen;
+      }
+      currentCardIndex++;
+      updateStudyCard();
+    }
+
+    function undoLastCard() {
+      if (currentCardIndex > 0) {
+        currentCardIndex--;
+        updateStudyCard();
+      }
+    }
+
+    function showMissedStep() {
+      document.getElementById('fcDeckStep').classList.add('hidden');
+      document.getElementById('fcResultsStep').classList.add('hidden');
+      document.getElementById('fcFreezeStep').classList.add('hidden');
+      document.getElementById('fcMissedStep').classList.remove('hidden');
+    }
+
+    function showResultsStep() {
+      document.getElementById('fcDeckStep').classList.add('hidden');
+      document.getElementById('fcMissedStep').classList.add('hidden');
+      document.getElementById('fcFreezeStep').classList.add('hidden');
+      document.getElementById('fcResultsStep').classList.remove('hidden');
+      const acc = scoreGreen + scoreRed > 0 ? Math.round((scoreGreen / (scoreGreen + scoreRed)) * 100) : 100;
+      document.getElementById('fcAccuracyPercent').textContent = `${acc}%`;
+    }
+
+    function showFreezeStep() {
+      document.getElementById('fcDeckStep').classList.add('hidden');
+      document.getElementById('fcMissedStep').classList.add('hidden');
+      document.getElementById('fcResultsStep').classList.add('hidden');
+      document.getElementById('fcFreezeStep').classList.remove('hidden');
+    }
+
+    function restartStudySession() {
+      launchStudy(currentDeckKey);
+    }
+
+    function shuffleCurrentDeck() {
+      const deck = DECKS[currentDeckKey];
+      if (deck && deck.cards) {
+        deck.cards.sort(() => Math.random() - 0.5);
+        currentCardIndex = 0;
+        updateStudyCard();
+      }
+    }
+
+    function starActiveCard() {
+      alert("Card starred for priority review!");
+    }
+
+    // Drawer & Modals
+    function openDrawer() { document.getElementById('drawerOverlay').classList.remove('hidden'); }
+    function closeDrawer() { document.getElementById('drawerOverlay').classList.add('hidden'); }
+
+    function openSettingsView() {
+      closeDrawer();
+      document.getElementById('settingsModal').classList.remove('hidden');
+    }
+    function closeSettingsView() { document.getElementById('settingsModal').classList.add('hidden'); }
+
+    function openApkModal() { document.getElementById('apkModal').classList.remove('hidden'); }
+    function closeApkModal() { document.getElementById('apkModal').classList.add('hidden'); }
+
+    function handleAndroidBack() {
+      if (!document.getElementById('apkModal').classList.contains('hidden')) {
+        closeApkModal();
+      } else if (!document.getElementById('settingsModal').classList.contains('hidden')) {
+        closeSettingsView();
+      } else if (!document.getElementById('drawerOverlay').classList.contains('hidden')) {
+        closeDrawer();
+      } else if (!document.getElementById('flashcardsModal').classList.contains('hidden')) {
+        closeStudyRunner();
+      } else {
+        switchTab('library');
+      }
+    }
+
+    // ==========================================
+    // GSAP Core Showcase Engine (Matching Reference)
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      renderLeaderboard();
+
+      if (!window.gsap) return;
+
+      // 1. Stagger Entrance for Cards on Page Load
+      gsap.from('.edu-card', {
+        y: 20,
+        opacity: 0,
+        duration: 0.55,
+        stagger: 0.08,
+        ease: 'power3.out',
+        clearProps: 'transform,opacity'
+      });
+
+      // 2. Ambient Breathing & 360° Spin on Center Create FAB (NO sideways movement)
+      const fab = document.querySelector('.notched-fab');
+      if (fab) {
+        gsap.set(fab, { xPercent: -50, left: '50%' });
+        gsap.to(fab, {
+          scale: 1.05,
+          duration: 1.8,
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut'
+        });
+
+        const spinFab = () => {
+          const icon = fab.querySelector('svg');
+          if (icon && !gsap.isTweening(icon)) {
+            gsap.to(icon, {
+              rotation: '+=360_cw',
+              duration: 0.65,
+              ease: 'power2.out'
+            });
+          }
+        };
+        fab.addEventListener('click', spinFab);
+        fab.addEventListener('mouseenter', spinFab);
+      }
+
+      // 3. StudyUp Mascot Idle Floating & Tactile Bounce (From syllabus recreation)
+      const mascot = document.querySelector('#tab-library img[alt*="Mascot"]');
+      if (mascot) {
+        // Idle gentle floating
+        gsap.to(mascot, {
+          y: '+=4',
+          rotation: '+=2.5_short',
+          duration: 2.2,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true
+        });
+
+        const mascotBounce = () => {
+          gsap.fromTo(
+            mascot,
+            { scale: 1 },
+            {
+              keyframes: [
+                { scaleX: 1.12, scaleY: 0.88, y: 7, duration: 0.14, ease: 'power2.out' },
+                { scaleX: 0.94, scaleY: 1.08, y: -4, duration: 0.16, ease: 'power2.inOut' },
+                { scaleX: 1, scaleY: 1, y: 0, duration: 0.5, ease: 'elastic.out(1.2, 0.35)' }
+              ],
+              overwrite: 'auto'
+            }
+          );
+        };
+        mascot.parentElement.addEventListener('click', mascotBounce);
+      }
+
+      // 4. Tactile Squash & Elastic Rebound Button Press
+      document.querySelectorAll('.gsap-btn, button:not(.notched-fab)').forEach(btn => {
+        btn.addEventListener('pointerdown', () => {
+          gsap.to(btn, { scaleX: 1.04, scaleY: 0.93, duration: 0.09, ease: 'power2.out' });
+        });
+        const release = () => {
+          gsap.to(btn, { scaleX: 1, scaleY: 1, duration: 0.38, ease: 'elastic.out(1.2, 0.4)' });
+        };
+        btn.addEventListener('pointerup', release);
+        btn.addEventListener('pointerleave', release);
+      });
+
+      // 5. Initialize Navbar Cutout Aperture & Add Digging Interaction
+      setTimeout(() => updateNavCutout('library'), 60);
+      window.addEventListener('resize', () => updateNavCutout());
+
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        btn.addEventListener('pointerdown', () => {
+          const hole = document.getElementById('navCutoutHole');
+          const rim = document.getElementById('navCutoutRim');
+          if (hole && rim) {
+            hole.setAttribute('d', getUPath(navCutoutState.left, navCutoutState.right, true));
+            rim.setAttribute('d', getUPath(navCutoutState.left, navCutoutState.right, false));
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

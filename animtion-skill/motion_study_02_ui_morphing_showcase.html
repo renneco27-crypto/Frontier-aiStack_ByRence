@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>motion study 02 — made in code</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --spring-easing: cubic-bezier(0.22, 1, 0.36, 1);
+      --morph-duration: 520ms;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      /* Soft warm off-white radial gradient matching the video frames */
+      background: radial-gradient(circle at 50% 48%, #f6f5f1 0%, #efeee9 52%, #e5e3dd 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Subtle ambient vignette & film grain feel */
+    .stage-vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.035) 100%);
+      z-index: 1;
+    }
+
+    /* Center stage wrapper that scales gracefully on small mobile screens */
+    #stage-scaler {
+      position: relative;
+      width: 600px;
+      height: 460px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transform-origin: center center;
+    }
+
+    /* The Core Morphing Surface */
+    #morph-container {
+      position: relative;
+      width: 230px;
+      height: 68px;
+      border-radius: 34px;
+      background-color: #070707;
+      box-shadow: 0 22px 45px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.10);
+      transition:
+        width var(--morph-duration) var(--spring-easing),
+        height var(--morph-duration) var(--spring-easing),
+        border-radius var(--morph-duration) var(--spring-easing),
+        background-color 380ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow var(--morph-duration) var(--spring-easing),
+        transform 240ms var(--spring-easing),
+        filter 220ms ease;
+      overflow: hidden;
+      will-change: width, height, border-radius, background-color, transform, filter;
+    }
+
+    #morph-container.pressed {
+      transform: scale(0.965);
+    }
+
+    #morph-container.motion-blur {
+      filter: url(#svg-motion-blur);
+    }
+
+    /* Individual State Layers inside the Morph Container */
+    .state-layer {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition:
+        opacity 240ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 380ms var(--spring-easing),
+        filter 240ms ease;
+      will-change: opacity, transform, filter;
+    }
+
+    .state-layer.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: blur(0px);
+    }
+
+    .state-layer.exit-blur {
+      opacity: 0;
+      filter: blur(6px);
+      transform: scale(0.95);
+    }
+
+    /* Shared vibrant warm-to-cool mesh gradient for Album Art */
+    .album-gradient {
+      background:
+        radial-gradient(circle at 18% 18%, #ffb84d 0%, transparent 55%),
+        radial-gradient(circle at 25% 65%, #ff6b39 0%, transparent 60%),
+        radial-gradient(circle at 75% 32%, #ff2e93 0%, transparent 62%),
+        radial-gradient(circle at 82% 85%, #6528f7 0%, transparent 65%),
+        linear-gradient(135deg, #ff7b39 0%, #ff2e93 52%, #5b2cf5 100%);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    }
+
+    /* Waveform Bars Animation (State 2) */
+    @keyframes wavePulse1 {
+      0%, 100% { height: 8px; opacity: 0.45; }
+      50% { height: 20px; opacity: 0.9; }
+    }
+    @keyframes wavePulse2 {
+      0%, 100% { height: 22px; opacity: 0.85; }
+      50% { height: 9px; opacity: 0.45; }
+    }
+    @keyframes wavePulse3 {
+      0%, 100% { height: 14px; opacity: 0.65; }
+      50% { height: 24px; opacity: 0.95; }
+    }
+
+    .wave-bar {
+      width: 3.5px;
+      border-radius: 99px;
+      background: #d6d6d8;
+      filter: blur(0.3px);
+    }
+    .wave-bar:nth-child(1) { height: 10px; animation: wavePulse1 0.55s ease-in-out infinite; }
+    .wave-bar:nth-child(2) { height: 22px; animation: wavePulse2 0.48s ease-in-out infinite 0.1s; }
+    .wave-bar:nth-child(3) { height: 15px; animation: wavePulse3 0.52s ease-in-out infinite 0.2s; }
+    .wave-bar:nth-child(4) { height: 9px;  animation: wavePulse1 0.60s ease-in-out infinite 0.15s; }
+    .wave-bar:nth-child(5) { height: 6px;  animation: wavePulse2 0.50s ease-in-out infinite 0.25s; }
+
+    /* Blinking Caret in Command Palette (State 8) */
+    @keyframes caretBlink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+    .caret-line {
+      display: inline-block;
+      width: 1.8px;
+      height: 20px;
+      background-color: #111111;
+      vertical-align: middle;
+      animation: caretBlink 0.9s infinite;
+    }
+
+    /* Simulated macOS-style Pointer Cursor */
+    #sim-cursor {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 28px;
+      height: 28px;
+      pointer-events: none;
+      z-index: 100;
+      will-change: transform;
+      filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.26));
+      transition: opacity 250ms ease;
+    }
+
+    #sim-cursor-inner {
+      width: 100%;
+      height: 100%;
+      transform-origin: 6px 4px;
+      transition: transform 130ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #sim-cursor.clicking #sim-cursor-inner {
+      transform: scale(0.80);
+    }
+
+    /* Click ring pulse feedback */
+    #cursor-ripple {
+      position: absolute;
+      top: -6px;
+      left: -4px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid rgba(120, 120, 120, 0.45);
+      opacity: 0;
+      transform: scale(0.4);
+      pointer-events: none;
+    }
+
+    #sim-cursor.clicking #cursor-ripple {
+      animation: rippleOut 360ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes rippleOut {
+      0% { opacity: 0.75; transform: scale(0.4); }
+      100% { opacity: 0; transform: scale(1.85); }
+    }
+
+    /* Number counter blur during fast counting */
+    .counter-blur {
+      filter: blur(2.2px);
+      transform: translateY(1px);
+    }
+
+    /* Tabular numbers for crisp metrics and timers */
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Custom subtle glass dock at bottom */
+    .control-dock {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    .step-pill {
+      transition: all 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .step-pill.active {
+      background: #070707;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hidden SVG Filters for Horizontal & Directional Motion Blur -->
+  <svg width="0" height="0" class="absolute pointer-events-none">
+    <defs>
+      <filter id="svg-motion-blur" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur id="blur-node" in="SourceGraphic" stdDeviation="2.5 0.6" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Subtle Stage Vignette -->
+  <div class="stage-vignette"></div>
+
+  <!-- Top Minimal Header Badge -->
+  <div class="fixed top-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/60 backdrop-blur-md border border-black/5 shadow-sm text-xs text-neutral-600 font-medium">
+    <span class="w-2 h-2 rounded-full bg-neutral-900 animate-pulse"></span>
+    <span>motion study 02</span>
+    <span class="text-neutral-300">•</span>
+    <span id="state-label-badge" class="text-neutral-900 font-semibold">01 / Generate</span>
+  </div>
+
+  <!-- Main Stage Wrapper -->
+  <div id="stage-scaler">
+
+    <!-- MORPHING UI CONTAINER -->
+    <div id="morph-container" role="region" aria-label="Morphing UI Component">
+
+      <!-- =========================================================
+           STATE 1: "Generate" Pill Button (0:00)
+           ========================================================= -->
+      <div id="layer-state-1" class="state-layer active flex items-center justify-center cursor-pointer" onclick="handleManualGenerateClick()">
+        <span class="text-white text-[22px] font-medium tracking-[-0.025em] select-none">
+          Generate
+        </span>
+      </div>
+
+      <!-- =========================================================
+           STATE 2: Compact Audio Pill (0:01)
+           ========================================================= -->
+      <div id="layer-state-2" class="state-layer flex items-center justify-between px-[10px] cursor-pointer" onclick="handleManualCompactAudioClick()">
+        <!-- Left 44x44 Gradient Rounded Square -->
+        <div class="w-[44px] h-[44px] rounded-[12px] album-gradient shrink-0"></div>
+        <!-- Right Animated Waveform -->
+        <div class="flex items-center gap-[3.5px] pr-[14px] h-[28px]">
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+        </div>
+      </div>
+
+      <!-- =========================================================
+           STATE 3: Expanded Music Player Card (0:02 - 0:03)
+           ========================================================= -->
+      <div id="layer-state-3" class="state-layer flex flex-col justify-between p-[24px]">
+        <!-- Top Row: Album Art + Track Info -->
+        <div class="flex items-center gap-[16px]">
+          <div class="w-[64px] h-[64px] rounded-[14px] album-gradient shrink-0 shadow-md"></div>
+          <div class="flex flex-col justify-center">
+            <div class="text-white text-[16.5px] font-semibold tracking-[-0.02em] leading-tight">
+              motion study 02
+            </div>
+            <div class="text-[#8e8e93] text-[14px] font-normal tracking-[-0.01em] mt-[3px]">
+              made in code
+            </div>
+          </div>
+        </div>
+
+        <!-- Middle Row: Progress Scrubber & Timestamps -->
+        <div class="mt-[18px]">
+          <div id="player-scrubber-track" class="relative w-full h-[5px] bg-[#363638] rounded-full cursor-pointer flex items-center" onmousedown="startManualScrub(event)">
+            <!-- White Progress Fill -->
+            <div id="player-progress-fill" class="h-full bg-white rounded-full" style="width: 26.8%;"></div>
+            <!-- White Draggable Thumb -->
+            <div id="player-progress-thumb" class="w-[15px] h-[15px] rounded-full bg-white shadow-md -ml-[7.5px] transition-transform duration-150" style="transform: scale(0);"></div>
+          </div>
+          <div class="flex justify-between items-center text-[11.5px] font-medium text-[#8e8e93] mt-[7px] tabular-nums tracking-[-0.01em]">
+            <span id="player-time-current">0:48</span>
+            <span id="player-time-remaining">-2:11</span>
+          </div>
+        </div>
+
+        <!-- Bottom Row: Transport Controls -->
+        <div class="flex items-center justify-center gap-[38px] mt-[4px]">
+          <!-- Previous Track (|◀◀) -->
+          <button type="button" class="text-white hover:opacity-80 active:scale-90 transition-all p-1" onclick="handleManualPrevTrack()" title="Previous">
+            <svg width="20" height="16" viewBox="0 0 20 16" fill="currentColor">
+              <rect x="0" y="2" width="2.2" height="12" rx="0.8"/>
+              <path d="M10.5 2.4C10.9 2.1 11.5 2.4 11.5 2.9V13.1C11.5 13.6 10.9 13.9 10.5 13.6L3.2 8.5C2.8 8.2 2.8 7.8 3.2 7.5L10.5 2.4Z"/>
+              <path d="M18.8 2.4C19.2 2.1 19.8 2.4 19.8 2.9V13.1C19.8 13.6 19.2 13.9 18.8 13.6L11.5 8.5C11.1 8.2 11.1 7.8 11.5 7.5L18.8 2.4Z"/>
+            </svg>
+          </button>
+
+          <!-- Play / Pause Button -->
+          <button id="player-play-btn" type="button" class="text-white hover:opacity-90 active:scale-90 transition-all w-[28px] h-[28px] flex items-center justify-center" onclick="toggleManualPlayPause()" title="Play/Pause">
+            <!-- Play Icon (Default at 0:02) -->
+            <svg id="icon-play" width="22" height="22" viewBox="0 0 22 22" fill="currentColor">
+              <path d="M5.5 3.2C4.8 2.8 4 3.3 4 4.1V17.9C4 18.7 4.8 19.2 5.5 18.8L18.2 11.9C18.9 11.5 18.9 10.5 18.2 10.1L5.5 3.2Z"/>
+            </svg>
+            <!-- Pause Icon (Toggled at 0:03) -->
+            <svg id="icon-pause" class="hidden" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <rect x="3.5" y="2.5" width="4.5" height="15" rx="1.2"/>
+              <rect x="12" y="2.5" width="4.5" height="15" rx="1.2"/>
+            </svg>
+          </button>
+
+          <!-- Next Track (▶▶|) -->
+          <button type="button" class="text-white hover:opacity-80 active:scale-90 transition-all p-1" onclick="handleManualNextTrack()" title="Next">
+            <svg width="20" height="16" viewBox="0 0 20 16" fill="currentColor">
+              <path d="M1.2 2.4C0.8 2.1 0.2 2.4 0.2 2.9V13.1C0.2 13.6 0.8 13.9 1.2 13.6L8.5 8.5C8.9 8.2 8.9 7.8 8.5 7.5L1.2 2.4Z"/>
+              <path d="M9.5 2.4C9.1 2.1 8.5 2.4 8.5 2.9V13.1C8.5 13.6 9.1 13.9 9.5 13.6L16.8 8.5C17.2 8.2 17.2 7.8 16.8 7.5L9.5 2.4Z"/>
+              <rect x="17.8" y="2" width="2.2" height="12" rx="0.8"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- =========================================================
+           STATE 4: Volume Slider Pill (0:04)
+           ========================================================= -->
+      <div id="layer-state-4" class="state-layer flex items-center px-[22px] gap-[16px]">
+        <!-- Speaker Icon -->
+        <svg class="text-white shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M11.383 3.076A1 1 0 0 1 12 4v16a1 1 0 0 1-1.707.707L5.586 16H3a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h2.586l4.707-4.707a1 1 0 0 1 1.09-.217z"/>
+          <path d="M15.536 8.464a5 5 0 0 1 0 7.072" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        </svg>
+        <!-- Dark Gray Volume Track -->
+        <div id="volume-track" class="relative flex-1 h-[10px] bg-[#2a2a2c] rounded-full overflow-hidden cursor-pointer" onmousedown="startManualVolumeDrag(event)">
+          <!-- Thick White Pill Fill -->
+          <div id="volume-fill" class="h-full bg-white rounded-full" style="width: 55%;"></div>
+        </div>
+      </div>
+
+      <!-- =========================================================
+           STATE 5: Toggle Switch (0:05)
+           ========================================================= -->
+      <div id="layer-state-5" class="state-layer flex items-center p-[8px] cursor-pointer" onclick="toggleManualSwitch()">
+        <div id="toggle-thumb" class="w-[62px] h-[62px] rounded-full bg-white shadow-md transition-transform duration-500" style="transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1); transform: translateX(98px);"></div>
+      </div>
+
+      <!-- =========================================================
+           STATE 6: Segmented Pill Bar (0:06)
+           ========================================================= -->
+      <div id="layer-state-6" class="state-layer flex items-center justify-between p-[6px]">
+        <!-- Sliding Black Active Indicator -->
+        <div id="seg6-indicator" class="absolute top-[6px] left-[6px] w-[146px] h-[52px] rounded-full bg-[#070707] shadow-lg transition-transform duration-500" style="transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);"></div>
+
+        <button type="button" class="relative z-10 flex-1 h-full flex items-center justify-center text-[17px] font-medium tracking-[-0.02em] transition-colors" id="seg6-day" style="color: #b5b5b5;" onclick="handleManualSeg6Click('Day')">
+          Day
+        </button>
+        <button type="button" class="relative z-10 flex-1 h-full flex items-center justify-center text-[17px] font-medium tracking-[-0.02em] text-neutral-400 transition-colors" id="seg6-week" onclick="handleManualSeg6Click('Week')">
+          Week
+        </button>
+        <button type="button" class="relative z-10 flex-1 h-full flex items-center justify-center text-[17px] font-medium tracking-[-0.02em] text-neutral-400 transition-colors" id="seg6-month" onclick="handleManualSeg6Click('Month')">
+          Month
+        </button>
+      </div>
+
+      <!-- =========================================================
+           STATE 7: Analytics Card (0:07 - 0:09)
+           ========================================================= -->
+      <div id="layer-state-7" class="state-layer flex flex-col pt-[22px] pb-[20px] px-[32px]">
+        <!-- Top Segmented Control ("Day", "Week", "Month") -->
+        <div class="relative mx-auto w-[276px] h-[32px] flex items-center justify-between select-none">
+          <!-- Sliding Black Pill -->
+          <div id="analytics-tab-pill" class="absolute top-0 left-0 w-[86px] h-[32px] rounded-full bg-[#070707] shadow-md transition-transform duration-500" style="transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1); transform: translateX(190px);"></div>
+
+          <button type="button" id="tab-btn-day" class="relative z-10 w-[86px] h-full text-[12.5px] font-medium text-[#4a4a4a] transition-colors" onclick="switchAnalyticsTab('Day')">
+            Day
+          </button>
+          <button type="button" id="tab-btn-week" class="relative z-10 w-[86px] h-full text-[12.5px] font-medium text-[#4a4a4a] transition-colors" onclick="switchAnalyticsTab('Week')">
+            Week
+          </button>
+          <button type="button" id="tab-btn-month" class="relative z-10 w-[86px] h-full text-[12.5px] font-semibold text-white transition-colors" onclick="switchAnalyticsTab('Month')">
+            Month
+          </button>
+        </div>
+
+        <!-- Metric Header -->
+        <div id="analytics-metric-wrap" class="mt-[16px] transition-all duration-200 origin-left">
+          <div id="analytics-number" class="text-[38px] font-bold text-[#070707] tracking-[-0.035em] leading-none tabular-nums">
+            84,320
+          </div>
+          <div id="analytics-subtitle" class="text-[13.5px] font-normal text-[#6e6e73] tracking-[-0.01em] mt-[5px] transition-opacity duration-300">
+            total views
+          </div>
+        </div>
+
+        <!-- Bottom Smooth SVG Bezier Chart -->
+        <div id="analytics-chart-wrap" class="relative w-full h-[112px] mt-[12px] transition-opacity duration-300" onmousemove="handleManualChartHover(event)" onmouseleave="hideChartHover()">
+          <svg class="w-full h-full overflow-visible" viewBox="0 0 356 112">
+            <defs>
+              <linearGradient id="chartAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#070707" stop-opacity="0.10"/>
+                <stop offset="85%" stop-color="#070707" stop-opacity="0.02"/>
+                <stop offset="100%" stop-color="#070707" stop-opacity="0.0"/>
+              </linearGradient>
+            </defs>
+
+            <!-- 4 Subtle Horizontal Grid Lines -->
+            <line x1="0" y1="10"  x2="356" y2="10"  stroke="#ecebe6" stroke-width="1"/>
+            <line x1="0" y1="42"  x2="356" y2="42"  stroke="#ecebe6" stroke-width="1"/>
+            <line x1="0" y1="74"  x2="356" y2="74"  stroke="#ecebe6" stroke-width="1"/>
+            <line x1="0" y1="106" x2="356" y2="106" stroke="#ecebe6" stroke-width="1"/>
+
+            <!-- Dynamic Area Fill under Bezier Curve -->
+            <path id="chart-area-path" fill="url(#chartAreaGrad)" d="" />
+
+            <!-- Dynamic Smooth Bezier Stroke Curve -->
+            <path id="chart-line-path" fill="none" stroke="#070707" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="" />
+
+            <!-- Hover Inspection Group (Vertical Dashed Line + Point + Floating Tooltip) -->
+            <g id="chart-hover-group" class="opacity-0 transition-opacity duration-200 pointer-events-none">
+              <line id="chart-hover-line" x1="305" y1="24" x2="305" y2="106" stroke="#c4c3be" stroke-width="1.2" stroke-dasharray="3 3" />
+              <circle id="chart-hover-dot" cx="305" cy="24" r="4.5" fill="#070707" stroke="#ffffff" stroke-width="2" />
+            </g>
+          </svg>
+
+          <!-- Floating Dark Badge Tooltip ("72,553") -->
+          <div id="chart-tooltip-badge" class="absolute opacity-0 pointer-events-none transition-opacity duration-200 -translate-x-1/2 -translate-y-full bg-[#18181a] text-white text-[12px] font-semibold tabular-nums px-[10px] py-[4.5px] rounded-[8px] shadow-lg" style="left: 305px; top: 14px;">
+            72,553
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================================================
+           STATE 8: Command Palette (0:10 - 0:11)
+           ========================================================= -->
+      <div id="layer-state-8" class="state-layer flex flex-col">
+        <!-- Top Search Input Row -->
+        <div class="h-[58px] px-[22px] flex items-center gap-[12px] border-b border-[#efeee9] shrink-0">
+          <!-- Magnifying Glass Icon -->
+          <svg class="text-[#1c1c1e] shrink-0" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7.5"></circle>
+            <line x1="20" y1="20" x2="16.35" y2="16.35"></line>
+          </svg>
+          <!-- Simulated / Interactive Input Display -->
+          <div class="relative flex-1 flex items-center text-[17px] tracking-[-0.02em] font-normal">
+            <span id="cmd-typed-text" class="text-[#070707]"></span>
+            <span class="caret-line"></span>
+            <span id="cmd-placeholder" class="text-[#b5b4b0] ml-[1px]">Type a command</span>
+          </div>
+        </div>
+
+        <!-- Command Items List -->
+        <div id="cmd-list-container" class="flex flex-col p-[10px] gap-[2px]">
+          <!-- Item 1: New project -->
+          <div id="cmd-item-1" class="cmd-row flex items-center justify-between px-[12px] h-[44px] rounded-[10px] bg-[#f3f2ee] cursor-pointer transition-colors" onclick="triggerCommandSelect('New project')">
+            <div class="flex items-center gap-[12px]">
+              <div class="w-[24px] h-[24px] rounded-[6px] bg-[#eae9e4] flex items-center justify-center text-[#3a3a3c]">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="4" y="4" width="16" height="16" rx="2"/>
+                </svg>
+              </div>
+              <span class="text-[14.5px] font-medium text-[#111111] tracking-[-0.015em]">New project</span>
+            </div>
+            <span class="text-[12.5px] font-medium text-[#9e9d98]">⌘N</span>
+          </div>
+
+          <!-- Item 2: Export video -->
+          <div id="cmd-item-2" class="cmd-row flex items-center justify-between px-[12px] h-[44px] rounded-[10px] hover:bg-[#f3f2ee] cursor-pointer transition-colors" onclick="triggerCommandSelect('Export video')">
+            <div class="flex items-center gap-[12px]">
+              <div class="w-[24px] h-[24px] rounded-[6px] bg-[#f2f1ed] flex items-center justify-center text-[#3a3a3c]">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/>
+                </svg>
+              </div>
+              <span class="text-[14.5px] font-medium text-[#111111] tracking-[-0.015em]">Export video</span>
+            </div>
+            <span class="text-[12.5px] font-medium text-[#9e9d98]">⌘E</span>
+          </div>
+
+          <!-- Item 3: Frame rate · 60fps -->
+          <div id="cmd-item-3" class="cmd-row flex items-center justify-between px-[12px] h-[44px] rounded-[10px] hover:bg-[#f3f2ee] cursor-pointer transition-colors" onclick="triggerCommandSelect('Frame rate · 60fps')">
+            <div class="flex items-center gap-[12px]">
+              <div class="w-[24px] h-[24px] rounded-[6px] bg-[#f2f1ed] flex items-center justify-center text-[#3a3a3c]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="5" width="20" height="14" rx="3"/>
+                  <path d="M8 10v4m4-4v4m4-4v4"/>
+                </svg>
+              </div>
+              <span class="text-[14.5px] font-medium text-[#111111] tracking-[-0.015em]">Frame rate · 60fps</span>
+            </div>
+          </div>
+
+          <!-- Item 4: Motion blur -->
+          <div id="cmd-item-4" class="cmd-row flex items-center justify-between px-[12px] h-[44px] rounded-[10px] hover:bg-[#f3f2ee] cursor-pointer transition-colors" onclick="triggerCommandSelect('Motion blur')">
+            <div class="flex items-center gap-[12px]">
+              <div class="w-[24px] h-[24px] rounded-[6px] bg-[#f2f1ed] flex items-center justify-center text-[#3a3a3c]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <line x1="6" y1="7" x2="18" y2="7"/>
+                  <line x1="3" y1="12" x2="21" y2="12"/>
+                  <line x1="8" y1="17" x2="16" y2="17"/>
+                </svg>
+              </div>
+              <span class="text-[14.5px] font-medium text-[#111111] tracking-[-0.015em]">Motion blur</span>
+            </div>
+          </div>
+
+          <!-- Item 5: Every frame is code -->
+          <div id="cmd-item-5" class="cmd-row flex items-center justify-between px-[12px] h-[44px] rounded-[10px] hover:bg-[#f3f2ee] cursor-pointer transition-colors" onclick="triggerCommandSelect('Every frame is code')">
+            <div class="flex items-center gap-[12px]">
+              <div class="w-[24px] h-[24px] rounded-[6px] bg-[#f2f1ed] flex items-center justify-center text-[#3a3a3c]">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="8 7 3 12 8 17"/>
+                  <polyline points="16 7 21 12 16 17"/>
+                </svg>
+              </div>
+              <span class="text-[14.5px] font-medium text-[#111111] tracking-[-0.015em]">Every frame is code</span>
+            </div>
+            <span id="cmd-item-5-enter" class="text-[13px] font-medium text-[#9e9d98] opacity-0 transition-opacity">↵</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================================================
+           STATE 9: Toast Confirmation Pill (0:12)
+           ========================================================= -->
+      <div id="layer-state-9" class="state-layer flex items-center px-[20px] gap-[12px] cursor-pointer" onclick="jumpToChoreographyTime(0)">
+        <!-- White Circle Checkmark Icon -->
+        <div class="w-[22px] h-[22px] rounded-full bg-white flex items-center justify-center shrink-0">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#070707" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <span id="toast-message-text" class="text-white text-[16.5px] font-medium tracking-[-0.018em] whitespace-nowrap">
+          Every frame is code
+        </span>
+      </div>
+
+    </div><!-- /#morph-container -->
+
+    <!-- SIMULATED ANIMATED CURSOR -->
+    <div id="sim-cursor">
+      <div id="cursor-ripple"></div>
+      <div id="sim-cursor-inner">
+        <svg width="26" height="26" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5.5 3.2L21.8 14.3L14.2 15.8L18.1 23.1L14.9 24.7L11.1 17.3L5.5 21.8V3.2Z" fill="#070707" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+  </div><!-- /#stage-scaler -->
+
+  <!-- =========================================================
+       FLOATING INTERACTIVE CONTROL BAR AT BOTTOM OF VIEWPORT
+       ========================================================= -->
+  <div class="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 control-dock rounded-2xl px-3.5 py-2.5 flex flex-wrap items-center justify-center gap-3 max-w-[95vw]">
+    <!-- Play / Pause Auto-Choreography Button -->
+    <button id="dock-play-btn" type="button" onclick="toggleAutoPlay()" class="w-8 h-8 rounded-xl bg-neutral-900 text-white flex items-center justify-center hover:bg-neutral-800 active:scale-95 transition-all" title="Play/Pause Loop (Space)">
+      <svg id="dock-icon-pause" width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+        <rect x="4" y="3" width="4.2" height="14" rx="1"/>
+        <rect x="11.8" y="3" width="4.2" height="14" rx="1"/>
+      </svg>
+      <svg id="dock-icon-play" class="hidden" width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M5 3.5L16.5 10L5 16.5V3.5Z"/>
+      </svg>
+    </button>
+
+    <!-- Timeline Scrubber & Time Display -->
+    <div class="flex items-center gap-2.5">
+      <span id="dock-time-readout" class="text-[11.5px] font-semibold text-neutral-700 tabular-nums w-[34px]">0:00</span>
+      <input id="dock-timeline-slider" type="range" min="0" max="13" step="0.02" value="0"
+        class="w-28 sm:w-40 h-1.5 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-neutral-900"
+        oninput="handleTimelineScrub(this.value)" />
+      <span class="text-[11.5px] font-medium text-neutral-400 tabular-nums">0:13</span>
+    </div>
+
+    <div class="h-4 w-[1px] bg-neutral-200 hidden sm:block"></div>
+
+    <!-- Direct State Jump Pills (1 - 9) -->
+    <div class="flex items-center gap-1" role="group" aria-label="Jump to State">
+      <button type="button" onclick="jumpToState(1)" class="step-pill active w-6 h-6 rounded-lg text-[11px] font-semibold text-neutral-600 hover:bg-neutral-200/70" data-step="1" title="1. Generate Button (0:00)">1</button>
+      <button type="button" onclick="jumpToState(2)" class="step-pill w-6 h-6 rounded-lg text-[11px] font-semibold text-neutral-600 hover:bg-neutral-200/70" data-step="2" title="2. Compact Audio Pill (0:01)">2</button>
+      <button type="button" onclick="jumpToState(3)" class="step-pill w-6 h-6 rounded-lg text-[11px] font-semibold text-neutral-600 hover:bg-neutral-200/70" data-step="3" title="3. Music Player Card (0:02)">3</button>
+      <button type="button" onclick="jumpToState(4)" class="step-pill w-6 h-6 rounded-lg text-[11px] font-semibold text-neutral-600 hover:bg-neutral-200/70" data-step="4" title="4. Volume Slider Pill (0:04)">4</button>
+      <button type="button" onclick="jumpToState(5)" class="step-pill w-6 h-6 rounded-lg text-[11px] font-semibold text-neutral-600 hover:bg-neutral-200/70" data-step="5" title="5. Toggle Switch (0:05)">5</button>
+      <button type="button" onclick="jumpToState(6)" class="step-pill w-6 h-6 rounded-lg text-[11px] font-semibold text-neutral-600 hover:bg-neutral-200/70" data-step="6" title="6. Segmented Bar (0:06)">6</button>
+      <button type="button" onclick="jumpToState(7)" class="step-pill w-6 h-6 rounded-lg text-[11px] font-semibold text-neutral-600 hover:bg-neutral-200/70" data-step="7" title="7. Analytics Card (0:07)">7</button>
+      <button type="button" onclick="jumpToState(8)" class="step-pill w-6 h-6 rounded-lg text-[11px] font-semibold text-neutral-600 hover:bg-neutral-200/70" data-step="8" title="8. Command Palette (0:10)">8</button>
+      <button type="button" onclick="jumpToState(9)" class="step-pill w-6 h-6 rounded-lg text-[11px] font-semibold text-neutral-600 hover:bg-neutral-200/70" data-step="9" title="9. Toast Confirmation (0:12)">9</button>
+    </div>
+
+    <div class="h-4 w-[1px] bg-neutral-200 hidden sm:block"></div>
+
+    <!-- Auto vs Manual Interactive Mode Button -->
+    <button id="mode-toggle-btn" type="button" onclick="toggleInteractiveMode()" class="px-2.5 py-1 rounded-lg text-[11.5px] font-medium bg-neutral-100 hover:bg-neutral-200/80 text-neutral-700 transition-colors flex items-center gap-1.5">
+      <span id="mode-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+      <span id="mode-label">Auto Loop</span>
+    </button>
+  </div>
+
+  <!-- =========================================================
+       APPLICATION CHOREOGRAPHY & INTERACTION ENGINE
+       ========================================================= -->
+  <script>
+    /**
+     * Responsive Stage Scaling
+     * Ensures the 600x460 stage fits comfortably on any viewport width/height.
+     */
+    function updateStageScale() {
+      const scaler = document.getElementById('stage-scaler');
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const scale = Math.min(1, (vw - 24) / 500, (vh - 140) / 420);
+      scaler.style.transform = `scale(${scale})`;
+    }
+    window.addEventListener('resize', updateStageScale);
+    updateStageScale();
+
+    /**
+     * State Definitions for the Morphing Container
+     * Using pixel border-radius matching half-height on pills so transitions to 28px cards
+     * interpolate immediately and smoothly without delay.
+     */
+    const STATE_CONFIGS = {
+      1: {
+        name: '01 / Generate',
+        width: 230,
+        height: 68,
+        radius: 34,
+        bg: '#070707',
+        shadow: '0 22px 45px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.10)'
+      },
+      2: {
+        name: '02 / Audio Pill',
+        width: 320,
+        height: 64,
+        radius: 32,
+        bg: '#070707',
+        shadow: '0 22px 45px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.10)'
+      },
+      3: {
+        name: '03 / Music Player',
+        width: 360,
+        height: 210,
+        radius: 28,
+        bg: '#070707',
+        shadow: '0 26px 52px rgba(0, 0, 0, 0.25), 0 6px 16px rgba(0, 0, 0, 0.12)'
+      },
+      4: {
+        name: '04 / Volume Slider',
+        width: 360,
+        height: 58,
+        radius: 29,
+        bg: '#070707',
+        shadow: '0 22px 45px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.10)'
+      },
+      5: {
+        name: '05 / Toggle Switch',
+        width: 176,
+        height: 78,
+        radius: 39,
+        bg: '#070707',
+        shadow: '0 22px 45px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.10)'
+      },
+      6: {
+        name: '06 / Segmented Bar',
+        width: 460,
+        height: 64,
+        radius: 32,
+        bg: '#ffffff',
+        shadow: '0 20px 45px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04)'
+      },
+      7: {
+        name: '07 / Analytics Card',
+        width: 420,
+        height: 275,
+        radius: 28,
+        bg: '#ffffff',
+        shadow: '0 24px 50px rgba(0, 0, 0, 0.09), 0 4px 14px rgba(0, 0, 0, 0.04)'
+      },
+      8: {
+        name: '08 / Command Palette',
+        width: 420,
+        height: 306,
+        radius: 26,
+        bg: '#ffffff',
+        shadow: '0 24px 50px rgba(0, 0, 0, 0.09), 0 4px 14px rgba(0, 0, 0, 0.04)'
+      },
+      9: {
+        name: '09 / Toast Pill',
+        width: 340,
+        height: 60,
+        radius: 30,
+        bg: '#070707',
+        shadow: '0 22px 45px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.10)'
+      }
+    };
+
+    /**
+     * Chart Anchor Points for Smooth SVG Path Morphing (State 7)
+     * 9 X-anchors across the 356px chart width.
+     */
+    const CHART_X = [0, 44.5, 89, 133.5, 178, 222.5, 267, 311.5, 356];
+    // Month Y values (ascending wave peaking on the right, matching frame 00:08)
+    const CHART_Y_MONTH = [88, 92, 68, 72, 50, 56, 36, 22, 6];
+    // Week Y values (gentle oscillating mid-wave, matching frame 00:09)
+    const CHART_Y_WEEK  = [55, 62, 46, 56, 32, 50, 34, 18, 24];
+    // Day Y values (for interactive exploration)
+    const CHART_Y_DAY   = [74, 52, 64, 38, 45, 26, 40, 29, 16];
+
+    /**
+     * Builds a smooth cubic bezier SVG path string and area path string from Y coordinates.
+     */
+    function buildSmoothChartPaths(yPoints) {
+      const pts = CHART_X.map((x, i) => ({ x, y: yPoints[i] }));
+      let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[i];
+        const p1 = pts[i + 1];
+        const cpx1 = p0.x + (p1.x - p0.x) * 0.48;
+        const cpy1 = p0.y;
+        const cpx2 = p0.x + (p1.x - p0.x) * 0.52;
+        const cpy2 = p1.y;
+        d += ` C ${cpx1.toFixed(1)} ${cpy1.toFixed(1)}, ${cpx2.toFixed(1)} ${cpy2.toFixed(1)}, ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
+      }
+      const areaD = `${d} L 356 106 L 0 106 Z`;
+      return { lineD: d, areaD };
+    }
+
+    /**
+     * Linearly interpolates between two arrays of Y coordinates and updates the SVG DOM.
+     */
+    function renderInterpolatedChart(yStart, yEnd, t) {
+      const clamped = Math.max(0, Math.min(1, t));
+      // Smooth ease-in-out
+      const ease = clamped < 0.5
+        ? 4 * clamped * clamped * clamped
+        : 1 - Math.pow(-2 * clamped + 2, 3) / 2;
+
+      const currentY = yStart.map((y0, idx) => y0 + (yEnd[idx] - y0) * ease);
+      const { lineD, areaD } = buildSmoothChartPaths(currentY);
+      document.getElementById('chart-line-path').setAttribute('d', lineD);
+      document.getElementById('chart-area-path').setAttribute('d', areaD);
+    }
+
+    // Initialize chart with Month curve
+    renderInterpolatedChart(CHART_Y_MONTH, CHART_Y_MONTH, 1);
+
+    /**
+     * DOM Element References
+     */
+    const morphContainer = document.getElementById('morph-container');
+    const simCursor = document.getElementById('sim-cursor');
+    const stateLabelBadge = document.getElementById('state-label-badge');
+    const dockTimelineSlider = document.getElementById('dock-timeline-slider');
+    const dockTimeReadout = document.getElementById('dock-time-readout');
+
+    // State tracking variables
+    let currentStateId = 1;
+    let isAutoPlaying = true;
+    let isManualMode = false;
+    let timelineSeconds = 0; // 0.00 to 13.00s loop
+    const LOOP_DURATION = 13.0;
+    let lastFrameTimestamp = performance.now();
+    let motionBlurTimeout = null;
+
+    /**
+     * Applies morphing container geometry and switches visible state layer.
+     */
+    function applyMorphState(stateId, customHeight = null) {
+      const cfg = STATE_CONFIGS[stateId];
+      if (!cfg) return;
+
+      if (currentStateId !== stateId) {
+        // Trigger subtle directional SVG motion blur on rapid container morphs
+        morphContainer.classList.add('motion-blur');
+        clearTimeout(motionBlurTimeout);
+        motionBlurTimeout = setTimeout(() => {
+          morphContainer.classList.remove('motion-blur');
+        }, 290);
+
+        // Update active layer
+        for (let i = 1; i <= 9; i++) {
+          const layer = document.getElementById(`layer-state-${i}`);
+          if (i === stateId) {
+            layer.classList.add('active');
+            layer.classList.remove('exit-blur');
+          } else if (i === currentStateId) {
+            layer.classList.remove('active');
+            layer.classList.add('exit-blur');
+          } else {
+            layer.classList.remove('active', 'exit-blur');
+          }
+        }
+
+        // Update dock step pills
+        document.querySelectorAll('.step-pill').forEach(btn => {
+          const step = parseInt(btn.getAttribute('data-step'), 10);
+          btn.classList.toggle('active', step === stateId);
+        });
+
+        stateLabelBadge.textContent = cfg.name;
+        currentStateId = stateId;
+      }
+
+      morphContainer.style.width = `${cfg.width}px`;
+      morphContainer.style.height = `${customHeight !== null ? customHeight : cfg.height}px`;
+      morphContainer.style.borderRadius = `${cfg.radius}px`;
+      morphContainer.style.backgroundColor = cfg.bg;
+      morphContainer.style.boxShadow = cfg.shadow;
+    }
+
+    /**
+     * Helper: Format seconds into M:SS
+     */
+    function formatTrackTime(totalSeconds) {
+      const s = Math.max(0, Math.round(totalSeconds));
+      const mins = Math.floor(s / 60);
+      const secs = s % 60;
+      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    /**
+     * Helper: Updates the Music Player (State 3) progress bar & timestamps
+     * Total track duration = 179 seconds (2:59) -> 0:48 + 2:11 = 2:59, and 2:28 + 0:31 = 2:59!
+     */
+    function updateMusicPlayerProgress(progressRatio, showThumb = false, isPlaying = false) {
+      const totalDuration = 179; // 2:59 total
+      const elapsed = totalDuration * progressRatio;
+      const remaining = totalDuration - elapsed;
+
+      document.getElementById('player-progress-fill').style.width = `${(progressRatio * 100).toFixed(1)}%`;
+      document.getElementById('player-progress-thumb').style.transform = showThumb ? 'scale(1)' : 'scale(0)';
+      document.getElementById('player-time-current').textContent = formatTrackTime(elapsed);
+      document.getElementById('player-time-remaining').textContent = `-${formatTrackTime(remaining)}`;
+
+      const playIcon = document.getElementById('icon-play');
+      const pauseIcon = document.getElementById('icon-pause');
+      if (isPlaying) {
+        playIcon.classList.add('hidden');
+        pauseIcon.classList.remove('hidden');
+      } else {
+        playIcon.classList.remove('hidden');
+        pauseIcon.classList.add('hidden');
+      }
+    }
+
+    /**
+     * Helper: Configure Command Palette (State 8) for unfiltered vs "frame" filtered view
+     */
+    function updateCommandPaletteView(typedStr) {
+      const typedEl = document.getElementById('cmd-typed-text');
+      const placeholderEl = document.getElementById('cmd-placeholder');
+      const item1 = document.getElementById('cmd-item-1');
+      const item2 = document.getElementById('cmd-item-2');
+      const item3 = document.getElementById('cmd-item-3');
+      const item4 = document.getElementById('cmd-item-4');
+      const item5 = document.getElementById('cmd-item-5');
+      const item5Enter = document.getElementById('cmd-item-5-enter');
+
+      typedEl.textContent = typedStr;
+      placeholderEl.style.display = typedStr.length > 0 ? 'none' : 'inline';
+
+      const isFiltered = typedStr.toLowerCase().includes('f');
+      if (!isFiltered) {
+        // Show all 5 items (height: 306px), highlight item 1 ("New project")
+        item1.style.display = 'flex';
+        item2.style.display = 'flex';
+        item3.style.display = 'flex';
+        item4.style.display = 'flex';
+        item5.style.display = 'flex';
+
+        item1.classList.add('bg-[#f3f2ee]');
+        item5.classList.remove('bg-[#f3f2ee]');
+        item5Enter.style.opacity = '0';
+        if (currentStateId === 8) morphContainer.style.height = '306px';
+      } else {
+        // Filtered down to "Frame rate · 60fps" & "Every frame is code" (height: 174px)
+        item1.style.display = 'none';
+        item2.style.display = 'none';
+        item3.style.display = 'flex';
+        item4.style.display = 'none';
+        item5.style.display = 'flex';
+
+        item1.classList.remove('bg-[#f3f2ee]');
+        item5.classList.add('bg-[#f3f2ee]');
+        item5Enter.style.opacity = '1';
+        if (currentStateId === 8) morphContainer.style.height = '174px';
+      }
+    }
+
+    /**
+     * Keyframe Cursor Path & Choreography Evaluator
+     * Center of #stage-scaler is (300, 230).
+     * Cursor coordinates are relative to center (cx, cy).
+     */
+    const CURSOR_KEYFRAMES = [
+      // State 1: Glide onto "Generate" button and click
+      { t: 0.00, x: 75,  y: 65,  click: false },
+      { t: 0.45, x: 38,  y: 22,  click: false },
+      { t: 0.72, x: 38,  y: 22,  click: true  },
+      // State 2: Move down-right while compact audio pill plays waveform, then click
+      { t: 1.15, x: 148, y: 96,  click: false },
+      { t: 1.65, x: 95,  y: 12,  click: false },
+      { t: 1.85, x: 95,  y: 12,  click: true  },
+      // State 3: Move to Play button at bottom center of expanded Music Player (0:02)
+      { t: 2.25, x: 6,   y: 68,  click: false },
+      { t: 2.50, x: 6,   y: 68,  click: true  },
+      // Drag scrubber from 26.8% (x: -72) to 82.5% (x: 88) during 0:02.75 -> 0:03.65
+      { t: 2.80, x: -72, y: 12,  click: false },
+      { t: 2.92, x: -72, y: 12,  click: true  },
+      { t: 3.65, x: 88,  y: 12,  click: true  },
+      { t: 3.88, x: 88,  y: 12,  click: false },
+      // State 4: Volume slider pill (0:04) - drag volume thumb left to ~18% (x: -88)
+      { t: 4.18, x: -25, y: 14,  click: true  },
+      { t: 4.75, x: -88, y: 14,  click: true  },
+      // State 5: Toggle switch (0:05) - click white thumb on right (x: 32, y: 16), slide left
+      { t: 5.20, x: 32,  y: 16,  click: false },
+      { t: 5.50, x: 32,  y: 16,  click: true  },
+      // State 6: Segmented pill bar (0:06) - cursor glides near center/right and clicks "Month"
+      { t: 6.15, x: 6,   y: 18,  click: false },
+      { t: 6.65, x: 138, y: 4,   click: false },
+      { t: 6.82, x: 138, y: 4,   click: true  },
+      // State 7: Analytics card (0:07 - 0:09)
+      // At 0:07, cursor rests bottom-left while counter blurs up 48,304 -> 84,320
+      { t: 7.25, x: -95, y: 52,  click: false },
+      // At 0:08, cursor glides to right peak of chart (x: 126, y: 52) to trigger tooltip "72,553"
+      { t: 7.90, x: 126, y: 52,  click: false },
+      { t: 8.65, x: 126, y: 52,  click: false },
+      // At 0:08.8, moves up to click "Week" tab (x: 0, y: -102), then drops to bottom right (x: 112, y: 112)
+      { t: 8.92, x: 0,   y: -102, click: true },
+      { t: 9.45, x: 112, y: 112, click: false },
+      { t: 9.85, x: 112, y: 112, click: false },
+      // State 8: Command Palette (0:10 - 0:11)
+      // At 0:10, cursor rests near bottom-right of palette (x: 152, y: 98)
+      { t: 10.35, x: 152, y: 98,  click: false },
+      // At 0:11, moves outside bottom-right (x: 215, y: 128) while typing "frame", then clicks "Every frame is code"
+      { t: 11.20, x: 215, y: 128, click: false },
+      { t: 11.72, x: 45,  y: 48,  click: false },
+      { t: 11.88, x: 45,  y: 48,  click: true  },
+      // State 9: Toast confirmation pill (0:12) -> resets smoothly at 0:13
+      { t: 12.40, x: 225, y: 135, click: false },
+      { t: 13.00, x: 75,  y: 65,  click: false }
+    ];
+
+    /**
+     * Evaluates the cursor position and click state at time `t` (0..13s)
+     */
+    function evaluateCursorAtTime(t) {
+      let k0 = CURSOR_KEYFRAMES[0];
+      let k1 = CURSOR_KEYFRAMES[CURSOR_KEYFRAMES.length - 1];
+
+      for (let i = 0; i < CURSOR_KEYFRAMES.length - 1; i++) {
+        if (t >= CURSOR_KEYFRAMES[i].t && t <= CURSOR_KEYFRAMES[i + 1].t) {
+          k0 = CURSOR_KEYFRAMES[i];
+          k1 = CURSOR_KEYFRAMES[i + 1];
+          break;
+        }
+      }
+
+      const span = Math.max(0.0001, k1.t - k0.t);
+      const localT = Math.max(0, Math.min(1, (t - k0.t) / span));
+      // Smooth cubic ease
+      const ease = localT < 0.5
+        ? 4 * localT * localT * localT
+        : 1 - Math.pow(-2 * localT + 2, 3) / 2;
+
+      const cx = 300 + k0.x + (k1.x - k0.x) * ease;
+      const cy = 230 + k0.y + (k1.y - k0.y) * ease;
+
+      simCursor.style.transform = `translate3d(${cx.toFixed(1)}px, ${cy.toFixed(1)}px, 0)`;
+      simCursor.classList.toggle('clicking', Boolean(k0.click));
+    }
+
+    /**
+     * Master Choreography Evaluator for any timestamp `t` in [0, 13.0]
+     */
+    function evaluateChoreography(t) {
+      // Update timeline UI
+      dockTimelineSlider.value = t.toFixed(2);
+      const wholeSecs = Math.min(13, Math.floor(t));
+      dockTimeReadout.textContent = `0:${wholeSecs < 10 ? '0' : ''}${wholeSecs}`;
+
+      // Update simulated cursor
+      evaluateCursorAtTime(t);
+
+      // Subtle press scale when cursor clicks the main pill
+      const isClickingPill = (t >= 0.70 && t <= 0.86) || (t >= 1.82 && t <= 1.96);
+      morphContainer.classList.toggle('pressed', isClickingPill);
+
+      // ===================================================================
+      // 1. STATE 1 (0:00 - 0:00.85): "Generate" Button
+      // ===================================================================
+      if (t < 0.85 || t >= 12.75) {
+        applyMorphState(1);
+      }
+
+      // ===================================================================
+      // 2. STATE 2 (0:00.85 - 0:01.92): Compact Audio Pill
+      // ===================================================================
+      else if (t >= 0.85 && t < 1.92) {
+        applyMorphState(2);
+      }
+
+      // ===================================================================
+      // 3. STATE 3 (0:01.92 - 0:03.92): Expanded Music Player Card
+      // ===================================================================
+      else if (t >= 1.92 && t < 3.92) {
+        applyMorphState(3);
+        const isPlaying = t >= 2.52;
+        const showThumb = t >= 2.82 && t <= 3.85;
+        let progressRatio = 48 / 179; // 0:48 / -2:11
+        if (t > 2.92) {
+          const dragT = Math.min(1, (t - 2.92) / (3.65 - 2.92));
+          const easeDrag = dragT < 0.5 ? 2 * dragT * dragT : 1 - Math.pow(-2 * dragT + 2, 2) / 2;
+          progressRatio = (48 + (148 - 48) * easeDrag) / 179; // drags smoothly to 2:28 / -0:31
+        }
+        updateMusicPlayerProgress(progressRatio, showThumb, isPlaying);
+      }
+
+      // ===================================================================
+      // 4. STATE 4 (0:03.92 - 0:04.92): Volume Slider Pill
+      // ===================================================================
+      else if (t >= 3.92 && t < 4.92) {
+        applyMorphState(4);
+        const dragT = Math.max(0, Math.min(1, (t - 4.05) / 0.65));
+        const ease = 1 - Math.pow(1 - dragT, 3);
+        const volWidth = 52 - (52 - 18) * ease; // Drags down to ~18% as shown in frame 00:04
+        document.getElementById('volume-fill').style.width = `${volWidth.toFixed(1)}%`;
+      }
+
+      // ===================================================================
+      // 5. STATE 5 (0:04.92 - 0:05.92): Toggle Switch
+      // ===================================================================
+      else if (t >= 4.92 && t < 5.92) {
+        applyMorphState(5);
+        const toggleThumb = document.getElementById('toggle-thumb');
+        // Starts on the right (98px), slides left (0px) after click at 5.55s
+        toggleThumb.style.transform = t < 5.58 ? 'translateX(98px)' : 'translateX(0px)';
+      }
+
+      // ===================================================================
+      // 6. STATE 6 (0:05.92 - 0:06.88): Segmented Pill Bar
+      // ===================================================================
+      else if (t >= 5.92 && t < 6.88) {
+        applyMorphState(6);
+        const ind = document.getElementById('seg6-indicator');
+        const dayBtn = document.getElementById('seg6-day');
+        const monthBtn = document.getElementById('seg6-month');
+        if (t < 6.72) {
+          ind.style.transform = 'translateX(0px)';
+          dayBtn.style.color = '#d4d4d4';
+          monthBtn.style.color = '#a3a3a3';
+        } else {
+          ind.style.transform = 'translateX(302px)';
+          dayBtn.style.color = '#737373';
+          monthBtn.style.color = '#ffffff';
+        }
+      }
+
+      // ===================================================================
+      // 7. STATE 7 (0:06.88 - 0:09.92): Analytics Card
+      // ===================================================================
+      else if (t >= 6.88 && t < 9.92) {
+        applyMorphState(7);
+
+        const tabPill = document.getElementById('analytics-tab-pill');
+        const btnDay = document.getElementById('tab-btn-day');
+        const btnWeek = document.getElementById('tab-btn-week');
+        const btnMonth = document.getElementById('tab-btn-month');
+        const numEl = document.getElementById('analytics-number');
+        const subEl = document.getElementById('analytics-subtitle');
+        const chartWrap = document.getElementById('analytics-chart-wrap');
+        const hoverGroup = document.getElementById('chart-hover-group');
+        const tooltipBadge = document.getElementById('chart-tooltip-badge');
+
+        // Sub-phase 7A (6.88 - 7.45): Motion-blurred count-up from 48,304 to 84,320 (matching frame 00:07)
+        if (t < 7.45) {
+          tabPill.style.transform = 'translateX(190px)'; // Month active
+          btnMonth.classList.replace('text-[#4a4a4a]', 'text-white');
+          btnWeek.classList.replace('text-white', 'text-[#4a4a4a]');
+
+          const countProgress = Math.max(0, Math.min(1, (t - 6.92) / 0.48));
+          const val = Math.round(48304 + (84320 - 48304) * countProgress);
+          numEl.textContent = val.toLocaleString('en-US');
+
+          // Motion blur on counter & fade-in of chart
+          if (countProgress < 0.85) {
+            numEl.classList.add('counter-blur');
+            numEl.style.opacity = '0.45';
+            subEl.style.opacity = '0';
+            chartWrap.style.opacity = String((countProgress * 0.6).toFixed(2));
+          } else {
+            numEl.classList.remove('counter-blur');
+            numEl.style.opacity = '1';
+            subEl.style.opacity = '1';
+            chartWrap.style.opacity = '1';
+          }
+          hoverGroup.style.opacity = '0';
+          tooltipBadge.style.opacity = '0';
+          renderInterpolatedChart(CHART_Y_MONTH, CHART_Y_MONTH, 1);
+        }
+        // Sub-phase 7B (7.45 - 8.88): Crisp 84,320 + Hover point "72,553" at 0:08
+        else if (t >= 7.45 && t < 8.88) {
+          tabPill.style.transform = 'translateX(190px)';
+          btnMonth.classList.replace('text-[#4a4a4a]', 'text-white');
+          btnWeek.classList.replace('text-white', 'text-[#4a4a4a]');
+
+          numEl.classList.remove('counter-blur');
+          numEl.style.opacity = '1';
+          numEl.textContent = '84,320';
+          subEl.style.opacity = '1';
+          chartWrap.style.opacity = '1';
+          renderInterpolatedChart(CHART_Y_MONTH, CHART_Y_MONTH, 1);
+
+          // Show hover dot & floating badge "72,553" when cursor hovers the peak (7.80s - 8.75s)
+          const showPeakTooltip = t >= 7.78 && t <= 8.78;
+          hoverGroup.style.opacity = showPeakTooltip ? '1' : '0';
+          tooltipBadge.style.opacity = showPeakTooltip ? '1' : '0';
+          document.getElementById('chart-hover-line').setAttribute('x1', '305');
+          document.getElementById('chart-hover-line').setAttribute('x2', '305');
+          document.getElementById('chart-hover-line').setAttribute('y1', '24');
+          document.getElementById('chart-hover-dot').setAttribute('cx', '305');
+          document.getElementById('chart-hover-dot').setAttribute('cy', '24');
+          tooltipBadge.style.left = '305px';
+          tooltipBadge.style.top = '14px';
+          tooltipBadge.textContent = '72,553';
+        }
+        // Sub-phase 7C (8.88 - 9.92): Switch to "Week" tab -> 19,204 and morph chart wave
+        else {
+          tabPill.style.transform = 'translateX(95px)'; // Week active
+          btnMonth.classList.replace('text-white', 'text-[#4a4a4a]');
+          btnWeek.classList.replace('text-[#4a4a4a]', 'text-white');
+
+          hoverGroup.style.opacity = '0';
+          tooltipBadge.style.opacity = '0';
+
+          const morphT = Math.max(0, Math.min(1, (t - 8.88) / 0.45));
+          const val = Math.round(84320 + (19204 - 84320) * morphT);
+          numEl.textContent = val.toLocaleString('en-US');
+          numEl.classList.toggle('counter-blur', morphT < 0.65);
+          numEl.style.opacity = '1';
+          subEl.style.opacity = '1';
+          chartWrap.style.opacity = '1';
+
+          renderInterpolatedChart(CHART_Y_MONTH, CHART_Y_WEEK, morphT);
+        }
+      }
+
+      // ===================================================================
+      // 8. STATE 8 (0:09.92 - 0:11.92): Command Palette
+      // ===================================================================
+      else if (t >= 9.92 && t < 11.92) {
+        // Typing "frame" between 10.65s and 11.05s
+        const fullWord = 'frame';
+        let typed = '';
+        if (t >= 10.65) {
+          const charCount = Math.min(5, Math.floor(((t - 10.65) / 0.38) * 5) + 1);
+          typed = fullWord.slice(0, charCount);
+        }
+        const customH = typed.length > 0 ? 174 : 306;
+        applyMorphState(8, customH);
+        updateCommandPaletteView(typed);
+      }
+
+      // ===================================================================
+      // 9. STATE 9 (0:11.92 - 0:12.75): Toast Confirmation Pill
+      // ===================================================================
+      else if (t >= 11.92 && t < 12.75) {
+        document.getElementById('toast-message-text').textContent = 'Every frame is code';
+        applyMorphState(9);
+      }
+    }
+
+    /**
+     * Master Animation Loop (requestAnimationFrame)
+     */
+    function tick(now) {
+      const dt = (now - lastFrameTimestamp) / 1000;
+      lastFrameTimestamp = now;
+
+      if (isAutoPlaying && !isManualMode) {
+        timelineSeconds = (timelineSeconds + dt) % LOOP_DURATION;
+        evaluateChoreography(timelineSeconds);
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame((now) => {
+      lastFrameTimestamp = now;
+      evaluateChoreography(0);
+      requestAnimationFrame(tick);
+    });
+
+    /**
+     * ===================================================================
+     * DOCK CONTROLS & MANUAL INTERACTIVE SANDBOX HANDLERS
+     * ===================================================================
+     */
+    const STATE_START_TIMES = {
+      1: 0.20,
+      2: 1.25,
+      3: 2.35,
+      4: 4.55,
+      5: 5.35,
+      6: 6.25,
+      7: 8.15,
+      8: 10.25,
+      9: 12.25
+    };
+
+    function updatePlayPauseButtonsUI() {
+      const pauseIcon = document.getElementById('dock-icon-pause');
+      const playIcon = document.getElementById('dock-icon-play');
+      if (isAutoPlaying && !isManualMode) {
+        pauseIcon.classList.remove('hidden');
+        playIcon.classList.add('hidden');
+      } else {
+        pauseIcon.classList.add('hidden');
+        playIcon.classList.remove('hidden');
+      }
+    }
+
+    function toggleAutoPlay() {
+      if (isManualMode) {
+        toggleInteractiveMode(false);
+        isAutoPlaying = true;
+      } else {
+        isAutoPlaying = !isAutoPlaying;
+      }
+      updatePlayPauseButtonsUI();
+    }
+
+    function handleTimelineScrub(val) {
+      isAutoPlaying = false;
+      if (isManualMode) toggleInteractiveMode(false);
+      timelineSeconds = parseFloat(val);
+      evaluateChoreography(timelineSeconds);
+      updatePlayPauseButtonsUI();
+    }
+
+    function jumpToState(stateNum) {
+      const targetTime = STATE_START_TIMES[stateNum] ?? 0;
+      timelineSeconds = targetTime;
+      evaluateChoreography(timelineSeconds);
+    }
+
+    function jumpToChoreographyTime(targetTime) {
+      timelineSeconds = targetTime;
+      evaluateChoreography(timelineSeconds);
+    }
+
+    function toggleInteractiveMode(forceState) {
+      isManualMode = typeof forceState === 'boolean' ? forceState : !isManualMode;
+      const modeDot = document.getElementById('mode-dot');
+      const modeLabel = document.getElementById('mode-label');
+
+      if (isManualMode) {
+        isAutoPlaying = false;
+        simCursor.style.opacity = '0';
+        modeDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500';
+        modeLabel.textContent = 'Interactive Mode';
+        // Make sure analytics card or current state is clean and interactive
+        document.getElementById('analytics-number').classList.remove('counter-blur');
+        document.getElementById('analytics-number').style.opacity = '1';
+        document.getElementById('analytics-subtitle').style.opacity = '1';
+        document.getElementById('analytics-chart-wrap').style.opacity = '1';
+      } else {
+        simCursor.style.opacity = '1';
+        isAutoPlaying = true;
+        modeDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+        modeLabel.textContent = 'Auto Loop';
+      }
+      updatePlayPauseButtonsUI();
+    }
+
+    // Manual State 1 -> State 2
+    function handleManualGenerateClick() {
+      if (!isManualMode) toggleInteractiveMode(true);
+      applyMorphState(2);
+    }
+
+    // Manual State 2 -> State 3
+    function handleManualCompactAudioClick() {
+      if (!isManualMode) toggleInteractiveMode(true);
+      applyMorphState(3);
+      updateMusicPlayerProgress(48 / 179, true, true);
+    }
+
+    // Manual State 3 Play/Pause & Scrubber
+    let manualIsPlaying = true;
+    let manualProgress = 48 / 179;
+
+    function toggleManualPlayPause() {
+      if (!isManualMode) toggleInteractiveMode(true);
+      manualIsPlaying = !manualIsPlaying;
+      updateMusicPlayerProgress(manualProgress, true, manualIsPlaying);
+    }
+
+    function handleManualPrevTrack() {
+      if (!isManualMode) toggleInteractiveMode(true);
+      manualProgress = 0;
+      updateMusicPlayerProgress(manualProgress, true, manualIsPlaying);
+    }
+
+    function handleManualNextTrack() {
+      if (!isManualMode) toggleInteractiveMode(true);
+      applyMorphState(4);
+    }
+
+    function startManualScrub(e) {
+      if (!isManualMode) toggleInteractiveMode(true);
+      const track = document.getElementById('player-scrubber-track');
+      const updateFromEvent = (ev) => {
+        const rect = track.getBoundingClientRect();
+        const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+        manualProgress = ratio;
+        updateMusicPlayerProgress(manualProgress, true, manualIsPlaying);
+      };
+      updateFromEvent(e);
+      const onMove = (ev) => updateFromEvent(ev);
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    }
+
+    // Manual State 4 Volume Drag
+    function startManualVolumeDrag(e) {
+      if (!isManualMode) toggleInteractiveMode(true);
+      const track = document.getElementById('volume-track');
+      const updateVol = (ev) => {
+        const rect = track.getBoundingClientRect();
+        const pct = Math.max(12, Math.min(100, ((ev.clientX - rect.left) / rect.width) * 100));
+        document.getElementById('volume-fill').style.width = `${pct.toFixed(1)}%`;
+      };
+      updateVol(e);
+      const onMove = (ev) => updateVol(ev);
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    }
+
+    // Manual State 5 Toggle Switch
+    let manualToggleRight = false;
+    function toggleManualSwitch() {
+      if (!isManualMode) toggleInteractiveMode(true);
+      manualToggleRight = !manualToggleRight;
+      document.getElementById('toggle-thumb').style.transform = manualToggleRight
+        ? 'translateX(98px)'
+        : 'translateX(0px)';
+    }
+
+    // Manual State 6 Segmented Bar -> State 7 Analytics Card
+    function handleManualSeg6Click(period) {
+      if (!isManualMode) toggleInteractiveMode(true);
+      applyMorphState(7);
+      switchAnalyticsTab(period);
+    }
+
+    // Manual State 7 Analytics Tab Switching & Chart Hover
+    let currentAnalyticsCurve = CHART_Y_MONTH;
+    function switchAnalyticsTab(period) {
+      if (!isManualMode) toggleInteractiveMode(true);
+      const tabPill = document.getElementById('analytics-tab-pill');
+      const btnDay = document.getElementById('tab-btn-day');
+      const btnWeek = document.getElementById('tab-btn-week');
+      const btnMonth = document.getElementById('tab-btn-month');
+      const numEl = document.getElementById('analytics-number');
+
+      btnDay.className = 'relative z-10 w-[86px] h-full text-[12.5px] font-medium text-[#4a4a4a] transition-colors';
+      btnWeek.className = 'relative z-10 w-[86px] h-full text-[12.5px] font-medium text-[#4a4a4a] transition-colors';
+      btnMonth.className = 'relative z-10 w-[86px] h-full text-[12.5px] font-medium text-[#4a4a4a] transition-colors';
+
+      let targetCurve = CHART_Y_MONTH;
+      if (period === 'Day') {
+        tabPill.style.transform = 'translateX(0px)';
+        btnDay.classList.replace('text-[#4a4a4a]', 'text-white');
+        numEl.textContent = '4,892';
+        targetCurve = CHART_Y_DAY;
+      } else if (period === 'Week') {
+        tabPill.style.transform = 'translateX(95px)';
+        btnWeek.classList.replace('text-[#4a4a4a]', 'text-white');
+        numEl.textContent = '19,204';
+        targetCurve = CHART_Y_WEEK;
+      } else {
+        tabPill.style.transform = 'translateX(190px)';
+        btnMonth.classList.replace('text-[#4a4a4a]', 'text-white');
+        numEl.textContent = '84,320';
+        targetCurve = CHART_Y_MONTH;
+      }
+
+      const startCurve = [...currentAnalyticsCurve];
+      currentAnalyticsCurve = targetCurve;
+      let startTs = performance.now();
+      function animCurve(now) {
+        const p = Math.min(1, (now - startTs) / 380);
+        renderInterpolatedChart(startCurve, targetCurve, p);
+        if (p < 1) requestAnimationFrame(animCurve);
+      }
+      requestAnimationFrame(animCurve);
+    }
+
+    function handleManualChartHover(e) {
+      if (!isManualMode) return;
+      const wrap = document.getElementById('analytics-chart-wrap');
+      const rect = wrap.getBoundingClientRect();
+      const relX = Math.max(16, Math.min(340, ((e.clientX - rect.left) / rect.width) * 356));
+
+      // Approximate Y on current curve
+      const segIdx = Math.min(CHART_X.length - 2, Math.floor((relX / 356) * (CHART_X.length - 1)));
+      const x0 = CHART_X[segIdx];
+      const x1 = CHART_X[segIdx + 1];
+      const localT = (relX - x0) / (x1 - x0);
+      const yVal = currentAnalyticsCurve[segIdx] + (currentAnalyticsCurve[segIdx + 1] - currentAnalyticsCurve[segIdx]) * localT;
+
+      const hoverGroup = document.getElementById('chart-hover-group');
+      const tooltipBadge = document.getElementById('chart-tooltip-badge');
+      hoverGroup.style.opacity = '1';
+      tooltipBadge.style.opacity = '1';
+
+      document.getElementById('chart-hover-line').setAttribute('x1', relX.toFixed(1));
+      document.getElementById('chart-hover-line').setAttribute('x2', relX.toFixed(1));
+      document.getElementById('chart-hover-line').setAttribute('y1', yVal.toFixed(1));
+      document.getElementById('chart-hover-dot').setAttribute('cx', relX.toFixed(1));
+      document.getElementById('chart-hover-dot').setAttribute('cy', yVal.toFixed(1));
+
+      tooltipBadge.style.left = `${relX.toFixed(1)}px`;
+      tooltipBadge.style.top = `${Math.max(10, yVal - 10).toFixed(1)}px`;
+      const metricEstimate = Math.round((1 - yVal / 110) * 82000);
+      tooltipBadge.textContent = metricEstimate.toLocaleString('en-US');
+    }
+
+    function hideChartHover() {
+      if (!isManualMode) return;
+      document.getElementById('chart-hover-group').style.opacity = '0';
+      document.getElementById('chart-tooltip-badge').style.opacity = '0';
+    }
+
+    // Manual State 8 Command Palette Selection & Keyboard Typing
+    function triggerCommandSelect(commandTitle) {
+      if (!isManualMode) toggleInteractiveMode(true);
+      document.getElementById('toast-message-text').textContent = commandTitle;
+      applyMorphState(9);
+    }
+
+    let manualTypedCommand = '';
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && currentStateId !== 8) {
+        e.preventDefault();
+        toggleAutoPlay();
+        return;
+      }
+      if (currentStateId === 8) {
+        if (!isManualMode) toggleInteractiveMode(true);
+        if (e.key === 'Backspace') {
+          manualTypedCommand = manualTypedCommand.slice(0, -1);
+          updateCommandPaletteView(manualTypedCommand);
+        } else if (e.key === 'Enter') {
+          triggerCommandSelect('Every frame is code');
+        } else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+          manualTypedCommand = (manualTypedCommand + e.key).slice(0, 16);
+          updateCommandPaletteView(manualTypedCommand);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

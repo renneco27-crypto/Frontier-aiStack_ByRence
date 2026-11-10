@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyUp | Delete My Data</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body, html {
+            width: 100%; min-height: 100%;
+            background-color: #050505;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        /* Navbar */
+        .swiss-nav {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 60px; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 2.5rem;
+            background: rgba(5,5,5,.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .nav-logo {
+            font-family: "Courier New", monospace;
+            font-size: .95rem; font-weight: 700; letter-spacing: 2px;
+            color: #fff; text-decoration: none;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .nav-logo .tag { color: #e63946; font-weight: 400; font-size: .8rem; }
+        .nav-links { display: flex; align-items: center; gap: 1.6rem; list-style: none; }
+        .nav-links a {
+            font-size: .8rem; text-transform: uppercase; letter-spacing: 1.5px;
+            color: #888; text-decoration: none; transition: color .2s;
+        }
+        .nav-links a:hover { color: #fff; }
+        .nav-links a.current { color: #fff; }
+        .btn-cta {
+            font-family: "Courier New", monospace;
+            font-size: .78rem; letter-spacing: 1.5px; text-transform: uppercase;
+            color: #fff; background: #161616; border: 1px solid #333;
+            padding: 6px 14px; border-radius: 2px; text-decoration: none; transition: all .2s;
+        }
+        .btn-cta:hover { background: #fff; color: #050505; border-color: #fff; }
+
+        /* Particle canvas */
+        #node-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1; pointer-events: none;
+        }
+
+        /* Hero */
+        .hero-wrapper {
+            position: relative; z-index: 2;
+            width: 100%; min-height: 62vh;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            padding: 60px 1.5rem 2rem;
+        }
+        .hero-kicker {
+            font-family: "Courier New", monospace;
+            font-size: .85rem; letter-spacing: 3px; text-transform: uppercase;
+            color: #e63946; margin-bottom: 1.2rem;
+        }
+        h1 { font-size: 4.2rem; font-weight: 300; letter-spacing: -2px; margin-bottom: .6rem; }
+        .hero-sub {
+            font-size: 1.05rem; color: #666; letter-spacing: 2px;
+            text-transform: uppercase; margin-bottom: 2rem;
+        }
+        .terminal-line {
+            font-family: "Courier New", monospace;
+            font-size: 1rem; color: #ccc;
+            padding: 10px 18px; border-left: 2px solid #333;
+        }
+        .blinker {
+            display: inline-block; width: 9px; height: 1em;
+            background: #fff; vertical-align: middle; margin-left: 4px;
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+        /* Body */
+        .del-body { background: #0d0d0d; min-height: 60vh; position: relative; z-index: 10; border-top: 1px solid #1a1a1a; }
+        .del-banner {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 4.5rem; border-bottom: 1px solid #1a1a1a; background: #090909;
+        }
+        .del-banner span { font-family: "Courier New", monospace; font-size: .78rem; letter-spacing: 2px; text-transform: uppercase; color: #555; }
+        .del-banner .badge { background: #e63946; color: #fff; font-size: .72rem; padding: 3px 10px; border-radius: 2px; letter-spacing: 1.5px; }
+
+        .del-content { max-width: 820px; margin: 0 auto; padding: 4rem 2rem 6rem; }
+        .del-intro { margin-bottom: 3rem; padding-bottom: 2.5rem; border-bottom: 1px solid #1a1a1a; }
+        .del-intro p { font-size: 1.2rem; font-weight: 300; color: #888; line-height: 1.7; }
+
+        /* Contact cards (the main action) */
+        .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 3rem; }
+        .contact-card {
+            background: #121212; border: 1px solid #282828; border-radius: 4px;
+            padding: 2rem; text-align: center; text-decoration: none; color: inherit;
+            transition: border-color .2s, transform .2s;
+        }
+        .contact-card:hover { border-color: #e63946; transform: translateY(-2px); }
+        .contact-card .c-icon { font-size: 1.6rem; margin-bottom: .8rem; }
+        .contact-card .c-label { font-family: "Courier New", monospace; font-size: .72rem; letter-spacing: 2px; text-transform: uppercase; color: #f4a261; margin-bottom: .6rem; }
+        .contact-card .c-value { font-size: 1.15rem; color: #fff; font-weight: 400; word-break: break-word; }
+
+        /* Steps */
+        .step-list { counter-reset: step; list-style: none; margin-bottom: 3rem; }
+        .step-item {
+            counter-increment: step;
+            display: flex; gap: 1.4rem;
+            background: #121212; border: 1px solid #222; border-radius: 4px;
+            padding: 1.6rem 1.8rem; margin-bottom: 12px;
+        }
+        .step-item::before {
+            content: counter(step);
+            font-family: "Courier New", monospace;
+            color: #e63946; font-size: 1rem; font-weight: 700;
+            min-width: 28px; height: 28px; border: 1px solid #e63946; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .step-item p { font-size: .95rem; color: #999; line-height: 1.75; }
+        .step-item strong { color: #ddd; font-weight: 500; }
+
+        .section-title-sm {
+            font-size: 1.35rem; font-weight: 300; letter-spacing: -.02em;
+            color: #ececec; margin-bottom: 1.4rem;
+        }
+
+        .info-box { display: flex; gap: 1rem; align-items: flex-start; background: rgba(244,162,97,.07); border: 1px solid rgba(244,162,97,.25); border-radius: 4px; padding: 1.2rem 1.5rem; margin-bottom: 2rem; }
+        .info-box .info-icon { font-size: 1.1rem; padding-top: 1px; }
+        .info-box p { font-size: .9rem; color: #e0b088; line-height: 1.7; }
+
+        .del-table { width: 100%; border-collapse: collapse; margin-bottom: 3rem; }
+        .del-table th, .del-table td { text-align: left; padding: .9rem 1rem; border-bottom: 1px solid #1e1e1e; font-size: .9rem; }
+        .del-table th { font-family: "Courier New", monospace; font-size: .72rem; letter-spacing: 1.5px; text-transform: uppercase; color: #666; }
+        .del-table td { color: #999; }
+        .del-table td.pos { color: #8fbf8f; }
+        .del-table td.neg { color: #c77; }
+
+        .tag-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tag-pill { font-family: "Courier New", monospace; font-size: .75rem; letter-spacing: 1.5px; text-transform: uppercase; color: #fff; background: #1c1c1c; border: 1px solid #2e2e2e; padding: 5px 11px; border-radius: 2px; }
+
+        /* Footer */
+        .tos-footer {
+            background: #050505; border-top: 1px solid #1a1a1a;
+            padding: 3rem 4.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+            position: relative; z-index: 10;
+        }
+        .footer-left .logo { font-family: "Courier New", monospace; font-size: .9rem; font-weight: 700; letter-spacing: 2px; color: #fff; margin-bottom: .4rem; }
+        .footer-left p { font-size: .8rem; color: #444; }
+        .footer-links { display: flex; gap: 2rem; }
+        .footer-links a { font-size: .78rem; text-transform: uppercase; letter-spacing: 1.5px; color: #555; text-decoration: none; transition: color .2s; }
+        .footer-links a:hover { color: #fff; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #222; }
+
+        @media (max-width: 900px) {
+            h1 { font-size: 2.6rem; }
+            .contact-grid { grid-template-columns: 1fr; }
+            .del-banner { padding: 1rem 1.5rem; }
+            .del-content { padding: 3rem 1.5rem 4rem; }
+            .tos-footer { flex-direction: column; gap: 1.5rem; align-items: flex-start; padding: 2.5rem 1.5rem; }
+            .del-table { font-size: .82rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="swiss-nav">
+    <a href="#" class="nav-logo">STUDYUP <span class="tag">/ LEGAL</span></a>
+    <ul class="nav-links">
+        <li><a href="#">Home</a></li>
+        <li><a href="terms-of-service.html">Terms</a></li>
+        <li><a href="privacy-policy.html">Privacy</a></li>
+        <li><a href="data-deletion.html" class="current">Delete My Data</a></li>
+    </ul>
+    <a href="#" class="btn-cta">Sign In &rsaquo;</a>
+</nav>
+
+<!-- Particle canvas -->
+<canvas id="node-canvas"></canvas>
+
+<!-- Hero -->
+<div class="hero-wrapper">
+    <div class="hero-kicker">Legal Documentation</div>
+    <h1>Delete My Data</h1>
+    <div class="hero-sub">How to request account &amp; data deletion</div>
+    <div class="terminal-line">One request. We handle the rest<span class="blinker"></span></div>
+</div>
+
+<!-- Banner -->
+<div class="del-banner">
+    <span>Document Version &mdash; 1.0 &nbsp;|&nbsp; Last Revised January 2025</span>
+    <span class="badge">Data Deletion</span>
+</div>
+
+<div class="del-body">
+    <div class="del-content">
+
+        <div class="del-intro">
+            <p>You can request deletion of your StudyUp account and personal data at any time. This page explains how to submit a request, what gets deleted, and how long it takes.</p>
+        </div>
+
+        <h2 class="section-title-sm">Request Deletion</h2>
+        <div class="contact-grid">
+            <a class="contact-card" href="mailto:renneco27@gmail.com?subject=Data%20Deletion%20Request">
+                <div class="c-icon">&#9993;</div>
+                <div class="c-label">Email</div>
+                <div class="c-value">renneco27@gmail.com</div>
+            </a>
+            <a class="contact-card" href="tel:+639608857457">
+                <div class="c-icon">&#9742;</div>
+                <div class="c-label">Phone</div>
+                <div class="c-value">+63 960 885 7457</div>
+            </a>
+        </div>
+
+        <div class="info-box">
+            <span class="info-icon">&#9432;</span>
+            <p>Please include the email address associated with your StudyUp account so we can verify your identity before processing the request.</p>
+        </div>
+
+        <h2 class="section-title-sm">What Happens Next</h2>
+        <ul class="step-list">
+            <li class="step-item"><p><strong>Submit your request</strong> by email or phone with the account email you registered with.</p></li>
+            <li class="step-item"><p><strong>We verify your identity</strong> to make sure the request is coming from the account owner.</p></li>
+            <li class="step-item"><p><strong>We process the deletion</strong> within a reasonable timeframe and confirm with you once it's complete.</p></li>
+        </ul>
+
+        <h2 class="section-title-sm">What Gets Deleted</h2>
+        <table class="del-table">
+            <tr><th>Data</th><th>Outcome</th></tr>
+            <tr><td>Account profile &amp; login credentials</td><td class="pos">Permanently deleted</td></tr>
+            <tr><td>Private, unshared uploads</td><td class="pos">Permanently deleted</td></tr>
+            <tr><td>Usage analytics tied to your account</td><td class="pos">Permanently deleted</td></tr>
+            <tr><td>Documents you contributed to the shared library</td><td class="neg">De-identified &amp; retained, unless removal is separately requested</td></tr>
+            <tr><td>Records required by law (e.g. fraud prevention)</td><td class="neg">Retained as legally required</td></tr>
+        </table>
+
+        <h2 class="section-title-sm">Related</h2>
+        <div class="tag-row">
+            <span class="tag-pill">GDPR Aware</span>
+            <span class="tag-pill">COPPA Aware</span>
+            <span class="tag-pill">No Data Sold</span>
+        </div>
+
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="tos-footer">
+    <div class="footer-left">
+        <div class="logo">STUDYUP</div>
+        <p>&copy; 2025 StudyUp. All rights reserved.</p>
+    </div>
+    <nav class="footer-links">
+        <a href="terms-of-service.html">Terms of Service</a>
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <a href="#">Contact</a>
+    </nav>
+</footer>
+
+<script>
+/* Particle canvas with cursor linking */
+const canvas = document.getElementById('node-canvas');
+const ctx    = canvas.getContext('2d');
+let W, H, particles = [];
+const N = 70, D = 130;
+let mx = null, my = null;
+
+window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+window.addEventListener('mouseout',  ()  => { mx = null; my = null; });
+
+function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+window.addEventListener('resize', resize);
+resize();
+
+class P {
+    constructor() {
+        this.x  = Math.random() * W; this.y  = Math.random() * H;
+        this.vx = (Math.random() - .5) * .6; this.vy = (Math.random() - .5) * .6;
+    }
+    step() {
+        this.x += this.vx; this.y += this.vy;
+        if (this.x < 0 || this.x > W) this.vx *= -1;
+        if (this.y < 0 || this.y > H) this.vy *= -1;
+    }
+    draw() {
+        ctx.beginPath(); ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fill();
+    }
+}
+
+for (let i = 0; i < N; i++) particles.push(new P());
+
+(function loop() {
+    ctx.clearRect(0, 0, W, H);
+    for (let i = 0; i < N; i++) {
+        particles[i].step();
+        particles[i].draw();
+        for (let j = i + 1; j < N; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const d  = Math.hypot(dx, dy);
+            if (d < D) {
+                ctx.beginPath(); ctx.lineWidth = .5;
+                ctx.strokeStyle = `rgba(255,255,255,${1 - d / D})`;
+                ctx.moveTo(particles[i].x, particles[i].y);
+                ctx.lineTo(particles[j].x, particles[j].y);
+                ctx.stroke();
+            }
+        }
+        if (mx !== null) {
+            const dx = particles[i].x - mx;
+            const dy = particles[i].y - my;
+            const d  = Math.hypot(dx, dy);
+            if (d < 150) {
+                ctx.beginPath(); ctx.lineWidth = .8;
+                ctx.strokeStyle = `rgba(255,255,255,${1 - d / 150})`;
+                ctx.moveTo(particles[i].x, particles[i].y);
+                ctx.lineTo(mx, my);
+                ctx.stroke();
+            }
+        }
+    }
+    requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

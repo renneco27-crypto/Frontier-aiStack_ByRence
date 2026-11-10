@@ -1,0 +1,32 @@
+// src/features/math/preloadedMathDeck.ts
+// Type definitions for Math Lab covering Linear Equations, Fractions, Quadratics, Systems & Calculus
+
+export interface MathStep {
+  stepNumber: number
+  latex: string
+  rawText?: string
+  explanation: string
+  operationType: 'start' | 'add_sub' | 'mul_div' | 'cancel' | 'substitute' | 'factor' | 'simplify' | 'final'
+  operationBadge?: string
+  cancelledTerms?: string[]
+}
+
+export interface MathChallenge {
+  id: string
+  topic: string
+  category: 'Algebra' | 'Fractions & Cancellation' | 'Quadratic Equations' | 'Systems of Equations' | 'Trigonometry' | 'Calculus'
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
+  problemLatex: string
+  description: string
+  steps: MathStep[]
+  whatsNextQuiz: {
+    question: string
+    options: { textLatex: string; isCorrect: boolean; explanation: string }[]
+  }
+  bugHunterQuiz: {
+    flawedSteps: { stepNumber: number; latex: string; hasError: boolean; errorReason?: string }[]
+    correctStepLatex: string
+  }
+}
+
+export const PRELOADED_MATH_CHALLENGES: MathChallenge[] = []

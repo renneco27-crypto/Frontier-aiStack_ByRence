@@ -1,0 +1,529 @@
+'use client'
+
+import React, { useState, useEffect, useRef } from 'react'
+import {
+  Play, CheckCircle2, XCircle, RotateCcw,
+  ArrowLeft, ChevronRight, ChevronLeft, ChevronDown, Check,
+  Terminal, Bug, FileCode, Eye
+} from 'lucide-react'
+import { PRELOADED_CODING_CHALLENGES, UnifiedCodeChallenge } from './preloadedCodingDeck'
+import type { Card } from '@/lib/zodSchemas'
+
+type CodeMode = 'scenario' | 'bug_hunter'
+
+interface CodeLabViewProps {
+  deckTitle?: string
+  onBack?: () => void
+  cards?: Card[]
+}
+
+export function parseCodeChallenges(cards?: Card[]): UnifiedCodeChallenge[] {
+  if (!cards || cards.length === 0) return []
+  const parsed: UnifiedCodeChallenge[] = []
+
+  cards.forEach((c, i) => {
+    const isCodeType = c.type === 'code' || c.type === 'code_challenge'
+    const legacyLangMatch = c.front.match(/&\[CODE:(.*?)\]/) || c.back.match(/&\[CODE:(.*?)\]/)
+    if (!isCodeType && !legacyLangMatch) return
+
+    const lang = (
+      c.code_language ||
+      legacyLangMatch?.[1] ||
+      'java'
+    ).toLowerCase()
+
+    const topic = isCodeType
+      ? c.front.trim()
+      : c.front.replace(/&\[CODE:.*?\]/g, '').trim() || 'Custom Code Challenge'
+
+    // code_solution column = the correct answer Claude provided
+    const solution = c.code_solution || c.back.replace(/&\[CODE:.*?\]/g, '').trim()
+
+    // code_keywords column = semicolon-separated required keywords
+    const rawKeywords = c.code_keywords || ''
+    const keywords: string[] = rawKeywords
+      ? rawKeywords.split(';').map((k: string) => k.trim()).filter(Boolean)
+      : []
+
+    // code_starter column = starter template shown in the editor
+    const starter = c.code_starter || `// Write your ${lang} code here\n`
+
+    // code_output column = simulated console output on success
+    const output = c.code_output || '✓ Build succeeded.'
+
+    // Prompt shown below the IDE
+    const prompt = c.back.replace(/&\[CODE:.*?\]/g, '').trim() || topic
+
+    parsed.push({
+      id: c.id || `card-code-${i}`,
+      language: lang as any,
+      topic,
+      category: 'Algorithms',
+      description: topic,
+      scenario: {
+        scenarioPrompt: prompt,
+        starterTemplate: starter,
+        expectedKeywords: keywords,
+        simulatedOutput: output,
+        sampleSolution: solution,
+      },
+      bugHunter: {
+        scenarioPrompt: `Find and fix the bugs in this ${lang} code.`,
+        buggyCode: solution ? `${solution}\n// Find and fix any syntax errors or bugs above` : starter,
+        bugCount: 1,
+        bugDescriptions: ['Fix the bugs to make the code work correctly.'],
+        cleanSolution: solution,
+        simulatedOutput: output,
+      },
+    })
+  })
+
+  return parsed
+}
+
+export default function CodeLabView({
+  deckTitle = 'Coding IDE',
+  onBack,
+  cards
+}: CodeLabViewProps) {
+  const [challenges, setChallenges] = useState<UnifiedCodeChallenge[]>(() => {
+    const fromCards = parseCodeChallenges(cards)
+    if (fromCards.length > 0) return fromCards
+    return PRELOADED_CODING_CHALLENGES
+  })
+  
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [mode, setMode] = useState<CodeMode>('scenario')
+  const [showMenu, setShowMenu] = useState(false)
+  const [showSolution, setShowSolution] = useState(false)
+
+  // Reactively sync challenges whenever cards prop loads or changes
+  useEffect(() => {
+    const updated = parseCodeChallenges(cards)
+    if (updated.length > 0) {
+      setChallenges(updated)
+      setCurrentIndex(0)
+    } else if (cards && cards.length > 0) {
+      setChallenges([])
+      setCurrentIndex(0)
+    }
+  }, [cards])
+
+  const currentChallenge = challenges[currentIndex] || challenges[0]
+  const langKey = currentChallenge?.language || 'java'
+  const modeData = currentChallenge
+    ? (mode === 'scenario' ? currentChallenge.scenario : currentChallenge.bugHunter)
+    : null
+
+  const [userCode, setUserCode] = useState(() => {
+    if (!currentChallenge) return ''
+    return mode === 'scenario'
+      ? currentChallenge.scenario.starterTemplate
+      : currentChallenge.bugHunter.buggyCode
+  })
+
+  const [feedback, setFeedback] = useState<{
+    status: 'idle' | 'success' | 'error'
+    message: string
+    output?: string
+  }>({ status: 'idle', message: '' })
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (!currentChallenge) return
+    setUserCode(
+      mode === 'scenario'
+        ? currentChallenge.scenario.starterTemplate
+        : currentChallenge.bugHunter.buggyCode
+    )
+    setFeedback({ status: 'idle', message: '' })
+    setShowSolution(false)
+  }, [currentIndex, mode, currentChallenge])
+
+  const handleChallengeChange = (idx: number) => {
+    setCurrentIndex(idx)
+    setShowMenu(false)
+  }
+
+  const handleRun = () => {
+    if (!currentChallenge || !modeData) return
+
+    const code = userCode.trim()
+    const cleanLower = code.toLowerCase()
+
+    if (!code) {
+      setFeedback({ status: 'error', message: 'Write code before running.' })
+      return
+    }
+
+    if (mode === 'scenario') {
+      const scenario = currentChallenge.scenario
+
+      // Exact-match check against CSV code_solution (no API needed)
+      const normalize = (s: string) => s.replace(/\s+/g, ' ').trim()
+      if (
+        scenario.sampleSolution &&
+        normalize(code) === normalize(scenario.sampleSolution)
+      ) {
+        setFeedback({
+          status: 'success',
+          message: 'Perfect match! Solution accepted.',
+          output: scenario.simulatedOutput,
+        })
+        return
+      }
+
+      // Keyword presence check
+      const missing = scenario.expectedKeywords.filter(
+        (kw) => !code.includes(kw) && !cleanLower.includes(kw.toLowerCase())
+      )
+
+      if (missing.length > 0) {
+        setFeedback({
+          status: 'error',
+          message: `Missing: ${missing.join(', ')}`,
+          output: `Required keyword missing: ${missing[0]}`,
+        })
+        return
+      }
+
+      const openBraces = (code.match(/\{/g) || []).length
+      const closeBraces = (code.match(/\}/g) || []).length
+      if (openBraces !== closeBraces) {
+        setFeedback({
+          status: 'error',
+          message: 'Unbalanced brackets in code.',
+          output: `Mismatch: ${openBraces} '{' vs ${closeBraces} '}'`,
+        })
+        return
+      }
+
+      setFeedback({
+        status: 'success',
+        message: 'Build succeeded. All checks passed.',
+        output: scenario.simulatedOutput,
+      })
+      return
+    }
+
+    if (mode === 'bug_hunter') {
+      const bugHunter = currentChallenge.bugHunter
+
+      if (code === bugHunter.buggyCode.trim()) {
+        setFeedback({
+          status: 'error',
+          message: `${bugHunter.bugCount} bugs still in code.`,
+          output: bugHunter.bugDescriptions[0] || 'Fix syntax errors.',
+        })
+        return
+      }
+
+      const openBraces = (code.match(/\{/g) || []).length
+      const closeBraces = (code.match(/\}/g) || []).length
+      if (openBraces !== closeBraces) {
+        setFeedback({
+          status: 'error',
+          message: 'Unbalanced brackets in code.',
+          output: `Mismatch: ${openBraces} '{' vs ${closeBraces} '}'`,
+        })
+        return
+      }
+
+      setFeedback({
+        status: 'success',
+        message: 'All bugs resolved successfully.',
+        output: bugHunter.simulatedOutput,
+      })
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab') {
+      e.preventDefault()
+      const textarea = textareaRef.current
+      if (!textarea) return
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const updated = userCode.substring(0, start) + '  ' + userCode.substring(end)
+      setUserCode(updated)
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 2
+      }, 0)
+    }
+  }
+
+  const handleReset = () => {
+    if (!currentChallenge) return
+    setUserCode(
+      mode === 'scenario'
+        ? currentChallenge.scenario.starterTemplate
+        : currentChallenge.bugHunter.buggyCode
+    )
+    setFeedback({ status: 'idle', message: '' })
+  }
+
+  if (!currentChallenge || challenges.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col">
+        <header className="border-b border-white/10 bg-[#070b14]/95 backdrop-blur-md px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="p-2 rounded-xl border border-white/10 hover:bg-white/5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Back"
+              >
+                <ArrowLeft size={18} />
+              </button>
+            )}
+            <span className="text-base font-bold text-white tracking-wide">
+              {deckTitle}
+            </span>
+          </div>
+        </header>
+
+        <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 mb-4">
+            <Terminal size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">No Coding Challenges Found</h2>
+          <p className="text-sm text-slate-400 max-w-md mb-6">
+            This deck does not contain any cards with type &quot;code&quot; or &quot;code_challenge&quot;. Upload or add code challenges to start practicing.
+          </p>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="px-5 py-2.5 rounded-xl bg-[var(--color-accent,#ff2d85)] text-white font-medium hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-2"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Deck</span>
+            </button>
+          )}
+        </main>
+      </div>
+    )
+  }
+
+  const lines = userCode.split('\n')
+  const ext = langKey === 'java' ? 'java' : langKey === 'sql' ? 'sql' : langKey === 'python' ? 'py' : 'js'
+
+  return (
+    <div className="min-h-screen bg-[#070b14] text-[#E2E8F0] font-sans antialiased flex flex-col pb-6">
+      
+      {/* 1. Simplified Header Bar */}
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#070b14]/95 backdrop-blur-md px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="p-2 rounded-xl border border-white/10 hover:bg-white/5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              title="Back"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
+          <span className="text-base font-bold text-white tracking-wide">
+            {deckTitle}
+          </span>
+        </div>
+      </header>
+
+      {/* 2. Workspace Body */}
+      <main className="max-w-6xl w-full mx-auto px-3 sm:px-6 pt-4 flex-1 flex flex-col gap-4">
+        
+        {/* Editor Box (Centerpiece) */}
+        <div className="flex-1 rounded-2xl bg-[#090d16] border border-white/10 shadow-2xl overflow-hidden flex flex-col min-h-screen">
+          {/* Editor Header Bar */}
+          <div className="bg-[#0e1626] px-4 py-2 border-b border-white/10 flex items-center justify-between text-xs font-mono">
+            <span className="text-slate-300 font-medium flex items-center gap-2">
+              <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 font-bold tracking-wider">
+                {currentChallenge.language}
+              </span>
+              Main.{ext}
+            </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleReset}
+                className="text-slate-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <RotateCcw size={14} />
+                <span className="hidden sm:inline">Reset</span>
+              </button>
+
+              <button
+                onClick={handleRun}
+                className="px-5 py-1.5 rounded-lg bg-[var(--color-accent,#ff2d85)] hover:brightness-110 text-white font-bold tracking-wide flex items-center gap-1.5 shadow active:scale-95 transition-all cursor-pointer"
+              >
+                <Play size={14} fill="currentColor" />
+                <span>Run</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Fully Interactive Code Textarea */}
+          <div className="flex flex-1 bg-[#070b14]">
+            {/* Line numbers */}
+            <div className="select-none text-slate-600 bg-[#060911] text-right py-4 px-3 border-r border-white/5 font-mono text-xs leading-6 shrink-0 min-w-[42px]">
+              {lines.map((_, i) => (
+                <div key={i}>{i + 1}</div>
+              ))}
+            </div>
+
+            {/* Editable Monospace Textarea */}
+            <textarea
+              ref={textareaRef}
+              value={userCode}
+              onChange={(e) => {
+                setUserCode(e.target.value)
+                setFeedback({ status: 'idle', message: '' })
+              }}
+              onKeyDown={handleKeyDown}
+              spellCheck={false}
+              autoCapitalize="off"
+              autoComplete="off"
+              autoCorrect="off"
+              className="flex-1 w-full h-full p-4 font-mono text-sm leading-6 text-[#e2e8f0] caret-[var(--color-accent,#ff2d85)] bg-transparent outline-none resize-none overflow-auto whitespace-pre selection:bg-[var(--color-accent,#ff2d85)]/30"
+              placeholder="// Type your code here..."
+            />
+          </div>
+
+          {/* Terminal Output */}
+          <div className="border-t border-white/10 bg-[#0b101c] p-3.5 font-mono text-xs max-h-48 overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <span className="flex items-center gap-1.5 text-slate-400">
+                <Terminal size={14} className="text-emerald-400" />
+                <span>Console</span>
+              </span>
+
+              {feedback.status !== 'idle' && (
+                <span className={`font-semibold flex items-center gap-1 ${
+                  feedback.status === 'success' ? 'text-emerald-400' : 'text-rose-400'
+                }`}>
+                  {feedback.status === 'success' ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                  {feedback.message}
+                </span>
+              )}
+            </div>
+
+            {feedback.output ? (
+              <div className="p-3 rounded-xl bg-black/60 border border-white/5 text-slate-300 whitespace-pre-wrap leading-relaxed text-[13px]">
+                {feedback.output}
+              </div>
+            ) : (
+              <p className="text-slate-500 italic">Click Run to test your code.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Section: Controls & Prompt */}
+        <div className="rounded-2xl bg-[#0d1424] border border-white/10 p-4 sm:p-5 flex flex-col gap-4 shadow-lg shrink-0">
+          
+          {/* Controls Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+            
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+              {/* Problem Selector */}
+              <div className="relative flex items-center gap-1 bg-white/5 rounded-xl p-1 border border-white/10">
+                <button
+                  onClick={() => handleChallengeChange(Math.max(0, currentIndex - 1))}
+                  disabled={currentIndex === 0}
+                  className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-30 text-white transition-colors cursor-pointer"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="px-3 py-1 rounded-lg hover:bg-white/10 text-sm font-mono font-bold text-[var(--color-accent,#ff2d85)] flex items-center gap-2 cursor-pointer"
+                >
+                  <span>Challenge {currentIndex + 1} of {challenges.length}</span>
+                  <ChevronDown size={14} className={`text-slate-400 transition-transform ${showMenu ? 'rotate-180' : ''}`} />
+                </button>
+
+                <button
+                  onClick={() => handleChallengeChange(Math.min(challenges.length - 1, currentIndex + 1))}
+                  disabled={currentIndex === challenges.length - 1}
+                  className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-30 text-white transition-colors cursor-pointer"
+                >
+                  <ChevronRight size={16} />
+                </button>
+
+                {showMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 w-64 max-h-64 overflow-y-auto bg-[#0f172a] border border-white/15 rounded-2xl shadow-2xl p-2 z-50">
+                    {challenges.map((c, i) => (
+                      <button
+                        key={c.id}
+                        onClick={() => handleChallengeChange(i)}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-sm flex items-center justify-between transition-colors my-0.5 cursor-pointer ${
+                          currentIndex === i
+                            ? 'bg-[var(--color-accent,#ff2d85)]/15 text-white font-semibold border border-[var(--color-accent,#ff2d85)]/30'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                        }`}
+                      >
+                        <span className="truncate">{i + 1}. {c.topic}</span>
+                        {currentIndex === i && <Check size={14} className="text-[var(--color-accent,#ff2d85)] shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Mode Switcher */}
+              <div className="flex items-center bg-white/5 border border-white/10 p-1 rounded-xl gap-1">
+                <button
+                  onClick={() => setMode('scenario')}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                    mode === 'scenario'
+                      ? 'bg-[var(--color-accent,#ff2d85)] text-white shadow-md'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <FileCode size={16} />
+                  <span>Build</span>
+                </button>
+
+                <button
+                  onClick={() => setMode('bug_hunter')}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                    mode === 'bug_hunter'
+                      ? 'bg-[var(--color-accent,#ff2d85)] text-white shadow-md'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Bug size={16} />
+                  <span>Fix Bugs</span>
+                </button>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => setShowSolution(!showSolution)}
+              className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/25 text-sm font-medium text-slate-300 hover:text-white flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0"
+            >
+              <Eye size={16} />
+              <span>{showSolution ? 'Hide Solution' : 'View Solution'}</span>
+            </button>
+          </div>
+
+          {/* Prompt Details */}
+          <div>
+            <h2 className="text-lg font-bold text-white mb-2">{currentChallenge.topic}</h2>
+            <p className="text-sm text-slate-300 leading-relaxed max-w-4xl">{modeData?.scenarioPrompt}</p>
+          </div>
+
+        </div>
+
+        {/* Reference Solution if opened */}
+        {showSolution && modeData && (
+          <div className="rounded-2xl bg-black/60 border border-white/10 p-5 text-sm font-mono text-emerald-300 whitespace-pre-wrap leading-relaxed shadow-lg">
+            <div className="text-emerald-500/50 uppercase tracking-widest text-[10px] font-bold mb-3">Reference Solution</div>
+            {mode === 'scenario' ? currentChallenge.scenario.sampleSolution : currentChallenge.bugHunter.cleanSolution}
+          </div>
+        )}
+
+      </main>
+    </div>
+  )
+}

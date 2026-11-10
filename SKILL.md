@@ -226,7 +226,20 @@ A unified master skill for Google Antigravity. Like the Cloudflare master router
 
 ---
 
-## ðŸŽ¯ Exam Categorization Taxonomy (CSC & UPCAT Grouping)
+### 13. Frontier LLM Specialization for UI & Visual Engineering
+- **Claude (Sonnet / Opus)**:
+  - **Core Role**: **Decluttering UI (Paired with UI / Anti-Slop Skill)**
+  - Strips redundant wrapper cards, removes emoji slop, simplifies nesting, and refactors messy layouts into clean, token-disciplined frontend code.
+- **Gemini Argon**:
+  - **Core Role**: **Recreating the UI**
+  - High-reasoning model for structural UI reconstruction, complex 3D WebGL / Three.js geometry, spatial transforms, and pixel-precise layout reverse-engineering.
+- **ChatGPT (GPT-4o)**:
+  - **Core Role**: **Creating Stunning UI from Images**
+  - Translates visual screenshots, mockups, and reference images into vibrant, modern frontend components.
+
+---
+
+## 🎯 Exam Categorization Taxonomy (CSC & UPCAT Grouping)
 
 When compiling question banks into local JSON (`assets/exam_bank.json`):
 

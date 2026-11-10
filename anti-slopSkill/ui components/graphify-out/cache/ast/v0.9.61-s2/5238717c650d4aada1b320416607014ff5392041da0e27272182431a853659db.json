@@ -1,0 +1,1 @@
+{"nodes": [{"id": "$graphify-root$_packages_registry_test_fixtures_project_deno_deno_json", "label": "deno.json", "file_type": "code", "source_file": "packages/registry/test/fixtures/project-deno/deno.json", "source_location": "L1"}], "edges": []}

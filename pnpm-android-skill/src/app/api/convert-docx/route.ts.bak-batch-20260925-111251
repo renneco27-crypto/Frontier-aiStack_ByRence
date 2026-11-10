@@ -1,0 +1,891 @@
+import { NextRequest, NextResponse } from 'next/server'
+import * as mammoth from 'mammoth'
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
+import { spawn } from 'child_process'
+import { callAI } from '@/lib/callAI'
+import { isWorkerActive, enqueueRelayJob } from '@/lib/relayQueue'
+import { checkRateLimit } from '@/lib/rateLimiter'
+import { getAuthUser, isUserAdmin } from '@/lib/supabaseServer'
+
+interface FlashcardRow {
+  front: string
+  back: string
+  chapter: string
+  subject: string
+  lesson: string
+  type: string
+  mc_correct: string
+  mc_distractor1: string
+  mc_distractor2: string
+  mc_distractor3: string
+  tf_answer: string
+  enum_items: string
+  id_answer: string
+  id_variants: string
+}
+
+const CSV_HEADERS = [
+  'front', 'back', 'chapter', 'subject', 'lesson', 'type',
+  'mc_correct', 'mc_distractor1', 'mc_distractor2', 'mc_distractor3',
+  'tf_answer', 'enum_items', 'id_answer', 'id_variants',
+]
+
+function escapeCSV(value: string): string {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`
+  }
+  return value
+}
+
+function rowsToCSV(rows: FlashcardRow[]): string {
+  const header = CSV_HEADERS.join(',')
+  const lines = rows.map((row) =>
+    CSV_HEADERS.map((h) => escapeCSV(row[h as keyof FlashcardRow] ?? '')).join(',')
+  )
+  return [header, ...lines].join('\n')
+}
+
+function makeRow(overrides: Partial<FlashcardRow>): FlashcardRow {
+  return {
+    front: '', back: '', chapter: '', subject: '', lesson: '',
+    type: 'definition',
+    mc_correct: '', mc_distractor1: '', mc_distractor2: '', mc_distractor3: '',
+    tf_answer: '', enum_items: '', id_answer: '', id_variants: '',
+    ...overrides,
+  }
+}
+
+interface ParsedCard {
+  front: string
+  back: string
+  subject: string
+  topic: string
+  type: string
+}
+
+function isCodeOrNoise(text: string): boolean {
+  const t = text.trim()
+  if (!t || t.length < 2) return true
+  // Check for programming code fragments
+  if (
+    /^(const|let|var|function|return|import|export|console\.|document\.|for\s*\(|while\s*\(|if\s*\(|\/\/|\/\*|<\/?script)/i.test(t) ||
+    /^(key|value|properties|values|direction|syntax|example|e\.g|note|output|activity\s*\d*|direction\s*:?)$/i.test(t) ||
+    /[{};=><\[\]]/.test(t) ||
+    t.startsWith('"') && t.endsWith('",') ||
+    t.startsWith("'") && t.endsWith("',")
+  ) {
+    return true
+  }
+  return false
+}
+
+function cleanSlideHeader(header: string, lines: string[]): { title: string; remainingLines: string[] } {
+  let title = header.replace(/^(\d+[\.\)]|[•\-\*])\s*/, '').trim()
+  let remainingLines = lines.slice(1).filter((l) => l.trim().length > 0)
+
+  // If header is a slide marker (e.g. === Slide 10 - JS Functions === or === Slide 10 ===)
+  if (/^===?\s*Slide\s*\d+/i.test(title) || title.startsWith('===')) {
+    // Extract title from marker if present (e.g. Slide 10 - JavaScript Functions)
+    const markerTitleMatch = title.match(/^===?\s*Slide\s*\d+\s*(?:[-–—:]\s*(.+?))?\s*===?$/i)
+    if (markerTitleMatch && markerTitleMatch[1] && markerTitleMatch[1].trim().length > 2) {
+      title = markerTitleMatch[1].trim().replace(/^[•\-\*]\s*/, '')
+    } else if (remainingLines.length > 0) {
+      // Use the first non-empty content line as the real slide title
+      title = remainingLines[0].replace(/^(\d+[\.\)]|[•\-\*])\s*/, '').trim()
+      remainingLines = remainingLines.slice(1)
+    } else {
+      title = 'Presentation Notes'
+    }
+  }
+
+  // Clean trailing punctuation or marker syntax
+  title = title.replace(/^===+|===+$/g, '').trim()
+  return { title: title || 'Topic', remainingLines }
+}
+
+function parseStructuredNotes(rawText: string): ParsedCard[] {
+  const cards: ParsedCard[] = []
+  const seenFronts = new Set<string>()
+
+  // Split by slide boundaries, horizontal rules, or double newlines
+  const rawSections = rawText
+    .split(/(?:_{3,}|-{3,}|\n{2,}|(?====\s*Slide\s*\d+))/i)
+    .map((s) => s.trim())
+    .filter(Boolean)
+
+  for (const section of rawSections) {
+    const rawLines = section.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+    if (rawLines.length === 0) continue
+
+    const { title: header, remainingLines: contentLines } = cleanSlideHeader(rawLines[0], rawLines)
+    if (!header || isCodeOrNoise(header)) continue
+
+    const allSectionLines = contentLines.length > 0 ? contentLines : rawLines.slice(1)
+
+    // 1. Create a rich study note card for Notes tab (deduped by title)
+    if (allSectionLines.length > 0 && !seenFronts.has(header.toLowerCase())) {
+      const combinedNotes = allSectionLines
+        .map((l) => (l.startsWith('•') || l.startsWith('-') ? l : `• ${l}`))
+        .join('\n')
+
+      cards.push({
+        front: header,
+        back: combinedNotes,
+        subject: header,
+        topic: 'Notes',
+        type: 'keyword',
+      })
+      seenFronts.add(header.toLowerCase())
+    }
+
+    // 2. Extract clean flashcards from definitions and key concepts
+    for (const line of allSectionLines) {
+      const cleanLine = line.replace(/^(\d+[\.\)]|[•\-\*])\s*/, '').trim()
+      if (!cleanLine || isCodeOrNoise(cleanLine) || cleanLine.length < 5) continue
+
+      let key = ''
+      let val = ''
+
+      // Structured delimiters: em-dash (—), en-dash (–), hyphen ( - ), or colon (:)
+      if (cleanLine.includes('—')) {
+        const parts = cleanLine.split('—')
+        key = parts[0].trim()
+        val = parts.slice(1).join('—').trim()
+      } else if (cleanLine.includes('–')) {
+        const parts = cleanLine.split('–')
+        key = parts[0].trim()
+        val = parts.slice(1).join('–').trim()
+      } else if (cleanLine.includes(' - ')) {
+        const parts = cleanLine.split(' - ')
+        key = parts[0].trim()
+        val = parts.slice(1).join(' - ').trim()
+      } else if (cleanLine.includes('\t')) {
+        const parts = cleanLine.split('\t').map((p) => p.trim()).filter(Boolean)
+        if (parts.length >= 2) {
+          key = parts[0]
+          val = parts.slice(1).join(' — ')
+        }
+      } else if (cleanLine.includes(':')) {
+        const colonIdx = cleanLine.indexOf(':')
+        if (colonIdx > 0 && colonIdx < 40) {
+          const candidateKey = cleanLine.slice(0, colonIdx).trim()
+          const candidateVal = cleanLine.slice(colonIdx + 1).trim()
+          // Only accept clean term: definition pairs (no code, no quotes, no operators)
+          if (!isCodeOrNoise(candidateKey) && !isCodeOrNoise(candidateVal) && !candidateKey.includes('"')) {
+            key = candidateKey
+            val = candidateVal
+          }
+        }
+      }
+
+      // Check for clean term: definition match
+      if (key && val && !isCodeOrNoise(key) && !isCodeOrNoise(val) && val.length > 3) {
+        const frontText =
+          key.toLowerCase().includes(header.toLowerCase()) || header.length < 3 || key.length > 25
+            ? key
+            : `${header}: ${key}`
+
+        const frontKey = frontText.toLowerCase()
+        if (!seenFronts.has(frontKey)) {
+          cards.push({
+            front: frontText,
+            back: val,
+            subject: header,
+            topic: key,
+            type: 'definition',
+          })
+          seenFronts.add(frontKey)
+        }
+        continue
+      }
+
+      // Check for natural language definition statements ("X is a Y", "X refers to Y")
+      if (!cleanLine.endsWith('?')) {
+        const defMatch = cleanLine.match(/^([A-Z][A-Za-z0-9\s_-]{2,35})\s+(?:is|are|refers to|defined as)\s+(.+)/i)
+        if (
+          defMatch &&
+          !isCodeOrNoise(defMatch[1]) &&
+          !/^(what|why|how|when|where|who|which|there|it|this|these|they|that)\b/i.test(defMatch[1]) &&
+          defMatch[2].length > 8
+        ) {
+          const term = defMatch[1].trim()
+          const definition = defMatch[2].replace(/[.!?]$/, '').trim()
+          const frontKey = term.toLowerCase()
+          if (!seenFronts.has(frontKey)) {
+            cards.push({
+              front: term,
+              back: `${term} is ${definition}.`,
+              subject: header,
+              topic: term,
+              type: 'definition',
+            })
+            seenFronts.add(frontKey)
+          }
+        }
+      }
+    }
+  }
+
+  return cards
+}
+
+function parseTextToCards(rawText: string): ParsedCard[] {
+  // Check if input has structured notes (em-dashes —, bullets, colons, numbers, or line breaks)
+  if (
+    rawText.includes('—') ||
+    rawText.includes('–') ||
+    rawText.includes('•') ||
+    rawText.includes(':') ||
+    rawText.includes('\t') ||
+    /\d+[\.\)]\s+/.test(rawText) ||
+    /_{3,}/.test(rawText) ||
+    /\n/.test(rawText.trim())
+  ) {
+    const noteCards = parseStructuredNotes(rawText)
+    if (noteCards.length > 0) return noteCards
+  }
+
+  const sentences = rawText
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
+
+  const PATTERNS: Record<string, RegExp> = {
+    definition:  /(.+?)\s+(?:is|are|was|were)\s+(.+)/i,
+    property:    /(.+?)\s+(?:has|have)\s+(.+)/i,
+    function:    /(.+?)\s+(?:produces?|creates?|makes?|forms?)\s+(.+)/i,
+    composition: /(.+?)\s+(?:contains?|consists? of)\s+(.+)/i,
+    method:      /(.+?)\s+(?:uses?|attracts?)\s+(.+)/i,
+    cause:       /(.+?)\s+(?:causes?|enables?|allows?)\s+(.+)/i,
+  }
+
+  let currentTopic: string | null = null
+  const cards: ParsedCard[] = []
+
+  for (let sentence of sentences) {
+    if (currentTopic) {
+      sentence = sentence
+        .replace(/^It\b/i, currentTopic)
+        .replace(/^They\b/i, currentTopic)
+        .replace(/^This\b/i, currentTopic)
+        .replace(/^These\b/i, currentTopic)
+    }
+
+    const defMatch = sentence.match(/^(?:A|An|The)\s+(.+?)\s+(?:is|are)\s+/i)
+    if (defMatch) {
+      currentTopic = defMatch[1].trim()
+    }
+
+    let matched = false
+    for (const [type, regex] of Object.entries(PATTERNS)) {
+      const m = sentence.match(regex)
+      if (m) {
+        const subject = m[1].replace(/^(A|An|The)\s+/i, '').trim()
+        const object = m[2].replace(/[.!?]$/, '').trim()
+
+        const blankTemplates: Record<string, string> = {
+          definition:  `${subject} is ____.`,
+          property:    `${subject} has ____.`,
+          function:    `${subject} produces ____.`,
+          composition: `${subject} contains ____.`,
+          method:      `${subject} uses/attracts ____.`,
+          cause:       `${subject} causes/enables ____.`,
+        }
+
+        cards.push({
+          front: blankTemplates[type],
+          back: object,
+          subject: currentTopic || subject,
+          topic: type,
+          type: 'definition',
+        })
+
+        matched = true
+        break
+      }
+    }
+
+    if (!matched && currentTopic) {
+      cards.push({
+        front: `${currentTopic} ____.`,
+        back: sentence.replace(/[.!?]$/, '').trim(),
+        subject: currentTopic,
+        topic: 'general',
+        type: 'definition',
+      })
+    }
+  }
+
+  return cards
+}
+
+async function generateCardsWithAI(text: string): Promise<FlashcardRow[] | null> {
+  const prompt = `Convert these study notes into a comprehensive, high-yield deck for StitchCSV:
+MANDATORY RULES:
+1. NOTES FIRST & 1-TO-1 PAIRING:
+   - For every distinct concept, create a "keyword" row (for Notes tab) with rich bullet points (bolding ONLY the leading term name, e.g. "• **Term** - explanation").
+   - For EVERY bullet inside a "keyword" note row's back field, generate ONE matching "definition" flashcard: front = the bullet's bolded term, back = the bullet's definition text. Never put a label like "X Definition" in the front.
+2. QUIZ TYPES: Include "multiple_choice", "true_false", "enumeration", and "identification" where applicable.
+2b. MATH LATEX — COMPLETE AND FULLY FORMATTED (MANDATORY): Every type="math" row MUST have valid LaTeX in math_answer AND in the 1st segment of every math_steps entry. ALWAYS include the complete expression: \\int, \\frac, \\sqrt, \\sum, \\lim, \\sin, \\cos, \\tan, \\pi, \\theta, subscripts (_{...}), superscripts (^{...}), and \\left[ ... \\right]_{a}^{b} delimiters. NEVER write plain-text shortcuts like "int", "frac", "sqrt", "sinx", or "pi". Every math_answer MUST end with a unit wrapped in \\text{...} — e.g. "\\frac{16}{3} \\text{ square units}", "5 \\text{ cm}", or "\\text{ units}" if no physical unit applies. The final step's badge (4th math_steps segment) MUST be exactly "Answer" or "Answer: <unit>".
+3. DIRECTIVES & DATA PLACEMENT:
+   - If math is present, use math directives like &*(sigma), &*(cos), &*(sqrt{x}), or &*(STEPS: step1 -> step2 -> step3).
+   - TABLES STRICTLY IN NOTES: If tables or tabular comparisons are present, format them ONLY as "keyword" rows for the Notes tab using &[TABLE: H1, H2 | R1C1, R1C2] (never raw markdown pipes). Tables must NEVER go to flashcards (type definition, concept, etc.).
+   - If coding is present, use &[CODE: python=... | java=... | js=...].
+
+Each JSON object MUST have:
+"front", "back", "type", "subject", "lesson", "mc_correct", "mc_distractor1", "mc_distractor2", "mc_distractor3", "tf_answer", "enum_items", "id_answer"
+
+STUDY NOTES:
+"""
+${text.slice(0, 12000)}
+"""`
+
+  const systemPrompt = `You are a JSON API. You MUST output ONLY a valid JSON array of flashcard objects starting with [ and ending with ]. NEVER include thinking, explanations, preamble, or markdown backticks.`
+
+  try {
+    const rawOutput = await callAI(systemPrompt, prompt)
+    if (!rawOutput) return null
+
+    const jsonMatch = rawOutput.match(/\[\s*\{[\s\S]*\}\s*\]/) || rawOutput.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+    const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : rawOutput.trim()
+
+    const parsed = JSON.parse(jsonStr)
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      console.log(`[convert-docx] Successfully generated ${parsed.length} cards via AI`)
+      return parsed.map((item) => makeRow({
+        front: String(item.front || '').trim(),
+        back: String(item.back || '').trim(),
+        subject: String(item.subject || 'General').trim(),
+        lesson: String(item.lesson || 'Study Notes').trim(),
+        type: String(item.type || 'definition').toLowerCase().trim(),
+        mc_correct: String(item.mc_correct || '').trim(),
+        mc_distractor1: String(item.mc_distractor1 || '').trim(),
+        mc_distractor2: String(item.mc_distractor2 || '').trim(),
+        mc_distractor3: String(item.mc_distractor3 || '').trim(),
+        tf_answer: String(item.tf_answer || '').toLowerCase().trim(),
+        enum_items: String(item.enum_items || '').trim(),
+        id_answer: String(item.id_answer || '').trim(),
+      }))
+    }
+  } catch (err: any) {
+    console.warn('[convert-docx] AI generation failed, falling back to heuristic parser:', err.message)
+  }
+
+  return null
+}
+
+export async function GET() {
+  return NextResponse.json({
+    title: 'How Smart Card Generation Works',
+    steps: [
+      {
+        label: 'Sentence Splitting',
+        description: 'Text is split on . ! ? into individual sentences.',
+      },
+      {
+        label: 'Topic Memory',
+        description: 'Pronouns (It, They, This, These) are replaced with the last known topic. When a sentence begins with "A/An/The X is/are", X becomes the current topic.',
+      },
+      {
+        label: 'Pattern Matching',
+        description: 'Each sentence is matched against 6 patterns: definition (is/are/was/were), property (has/have), function (produces/creates/makes/forms), composition (contains/consists of), method (uses/attracts), cause (causes/enables/allows).',
+      },
+      {
+        label: 'Fill-in-the-Blank',
+        description: 'Each match produces one card with a fill-in-the-blank front like "X is ____." and the complement as the answer.',
+      },
+      {
+        label: 'Fallback',
+        description: 'If no pattern matches but a topic is known, a generic "Topic ____." card is created from the raw sentence.',
+      },
+    ],
+  })
+}
+
+function getPythonBinary(): string {
+  if (process.env.PYTHON_PATH && fs.existsSync(process.env.PYTHON_PATH)) {
+    return process.env.PYTHON_PATH
+  }
+  const candidates = [
+    'C:\\Users\\corte\\AppData\\Local\\Programs\\Python\\Python311\\python.exe',
+    path.join(/*turbopackIgnore: true*/ process.cwd(), 'venv', 'Scripts', 'python.exe'),
+    'C:\\Users\\corte\\Documents\\projects NOT DELETE\\lex memoria\\venv\\Scripts\\python.exe',
+  ]
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c
+  }
+  return 'python'
+}
+
+/**
+ * Sanitize a filename into a clean topic/subject.
+ * Strips query strings, extensions, common file prefixes, and whitespace.
+ * Falls back to "General" if nothing usable remains.
+ */
+function sanitizeTopicName(raw: string): string {
+  if (!raw) return 'General'
+  let t = raw.trim()
+  t = t.replace(/[?#].*$/, '')
+  t = t.replace(/\.[^/.]+$/, '')
+  t = t.replace(/[sS]=\d+$/, '')
+  t = t.replace(/[_-]+/g, ' ')
+  t = t.replace(/\s+/g, ' ').trim()
+  if (!t || /^(notes?|study notes|upload|untitled|temp|general)$/i.test(t)) return 'General'
+  return t
+}
+export async function POST(request: NextRequest) {
+  try {
+    // Apply SQL-based rate limiting (with Admin & Relay SHA exemption)
+    const forwardedFor = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || ''
+    const clientIp = forwardedFor.split(',')[0]?.trim() || '127.0.0.1'
+
+    let isAdminUser = false
+    try {
+      const authUser = await getAuthUser()
+      if (authUser) {
+        isAdminUser = await isUserAdmin(authUser.id, authUser.email, authUser.user_metadata, authUser.app_metadata)
+      }
+    } catch {}
+
+    const reqRelaySha = request.headers.get('x-relay-sha') || ''
+    const configuredSha = process.env.RELAY_SHA
+    if (configuredSha && reqRelaySha === configuredSha) {
+      isAdminUser = true
+    }
+
+    const rateLimitResult = await checkRateLimit(
+      clientIp,
+      '/api/convert-docx',
+      { maxRequests: 10, windowHours: 6 },
+      { isAdmin: isAdminUser }
+    )
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { 
+          error: rateLimitResult.error,
+          rateLimit: {
+            remaining: rateLimitResult.remaining,
+            resetAt: rateLimitResult.resetAt
+          }
+        }, 
+        { 
+          status: 429, 
+          headers: {
+            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+            'X-RateLimit-Reset': String(rateLimitResult.resetAt),
+            'Retry-After': String(Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000))
+          }
+        }
+      )
+    }
+
+    let rawTextFull = ''
+    let fileName = 'Study Notes'
+    let extractedImages: Array<{ title: string; caption?: string; dataUrl: string }> = []
+    let asyncMode = false
+    let deckId = ''
+    const contentType = request.headers.get('content-type') || ''
+
+    if (contentType.includes('application/json')) {
+      const jsonBody = await request.json()
+      rawTextFull = jsonBody.text || ''
+      fileName = (jsonBody.fileName || 'Study Notes').toLowerCase()
+      extractedImages = Array.isArray(jsonBody.images) ? jsonBody.images : []
+      asyncMode = jsonBody.async_mode === true
+      deckId = jsonBody.deckId || jsonBody.deck_id || ''
+    } else {
+      const formData = await request.formData()
+      const file = formData.get('file') as File | null
+      const deepOcr = formData.get('deepOcr') === 'true'
+      asyncMode = formData.get('async_mode') === 'true'
+      deckId = (formData.get('deckId') || formData.get('deck_id') || '') as string
+      if (!file) {
+        return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+      }
+      if (file.size > 1 * 1024 * 1024) {
+        return NextResponse.json({ error: `File "${file.name}" exceeds the 1MB limit. Each file must be 1MB or less.` }, { status: 400 })
+      }
+
+      fileName = file.name.toLowerCase()
+      const isTextFile = fileName.endsWith('.txt')
+      const isPdfOrPpt = fileName.endsWith('.pdf') || fileName.endsWith('.pptx') || fileName.endsWith('.ppt')
+
+      if (isPdfOrPpt) {
+        const arrayBuffer = await file.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const ext = path.extname(fileName)
+        const tempPath = path.join(os.tmpdir(), `stitch_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`)
+        fs.writeFileSync(tempPath, buffer)
+
+        try {
+          const scriptPath = path.join(/*turbopackIgnore: true*/ process.cwd(), 'scripts', 'doc_ppt_pdf_transcriber.py')
+          const pythonBin = getPythonBinary()
+          const rawOutput = await new Promise<string>((resolve, reject) => {
+            const pyArgs = ['--json', tempPath]
+            if (deepOcr) pyArgs.unshift('--deep-ocr')
+            const py = spawn(pythonBin, [scriptPath, ...pyArgs])
+            let out = ''
+            let err = ''
+            py.stdout.on('data', (d) => { out += d.toString() })
+            py.stderr.on('data', (d) => { err += d.toString() })
+            py.on('close', (code) => {
+              if (code === 0 && out.trim()) {
+                resolve(out.trim())
+              } else {
+                reject(new Error(err || `Transcriber exited with code ${code}`))
+              }
+            })
+            py.on('error', (e) => reject(e))
+          })
+
+          try {
+            const parsedJson = JSON.parse(rawOutput)
+            rawTextFull = parsedJson.text || ''
+            extractedImages = parsedJson.images || []
+          } catch {
+            rawTextFull = rawOutput
+          }
+        } finally {
+          try { fs.unlinkSync(tempPath) } catch (e) {}
+        }
+      } else if (isTextFile) {
+        rawTextFull = await file.text()
+      } else {
+        const arrayBuffer = await file.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        let imgIndex = 0
+        try {
+          const result = await mammoth.convertToHtml(
+            { buffer },
+            {
+              convertImage: mammoth.images.imgElement(async (img) => {
+                try {
+                  const imgBuffer = await img.read()
+                  const mime = img.contentType || 'image/jpeg'
+                  if (imgBuffer.length > 3000) {
+                    imgIndex++
+                    const b64 = imgBuffer.toString('base64')
+                    extractedImages.push({
+                      title: `Document Figure ${imgIndex}`,
+                      caption: `Extracted from ${file.name}`,
+                      dataUrl: `data:${mime};base64,${b64}`,
+                    })
+                  }
+                } catch {}
+                return { src: '' }
+              }),
+            }
+          )
+          rawTextFull = result.value
+            .replace(/\s*<\/(p|div|h[1-6]|li|tr|th|td)>/gi, '\n')
+            .replace(/<[^>]+>/g, '')
+        } catch {
+          const result = await mammoth.extractRawText({ buffer })
+          rawTextFull = result.value
+        }
+      }
+    }
+
+    const rawText = rawTextFull.replace(/\s+/g, ' ').trim()
+
+    if (!rawText) {
+      return NextResponse.json({ error: 'Could not extract text from file' }, { status: 400 })
+    }
+
+    // CSV passthrough
+    const firstLine = rawTextFull.split(/\r?\n/).find((l: string) => l.trim())?.trim() ?? ''
+    if (/^front[,\t]/.test(firstLine) && /type/.test(firstLine)) {
+      const csvLines = rawTextFull
+        .replace(/^\uFEFF/, '')
+        .split(/\r?\n/)
+        .map((l: string) => l.trim())
+        .filter(Boolean)
+        .join('\n')
+      return new NextResponse(csvLines, {
+        status: 200,
+        headers: { 'Content-Type': 'text/csv; charset=utf-8' },
+      })
+    }
+
+    let rows: FlashcardRow[] = []
+
+    // 1. Primary AI Pipeline: Chrome Extension Relay (Gemini Flash Pro web bridge)
+    try {
+      console.log('[convert-docx] Enqueuing job to Chrome Extension Relay Queue (Gemini Flash)...')
+      const topicName = sanitizeTopicName(fileName)
+      
+            const relayPrompt = `Analyze the entire reference material.
+Identify every distinct topic and subtopic.
+Extract every examinable fact, including definitions, formulas, theories, processes, rules, exceptions, examples, and conditions.
+Merge duplicate facts but NEVER omit unique information.
+
+OUTPUT FORMAT -- JSON ONLY:
+Output a SINGLE JSON object. No CSV. No comma counts. No column positions.
+
+  { "chapter": "...", "subject": "...", "lesson": "...", "cards": [ ... ] }
+
+The top-level "chapter", "subject", and "lesson" are optional; if omitted,
+each card should carry them instead.
+
+Each entry in "cards" MUST be an object with a "type" field. Allowed types
+and their required fields:
+
+  keyword:
+    { "type": "keyword", "front": "CONCEPT NAME", "back": "bullet list" }
+
+  definition:
+    { "type": "definition", "front": "question or prompt", "back": "answer" }
+
+  multiple_choice:
+    { "type": "multiple_choice", "front": "question",
+      "mc": { "correct": "...", "distractors": ["...", "...", "..."] } }
+
+  true_false:
+    { "type": "true_false", "front": "statement",
+      "tf": { "answer": true, "explanation": "..." } }
+
+  enumeration:
+    { "type": "enumeration", "front": "topic",
+      "enum_items": ["item1", "item2", "item3"] }
+
+  identification:
+    { "type": "identification", "front": "clue",
+      "id": { "answer": "...", "variants": ["...", "..."] } }
+
+  math:
+    { "type": "math", "front": "topic title", "back": "short description",
+      "math": {
+        "problem": "LaTeX expression",
+        "answer": "final answer",
+        "category": "Algebra | Calculus | Arithmetic | Geometry | Statistics | ...",
+        "difficulty": "Beginner | Intermediate | Advanced",
+        "steps": [
+          { "latex": "...", "explanation": "...", "operation": "start", "badge": "Start" },
+          { "latex": "...", "explanation": "...", "operation": "mul", "badge": "Expand" }
+        ]
+      } }
+
+  code:
+    { "type": "code", "front": "challenge title", "back": "prompt description",
+      "code": {
+        "language": "python | java | sql | javascript",
+        "starter": "starter template",
+        "keywords": ["kw1", "kw2"],
+        "solution": "full working solution",
+        "output": "expected output"
+      } }
+
+GENERATION ORDER (MANDATORY):
+1. NOTES FIRST (never skipped): start with at least 5 "keyword" cards for the Notes tab.
+   If the material is prose (history, biology, literature, etc.), the output is
+   MOSTLY keyword cards. Math/code cards do not appear at all.
+2. MATH & CODE -- conditional, only if the topic is present:
+   - Emit "math" cards when the material contains ANY of:
+       * a named formula (A = lw, a^2 + b^2 = c^2, P(E) = favorable / total)
+       * a symbolic expression (2x + 3, sqrt(25), pi r^2)
+       * an equation with a variable (3x + 9 = 24)
+       * a named theorem, rule, or law with a mathematical statement
+         ("Pythagorean theorem: a^2 + b^2 = c^2")
+       * a numeric worked example (2 + 3 x 4 = 14 via PEMDAS)
+     For EACH, populate math.problem (LaTeX), math.answer, math.category,
+     math.difficulty, and math.steps (array with at least 2 steps).
+   - Emit "code" cards when the material contains ANY of:
+       * an actual code snippet (def f(x): return x, print("hi"))
+       * a named programming construct being explained
+         ("for loop", "if statement", "def keyword", "list indexing")
+       * a language feature being taught
+         (string concatenation with +, modulo %, f-strings)
+       * a named algorithm, data structure, or behavior
+         ("stack is LIFO", "queue is FIFO")
+       * SQL, shell, or command-line usage
+     For EACH, populate code.language, code.starter, code.keywords,
+     code.solution, code.output. language is one of: python | java | sql | javascript.
+   - NEGATIVE examples (do NOT emit math/code for these):
+       * a bare number in prose ("3 apples", "in 1905")
+       * a name without content ("the Pythagorean theorem exists")
+       * a passing mention ("this uses math", "programming is fun")
+   - If the material contains NO named formulas AND NO programming topics,
+     emit zero math/code cards. Leave them out entirely.
+3. ENUMERATION & IDENTIFICATION next.
+4. FLASHCARDS & QUIZZES last: definition, multiple_choice, true_false.
+
+STUDY NOTES FORMAT (type="keyword"):
+- Each back is a bullet list of "Term -- definition (max 20 words, one sentence)".
+- NO paragraphs. NO "In this section...". NO examples. Split long definitions.
+- Bold ONLY the leading term name. Never bold inside the definition body.
+- If a term needs more than 20 words, SPLIT into two keyword cards.
+- Tables: put tables in the "back" field of a keyword card using:
+    &[TABLE: Header1, Header2 | Row1Col1, Row1Col2 | Row2Col1, Row2Col2]
+  Never use raw markdown pipes for tables.
+
+INLINE DIRECTIVE SYNTAX (use inside back / math.problem fields):
+
+MATH SYMBOLS (either LaTeX or the app shorthand):
+  &*(sigma) -> sigma   &*(theta) -> theta   &*(pi) -> pi   &*(sqrt{x}) -> sqrt(x)
+  &*(int) -> integral  &*(sum) -> sum       &*(infty) -> infinity
+  &*(cos), &*(sin), &*(tan), &*(log), &*(ln)
+
+LATEX (use inside math.problem, math.answer, math.steps, or any text field):
+  \frac{num}{den}   \sqrt{x}   \int_a^b   \sum_{i=1}^{n}   \lim_{x \to 0}
+  \sin \cos \tan \log \ln \pi \theta \alpha \beta \gamma \delta \lambda \mu \sigma \omega
+  Subscripts: x_{1}   Superscripts: x^{2}
+  Brackets:   \left[ ... \right]_{a}^{b}
+  Units:      \text{ cm} \text{ square units} \text{ units}
+  NEVER write plain-text "int", "frac", "sqrt", "sinx", "pi" -- use LaTeX or &*(...) directives.
+
+CODE BLOCKS (inside back field of a code card):
+  &[CODE: python=print("hi") | java=System.out.println("hi") | js=console.log("hi") | sql=SELECT 1]
+  Language keys must be one of: python, java, js, sql.
+
+FRONT vs BACK -- MANDATORY:
+- front = the actual question, prompt, statement, or clue the student reads FIRST.
+- back  = the answer. Empty for true_false and multiple_choice.
+- FORBIDDEN in ANY field: "Statement", "Definition", "Question", "True False",
+  "Identification", "Enumeration", "Challenge Title", or the type name as a placeholder.
+- GOOD true_false: { "type": "true_false", "front": "All living organisms are made of one or more cells.", "tf": { "answer": true, "explanation": "Cell theory" } }
+- BAD  true_false: { "type": "true_false", "front": "Cell Theory True False" }
+- GOOD definition: { "type": "definition", "front": "What is the basic unit of life?", "back": "The cell" }
+- BAD  definition: { "type": "definition", "front": "Cell Definition" }
+
+CARD LIMIT: no more than 130 cards total.
+
+COMPLETION CONTRACT:
+- Output ONLY the JSON. No prose before or after. No markdown code fences.
+- End the JSON with the sentinel END_OF_JSON on its own line when finished.
+- If output would exceed the length limit, stop after the last complete card
+  and output CONTINUE_FROM_NEXT_ROW on its own line instead.
+- Never output a continue button, a "click here" prompt, or any conversational
+  follow-up. The only permissible terminal tokens are END_OF_JSON or
+  CONTINUE_FROM_NEXT_ROW, each on its own line.
+- Never repeat a card that was already emitted.
+
+CONTINUATION:
+- When the user replies "Continue", resume the JSON from the next card,
+  without repeating any cards already emitted.
+
+TOPIC: ${topicName}
+CHAPTER: Chapter 1
+SUBJECT: ${topicName}
+LESSON: Study Notes
+REFERENCE STUDY NOTES:`
+
+      const hasActiveWorker = await isWorkerActive(process.env.RELAY_SHA || undefined)
+      if (hasActiveWorker) {
+        console.log(`[convert-docx] Active extension worker found. Dispatching job to Gemini Relay (asyncMode=${asyncMode}, deckId=${deckId || 'auto'})...`)
+        const { jobId, deckId: resolvedDeckId, promise } = await enqueueRelayJob(
+          relayPrompt,
+          rawTextFull,
+          topicName,
+          'flash',
+          240000,
+          extractedImages,
+          deckId || undefined
+        )
+
+        if (asyncMode) {
+          return NextResponse.json({
+            status: 'enqueued',
+            jobId,
+            deckId: resolvedDeckId,
+            images: extractedImages,
+            rateLimit: {
+              remaining: rateLimitResult.remaining,
+              resetAt: rateLimitResult.resetAt
+            }
+          })
+        }
+
+        const relayCsv = await promise
+        if (relayCsv && relayCsv.trim().length > 20) {
+          console.log(`[convert-docx] Successfully received CSV from Chrome Extension Relay! (Deck ID: ${resolvedDeckId}, Extracted images: ${extractedImages.length})`)
+          return NextResponse.json({
+            csv: relayCsv.trim(),
+            deckId: resolvedDeckId,
+            images: extractedImages,
+            rateLimit: {
+              remaining: rateLimitResult.remaining,
+              resetAt: rateLimitResult.resetAt
+            }
+          })
+        }
+      } else {
+        console.log('[convert-docx] No Chrome Extension worker active, using direct AI / local parser...')
+      }
+    } catch (relayErr: any) {
+      console.warn('[convert-docx] Chrome Extension Relay skipped or timed out, falling back to direct AI:', relayErr.message)
+    }
+
+    // 2. Secondary AI Pipeline: Direct API (Gemini Flash / OpenCode / Nvidia)
+    try {
+      const aiRows = await generateCardsWithAI(rawTextFull)
+      if (aiRows && aiRows.length > 0) {
+        rows = aiRows
+      }
+    } catch (aiErr) {
+      console.warn('[convert-docx] Direct AI generation failed, falling back to heuristic parser:', aiErr)
+    }
+
+    // 2. Fallback to local heuristic parser if AI returned empty or failed
+    if (rows.length === 0) {
+      const parsed = parseTextToCards(rawTextFull)
+      rows = parsed.map(c => makeRow({
+        front: c.front,
+        back: c.back,
+        subject: c.subject,
+        lesson: c.topic,
+        type: c.type,
+      }))
+    }
+
+    // Minimum 4 cards guarantee
+    if (rows.length < 4 && rows.length > 0) {
+      const sentences = rawText.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.length > 10)
+      for (const s of sentences) {
+        if (rows.length >= 4) break
+        const firstCap = s.match(/\b[A-Z][a-z]+\b/)?.[0] || 'Fact'
+        rows.push(makeRow({
+          front: s.length > 120 ? s.slice(0, 120) + '...' : s,
+          back: firstCap,
+          subject: firstCap,
+          lesson: 'general',
+          type: 'definition',
+        }))
+      }
+    }
+
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'No flashcards could be generated from this file' }, { status: 422 })
+    }
+
+    const csv = rowsToCSV(rows)
+    if (extractedImages.length > 0) {
+      return NextResponse.json({
+        csv,
+        images: extractedImages,
+        rateLimit: {
+          remaining: rateLimitResult.remaining,
+          resetAt: rateLimitResult.resetAt
+        }
+      })
+    }
+    return new NextResponse(csv, {
+      status: 200,
+      headers: { 
+        'Content-Type': 'text/csv; charset=utf-8',
+        'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+        'X-RateLimit-Reset': String(rateLimitResult.resetAt)
+      },
+    })
+  } catch (err) {
+    console.error('convert-docx error:', err)
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Failed to convert file' },
+      { status: 500 },
+    )
+  }
+}
+
+export const runtime = 'nodejs'

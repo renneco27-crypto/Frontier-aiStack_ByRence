@@ -1,0 +1,151 @@
+==============================================================
+ANTI-SLOP SKILL  -  rules for making UI that does not look "vibecoded"
+==============================================================
+Source: video "Day 1 of Removing AI Slop" (Charles Liu), plus a
+before/after on the StudyUp "Create Deck" modal.
+
+HOW TO READ THIS FILE
+- The video rules come from the on-screen captions and visuals in the
+  16 frames in images/video-frames (one frame every 2 seconds).
+  This is NOT a word-for-word audio transcript, only what the captions
+  and the demo show. Frame 03 has the player UI covering its caption.
+- Frames 04 and 05 are the "before" (the slop). The rest is the "after".
+
+--------------------------------------------------------------
+PART 1 - WHAT THE VIDEO DOES (frame by frame)
+--------------------------------------------------------------
+Task: an "How old are you?" age picker.
+
+BEFORE (frame 04, frame 05)
+  - Generic slider with a tiny "29 years old" label
+  - Emoji next to the title
+  - Small "Step 3 of 7" chip
+  - Purple gradient "Continue" button
+  - Everything the same weight, nothing leads the eye
+  => the default look of AI-generated UI.
+
+AFTER (captions, in order of the demo)
+  frame 01 "some snapping"           the ruler snaps to whole years
+  frame 02 "Add a ..."               (animation / haptic being added)
+  frame 04-05 "Make it snappable"    slider becomes a draggable ruler
+  frame 06 "visual hierarchy"        ONE huge number is the focus,
+                                     "years old" is small and quiet
+  frame 07 "Animate the transition"  the number animates when it changes
+  frame 09 "blur animation"          old digit blurs out, new one blurs in
+  frame 10 "font spacing consistent" tabular digits, so the number does not
+                                     jump sideways when digits change
+  frame 11 "feels polished"          the result of the details above
+  frame 12 "every year click"        a tiny haptic tick on EVERY step
+  frame 14-15                        the ruler edges fade out
+                                     ("Don't just stop" - keep refining)
+  frame 16 "part 2"                  there is more to remove
+
+THE RULES (distilled)
+  1. Visual hierarchy: one thing is big and obvious, everything else is
+     small and quiet. Never give every element the same weight.
+  2. Snapping: controls land on clear values, they never rest "between".
+  3. Animate state changes (blur / fade / slide), do not swap instantly.
+  4. Consistent font spacing: use tabular numbers and fixed type sizes.
+  5. Haptics: a light tick on every meaningful step or tap.
+  6. Fade edges instead of hard cuts (content should not just stop).
+  7. Remove default decoration: emoji as icons, gradient buttons,
+     unexplained chips, glow.
+  8. Keep going after "it works". Polish is the details.
+
+--------------------------------------------------------------
+PART 2 - WHY MY CREATE DECK ("YOUR ORIGINAL") WAS AI SLOP
+--------------------------------------------------------------
+Look at: images/01-ORIGINAL-ai-slop-create-deck.png
+
+  1. TWO CARDS SAY THE SAME THING.
+     "Pro Account Required" and "Stripe Payment / Pro Account" both explain
+     the paywall. The same message twice is a classic generated-UI habit.
+
+  2. TWO COMPETING BUTTONS.
+     "PURCHASE IT" and "CONNECT" are both big, filled and bright.
+     No hierarchy (video rule 1). The user does not know which to press.
+     "PURCHASE IT" is also an awkward label.
+
+  3. CARDS INSIDE CARDS INSIDE A MODAL.
+     Modal > dashed/solid card > another card. Nested boxes everywhere
+     is padding by default, not design.
+
+  4. ALL-CAPS BOLD ON EVERYTHING.
+     Tabs, buttons and labels all shout at the same volume, so nothing
+     stands out (same problem as the "before" frame in the video).
+
+  5. GLOW AND GRADIENT PURPLE.
+     Glowing borders and purple-on-purple, the default AI palette, with
+     no single accent reserved for the one main action.
+
+  6. A DEAD END.
+     You open "Upload files" and the whole tab is a paywall with no
+     preview of what you would get and no clear way back to the free path.
+
+  7. TOO MANY WORDS.
+     Long paragraph inside the paywall card, repeated explanations.
+     Good UI says it in a few words.
+
+  8. GENERIC ICON REUSED.
+     The same credit-card icon three times (circle, button, card).
+
+  9. SLOPPY EDGES.
+     The background tab labels are clipped behind the modal, bottom nav
+     labels are cut off, and the center "Create" button blends into the
+     background. The details were never checked.
+
+ 10. NO MOTION OR FEEL.
+     Nothing indicates animation, press states or haptics (video rules
+     3 and 5).
+
+--------------------------------------------------------------
+PART 3 - WHY THE REDESIGN LOOKS BETTER (what I chose and why)
+--------------------------------------------------------------
+Files: html/create-deck-redesign.standalone.html  (open in a browser)
+       html/create-deck-redesign.dc.html          (design-canvas source)
+       html/shadlingo-design-tokens-reference.html (your design system)
+Image: images/02-redesign-your-edited-version.png
+       (a screenshot of YOUR edited version of the redesign. The final
+       file in html/ has the later tidy-up, so it differs slightly.)
+
+  - ONE primary action: "Upgrade to Pro" is the only large filled button.
+    (rule 1)
+  - ONE paywall message instead of two cards.
+  - Short copy: "Pro feature", "Upgrade to Pro", "Deck title".
+  - Bottom sheet sized to its content, with a grabber handle, instead of
+    a floating modal with empty space.
+  - Reused YOUR design system (ShadLingo / Maia tokens): Nunito font,
+    #0b0c14 base, #9333ea primary, tactile 3D buttons that press down,
+    16px radius inputs, pill tab switcher.  That makes the screen match
+    the rest of the app instead of looking pasted in.
+  - Pro badge in gold on the active tab: the only warm color, so the
+    paid feature is easy to spot. (rule 1)
+  - Touch targets at least 44px, muted text with enough contrast.
+  - Press states on every button (tactile-btn): the 3D button moves down
+    3px when tapped. (rules 3 and 5 in spirit)
+
+HONEST NOTES / WHAT IS NOT DONE YET
+  - The uppercase labels are kept ONLY because your design system uses
+    them. They are a slop signal when used everywhere with no hierarchy,
+    but here the hierarchy fixes it. If it feels loud, drop the uppercase
+    on tabs and labels first.
+  - The static design does not show motion. Still to add in the real app:
+    sliding tab indicator, slide-up sheet (200-250 ms ease-out), blur
+    transition when switching tabs, a light haptic on tab change and tap
+    (navigator.vibrate(10) on web).
+  - Not fixed in the design: the clipped bottom nav and the "Create"
+    center button from the original screenshot. Those are in the app
+    shell, not this modal.
+
+--------------------------------------------------------------
+QUICK CHECKLIST FOR ANY SCREEN
+--------------------------------------------------------------
+  [ ] What is the ONE thing to look at? Is it the biggest / brightest?
+  [ ] Only one primary button?
+  [ ] Does any message appear twice?
+  [ ] Any box inside a box that does not need to be?
+  [ ] Can I cut 30% of the words?
+  [ ] Are all type sizes and gaps from a fixed scale?
+  [ ] Does every state change animate and every tap feel (press, haptic)?
+  [ ] Any clipped, cut-off or low-contrast text?
+  [ ] Does it match the rest of the app's tokens?

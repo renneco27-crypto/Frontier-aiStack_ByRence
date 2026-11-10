@@ -1,0 +1,429 @@
+Making an Android Offline WebApp
+Blog post from a neophyte app dev.
+Currently working on improving the UI
+Long post ahead.
+
+Hi everyone!
+For those who want to try Android app development, I’d like to share a workflow I’ve been experimenting with. I’m still a neophyte in app development, so this is based on my personal experience rather than a claim that this is the best approach.
+One thing I found helpful was using my existing Next.js/React web app and packaging its frontend into an Android APK instead of rebuilding everything from scratch in Android Studio.
+The idea is simple: make debugging easier before building the APK.
+Since I’m already working with TypeScript, React, and pnpm, I can develop and preview my web app locally, connect my Android phone to the same Wi-Fi network, and access the development server through my computer’s local IP address.
+This lets me inspect the interface on an actual phone before assembling the Android project with Gradle. I’m on a Ryzen 3 laptop and a first gradle assemble takes me about 9 minutes.
+So instead of rebuilding the APK after every small CSS or button change, I run my Next.js dev server and open it on my phone through my local IP.
+This way I can test responsive layouts, touch interactions, and mobile UI instantly.
+I only package it into an APK with Capacitor once the UI feels right.
+Of course, Logcat and Android Studio still have their place, especially when debugging native Android crashes and device-specific issues. This workflow simply gives me another way to test and troubleshoot my app.
+
+What does my app_cheatsheet.txt cover?
+I put together a technical cheat sheet covering the following:
+- Chapter 1: Headless Android Builds (Zero Android Studio Required)
+- Chapter 2: Next.js Static App Shell to Standalone APK (No Web Wrapper)
+- Chapter 3: Capacitor Setup & Offline Config
+- Chapter 4: Dual Storage & Offline-First Repository Strategy
+- Chapter 5: Native Android Bridge & Offline Fallbacks
+- Chapter 6: Headless Device Debugging with ADB
+- Chapter 7: Deep Linking & OAuth Handshake Relay
+- Chapter 8: Background Services & Offline Sync Workers
+- Chapter 9: Asset Compression & Binary Size Optimization
+- Chapter 10: Troubleshooting Common Native Build Errors
+- Chapter 11: The Next.js .rsc Trap & Remote URL Hydration Fallback
+- Chapter 12: Viewport Scroll Locks, Touch Clearance & Navbar Visibility
+- Chapter 13: The Login-to-Download Redirect Loop Trap
+- Chapter 14: Google Play Store First Priority & Android Deep Link Intent Filters
+- Chapter 15: In-Module Synthetic UI Sound Effects (soundcn / Web Audio vs File Assets)
+- Chapter 16: Never Put the APK in the public/ Folder (The Recursive Bloat Trap)
+- Chapter 17: Atomic Cloud Releases vs Over-Engineered Storage Bloat (One File, One URL)
+- Chapter 18: The Stale Asset Cache Trap & Build Discipline (Wait for the Build, Don't Poll)
+
+Why am I sharing this?
+I'm still learning, and I'm sure there are better ways to approach some of these problems. But I thought documenting the things I've learned might help someone who is also starting out, especially developers who are more comfortable with web technologies than native Android development.
+The goal isn't to replace native Android development or claim that every Next.js app can run fully offline without modifications. It's to explore how existing web development skills can be used to build Android applications while keeping the frontend, native layer, and backend responsibilities separate.
+If you're a beginner experimenting with TypeScript, React, pnpm, Capacitor, or Android development, I hope this gives you something useful to explore. Sharing what we learn is one way we can improve together.
+The cheat sheet is below:
+
+================================================================================
+CHAPTER 1: HEADLESS ANDROID BUILDS - ZERO ANDROID STUDIO REQUIRED
+================================================================================
+Build the APK using only the command line.
+No need to open the heavy Android Studio.
+You use Java 17, Android SDK Command-line Tools, Gradle Wrapper, and Capacitor CLI.
+First run:
+  npm run build
+Then sync assets to the Android project:
+  node scripts/sync-android-assets.js
+Then assemble:
+  .\gradlew assembleDebug   (or assembleRelease)
+This gives you the APK file directly in:
+  android/app/build/outputs/apk/debug/app-debug.apk
+
+================================================================================
+CHAPTER 2: NEXTJS STATIC APP SHELL TO STANDALONE APK - NO WEB WRAPPER
+================================================================================
+Make the app work fully offline, not just open a website.
+A Web Wrapper needs internet and shows a blank screen or connection error if offline.
+A Standalone APK puts all HTML, CSS, JS, and React Server Components inside the app assets so it opens in 0ms instantly.
+Key tricks:
+1. Pre-render all dynamic parameter pages at build time using generateStaticParams (e.g. export function generateStaticParams() { return [{ deckId: '_offline' }] }).
+2. Build with webpack or turbopack to generate .html, .rsc, and .next/static bundles.
+3. Sync .next/server/app and .next/static directly into android/app/src/main/assets/public.
+
+================================================================================
+CHAPTER 3: ZERO-DELAY NATIVE ASSET INTERCEPTION & OFFLINE-FIRST ARCHITECTURE
+================================================================================
+Make the app load instantly and work offline.
+Service Workers are notoriously unreliable inside Android WebView (often purged, delayed, or out of sync).
+Instead, intercept requests at the native Java layer using shouldInterceptRequest:
+- WebViewClient intercepts any request for your app's host domain or localhost.
+- Serves the prepackaged .html, .rsc, .js, and .css directly from APK assets via AssetManager.
+- API calls (/api/*) still pass through to the live server when online.
+- If offline, the native interceptor immediately returns a 503 JSON payload ({"offline":true,"error":"Offline mode"}) in 0ms so the UI can gracefully fallback to IndexedDB cached data.
+- Also evaluate Javascript on boot to unregister any legacy service workers so APK assets are always authoritative.
+
+================================================================================
+CHAPTER 4: THE RECURSIVE BUILD BLOAT TRAP - BINARY STORAGE INVARIANT
+================================================================================
+Stop your APK from becoming huge.
+If you put an old APK or ZIP file inside the public/ folder, Gradle will pack that entire APK inside the new APK assets!
+Then the next build packs both, and the size doubles every build (e.g. 20MB -> 40MB -> 80MB -> 160MB).
+Rule: Never put .apk, .zip, or .jar files inside public/ or assets/.
+Keep compiled binaries only in build/outputs/apk/.
+
+================================================================================
+CHAPTER 5: IN-MEMORY SLIDING WINDOW RATE LIMITING & TEMPORARY SPAM DROP
+================================================================================
+Protect your backend from spam and bot scraping without needing Redis:
+- Count how many requests each IP or user makes within a 1-minute window.
+- If someone exceeds the limit, block them for 5 minutes and return HTTP 429 Too Many Requests.
+- Run a periodic cleanup interval every 2 minutes so in-memory Maps do not leak memory.
+
+================================================================================
+CHAPTER 6: SECURE DATABASE USER ID AUTHENTICATION & CLIENT AUTO-TRIGGER
+================================================================================
+Make sure only authenticated users can access private endpoints:
+- When the user logs in, store their session token and user ID in localStorage.
+- Every API request sends Authorization: Bearer <token> and custom x-account-id headers.
+- If the backend does not see a valid user ID or token, reject with HTTP 401 "Database ID missing, please sign in".
+- When offline, bypass authentication gates so local study decks and cached material remain accessible.
+
+================================================================================
+CHAPTER 7: MOBILE WEBVIEW TOUCH CLEARANCE & VIEWPORT DYNAMICS
+================================================================================
+Fix common mobile UI issues inside Android WebView:
+1. Bottom clearance: Move bottom navigation bars and floating buttons up 72px to 88px so the Android system gesture bar / navigation pill does not cover them.
+2. Top safe area: Add padding-top at the top so header text does not hide under the camera punch hole or notch.
+3. Orientation: Lock the Android app to portrait mode in AndroidManifest.xml (android:screenOrientation="portrait") so layouts do not break when rotating.
+
+================================================================================
+CHAPTER 8: LEAN FCM PUSH NOTIFICATIONS & ACTIONABLE DEEP LINKS
+================================================================================
+Send push notifications without heavyweight third-party SDKs:
+- Use Firebase Cloud Messaging (FCM v1 API) directly via Google OAuth2 service account tokens.
+- Add action buttons inside the Android notification (e.g. "Review Now").
+- Use custom scheme deep links (e.g. com.studyup.app://study/deck-id) in MainActivity to navigate directly to the target deck or screen when tapped.
+
+================================================================================
+CHAPTER 9: DIRECT-TO-CLOUD STORAGE APK DISTRIBUTION PIPELINE
+================================================================================
+Distribute updates without relying on Google Play review delays:
+- Build the signed release APK using Gradle command line.
+- Upload the binary to cloud storage (e.g. Supabase Storage bucket, S3, or Cloudflare R2).
+- Save it with an unguessable versioned key or latest alias (e.g. app-release.apk).
+- The app can check /api/version or /api/download/status and download in-app updates directly.
+
+================================================================================
+CHAPTER 10: DOUBLE SERVER & DOUBLE STORAGE ARCHITECTURE: FAILOVER, BACKUP & ZERO-DOWNTIME MAINTENANCE
+================================================================================
+Never let server downtime or hosting suspension kill your mobile app.
+Implement a redundant Dual-Host and Dual-Storage architecture:
+
+1. Double Server (Primary Site A & Backup Site B):
+   - Configure two distinct servers:
+     * Site A (Primary): e.g. https://stitchcsv-f4r9.onrender.com
+     * Site B (Maintenance / Backup): e.g. https://www.studyup.cloud-ip.cc
+   - Store active host preference in Android SharedPreferences.
+   - In MainActivity.java, inspect WebView HTTP responses and DOM content:
+     * If Site A returns HTTP 502, 503, 504, 451, or 402, automatically switch active host to Site B and reload.
+     * If the server provider displays a suspension notice (e.g. "this service has been suspended by its owner"), detect the text in onPageFinished and trigger instant automatic failover to Site B.
+     * Allows seamless backend maintenance: push updates to Site B, test, then point traffic without user disruption.
+
+2. Double Storage (Local IndexedDB + Redundant Cloud Storage):
+   - Local Storage (Dexie / IndexedDB): Primary zero-latency storage on the device. All user study decks, cards, flashcard states, and study streaks are saved locally first.
+   - Primary Cloud Storage: Supabase PostgreSQL database for cross-device sync, leaderboard stats, and public feed.
+   - Backup Cloud Storage / File Mirror: A secondary object storage bucket (e.g. Cloudflare R2 or S3) mirroring public deck files and release APKs.
+   - If the cloud database is undergoing maintenance, the app operates 100% offline from local IndexedDB without interruption.
+
+================================================================================
+CHAPTER 11: THE NEXT.JS RSC ROUTING TRAP IN NATIVE WEBVIEW (REACT ERROR #418)
+================================================================================
+Why did /feed or other routes try to open external website URLs instead of staying inside the offline APK?
+Understanding React Error #418 in Next.js App Router:
+
+1. How Next.js Navigates:
+   - When a user taps a link or router.push('/feed') is called, Next.js does NOT request full HTML.
+   - It performs a soft client navigation by fetching the React Server Component stream: /feed.rsc.
+2. The RSC Trap:
+   - If your native Android WebView interceptor skips .rsc files or converts .rsc requests into .html responses, Next.js receives HTML text (text/html) instead of a React Server Component flight response (text/x-component).
+   - React throws: "Minified React error #418" (Hydration mismatch / invalid RSC stream).
+   - Because client-side routing failed, Next.js falls back to a hard browser navigation: window.location.href = '/feed'.
+   - The WebView then attempts to navigate to the external website URL (e.g. https://stitchcsv-f4r9.onrender.com/feed)!
+3. The Fix:
+   - Pre-package all .rsc files alongside .html files during build.
+   - In OfflineResourceInterceptor.java, never skip .rsc! Intercept .rsc requests and serve the packaged public/<route>.rsc directly from assets with Content-Type: text/x-component.
+   - Client navigation remains 100% offline, lightning fast (0ms), and never calls the remote website URL.
+
+================================================================================
+CHAPTER 12: VIEWPORT SCROLL LOCKS, TOUCH CLEARANCE & NAVBAR VISIBILITY
+================================================================================
+Fine-tuning mobile app ergonomics:
+1. Beware the root overflow-hidden trap:
+   - Putting overflow-hidden on the main app shell (<div className="... overflow-hidden">) locks all vertical touch scrolling on mobile.
+   - Instead, use overflow-x-clip to prevent horizontal wobble while allowing natural, butter-smooth vertical document scrolling.
+2. Avoid nested scroll containers on touch screens:
+   - A nested container with max-height: 440px; overflow-y: auto traps user touch events, preventing dragging the outer page down to see the header or mascot.
+   - Let content flow naturally in the document flow.
+3. Dynamic Navbar Rules:
+   - If an app requires scrolling 75% down to reveal the bottom navbar, that rule must NOT hide the navbar when a page has little or no content!
+   - When the deck list is empty (maxScroll <= 0), the navbar must ALWAYS show up immediately so the user is never stranded.
+4. Auto-Snap to Top:
+   - When decks load asynchronously, use window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) and CSS scroll snap (snap-y snap-proximity with snap-start on the header) so the page always opens cleanly at the top displaying the streak flame and mascot.
+
+================================================================================
+CHAPTER 13: THE LOGIN-TO-DOWNLOAD REDIRECT LOOP TRAP
+================================================================================
+A subtle bug that frustrates users during mobile web onboarding:
+1. The Gatekeeping Loop:
+   - If your server proxy or Next.js middleware guards the root path ('/') by redirecting unauthenticated browser visitors to '/download', any web user opening your app to log in gets redirected immediately to the download screen.
+   - Even worse: after completing OAuth in an external browser tab, the callback calls router.replace('/'). If the session cookie or access gate hasn't been set yet, the server intercepts the root request and boots the user right back to '/download'!
+2. The Fix:
+   - Keep the public route list clean: explicitly include '/' and login routes in public exemptions.
+   - Remove redundant or distracting download prompts from authentication cards so users can focus on signing in smoothly.
+
+================================================================================
+CHAPTER 14: GOOGLE PLAY STORE FIRST PRIORITY & ANDROID DEEP LINK INTENT FILTERS
+================================================================================
+How to cleanly redirect users from web authentication to the installed native app or Google Play Store:
+1. Intent URL with Browser Fallback:
+   - Modern Android Chrome supports Android Intent URLs with an explicit Play Store fallback parameter:
+     intent://auth-callback#Intent;scheme=studyup;package=com.studyup.app;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.studyup.app;end
+   - If the app matching package 'com.studyup.app' is installed on the phone, Android launches the app immediately.
+   - If the app is NOT installed, Android Chrome automatically falls back to the Google Play Store page so the user can install it.
+2. AndroidManifest.xml Intent Filters:
+   - For Android to recognize your custom scheme, MainActivity MUST declare explicit intent-filters:
+     <intent-filter>
+         <action android:name="android.intent.action.VIEW" />
+         <category android:name="android.intent.category.DEFAULT" />
+         <category android:name="android.intent.category.BROWSABLE" />
+         <data android:scheme="studyup" android:host="auth-callback" />
+     </intent-filter>
+     <intent-filter>
+         <action android:name="android.intent.action.VIEW" />
+         <category android:name="android.intent.category.DEFAULT" />
+         <category android:name="android.intent.category.BROWSABLE" />
+         <data android:scheme="com.studyup.app" />
+     </intent-filter>
+   - Without these filters in the manifest, Android treats the intent as unknown and fails to open the native app.
+
+================================================================================
+CHAPTER 15: IN-MODULE SYNTHETIC UI SOUND EFFECTS (soundcn / Web Audio vs File Assets)
+================================================================================
+Adding crisp, tactile audio feedback without asset bloat or licensing issues:
+1. The Problem with Loose Audio Files (.mp3 / .wav):
+   - Loose audio files create HTTP round-trip latency, can trigger 404/CORS errors in local WebViews, and add file packaging overhead.
+2. The Modern Solution (soundcn / Web Audio API):
+   - Like shadcn/ui, modern audio libraries (soundcn, Kenney CC0 assets) embed audio directly in TypeScript modules via base64 or synthesize sound waves in real time with the Web Audio API.
+   - Zero asset files to maintain, zero network delay, and 100% offline standalone compatibility.
+3. Perfecting the Brushing / Woosh Sound (Cards & Drawers):
+   - Don't use a boomy, cinematic movie woosh for cards or drawers. Users want a gentle, physical "brushing" friction sound.
+   - Synthesizing with Web Audio:
+     * Generate an air noise buffer shaped with a sine window envelope (~0.16s).
+     * Pass it through a BiquadFilter (bandpass sweeping from 680Hz to 1180Hz then down to 460Hz with Q = 1.15).
+     * Strictly clamp the peak master gain to 50% volume (0.5) so it feels polite and satisfying rather than jarring.
+     * Layer a tiny sine oscillator (180Hz -> 90Hz at 10% gain) to give a subtle physical body without low-frequency rumble.
+   - Wire this brushing sound effect directly to drawer toggles (AIPracticeDrawer, Sidebar) and flashcard flips and swipes!
+
+================================================================================
+CHAPTER 16: NEVER PUT THE APK IN THE PUBLIC/ FOLDER - THE RECURSIVE BLOAT TRAP
+================================================================================
+One of the most dangerous, insidious traps in hybrid/offline web app development:
+Placing your compiled APK or heavy build artifacts inside the web "public/" folder.
+
+Why is this so catastrophic?
+1. The Recursive Packaging Loop:
+   - When packaging an offline Android app, your asset sync script or standard Capacitor sync (`npx cap copy` / `npx cap sync`) copies your web assets (everything in `public/` or `out/`) into `android/app/src/main/assets/public`.
+   - If you copy your generated APK (e.g. `StudyUp.apk`, ~22 MB) into `public/` so web visitors can download it, the next time you sync assets, THAT 22 MB APK GETS COPIED INTO THE ANDROID ASSET BUNDLE!
+   - When Gradle assembles your new APK, it packages the previous APK inside the new APK.
+   - The new APK grows to 44 MB. Run it again, and it grows to 70 MB, 100 MB, 150 MB+!
+   - Eventually, Gradle/AAPT throws `OutOfMemoryError`, crashes with asset compression failures, or produces a monster APK that users refuse to install.
+
+2. Next.js, Git & Server Deployment Bloat:
+   - Every file inside `public/` is treated as a static web asset.
+   - Next.js build runners, Docker containers, and CI/CD pipelines (Vercel, Render, GitHub Actions) copy the entire `public/` folder into server bundles and production images.
+   - If `*.apk` isn't in `.gitignore`, every local build pushes 25MB+ binary diffs to git history, permanently bloating your repository into gigabytes of unpurgeable binary sludge.
+
+3. The Clean Solutions:
+   A. Keep APKs strictly in native build outputs:
+      - Leave compiled APKs in `android/app/build/outputs/apk/release/` or `debug/`. Never commit them or copy them into web assets.
+   B. Asset Sync Whitelisting:
+      - In your sync script (`sync-android-assets.js`), NEVER blindly sync the entire `public/` directory.
+      - Explicitly whitelist only essential web assets (e.g., `public/assets/`, icons, manifests) and explicitly ignore `*.apk`, `*.aab`, `*.zip`, `.git`.
+   C. AAPT Asset Exclusion:
+      - In `android/app/build.gradle`, configure AAPT to reject APKs from ever entering assets:
+        aaptOptions {
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!*.apk:!*.aab'
+        }
+   D. External Release Hosting:
+      - For web downloads, host the APK on GitHub Releases, AWS S3/Cloudflare R2, or direct users to the Google Play Store.
+      - If you need a local server download route (`/api/download/apk`), have the API route stream directly from `android/app/build/outputs/apk/` via fs.createReadStream without placing the static binary in `public/`!
+   E. Gitignore Protection:
+      - Always ensure `*.apk` and `*.aab` are listed in `.gitignore` so binaries never pollute source control.
+
+================================================================================
+CHAPTER 17: ATOMIC CLOUD RELEASES VS OVER-ENGINEERED STORAGE BLOAT
+================================================================================
+A hard-earned lesson from user feedback and real-world deployment friction:
+When distributing an app through cloud storage (Supabase, S3, R2, etc.), radical simplicity beats "clever" over-engineering every single time.
+
+1. The Over-Engineering Pitfall:
+   - It's tempting to build multi-part chunk uploaders (`part0`, `part1`, etc.), manifest files (`meta.json`), and duplicate alias names (`StudyUp.apk`, `latest/StudyUp.apk`, `app.apk`, `latest/app.apk`).
+   - The result? You litter production storage buckets with 15+ lingering orphan files, eat up storage quotas, and create confusion over which URL is the true source of truth.
+   - If an end user or automated updater wants to download your APK, they don't want a fragmented puzzle of chunks; they want ONE direct, working link that downloads the complete package instantly.
+
+2. The Atomic Release Philosophy (One File, One URL):
+   - Keep cloud distribution clean, deterministic, and lean:
+     * Purge Before Push: Before uploading a new version, purge all stale chunks, deprecated aliases, and orphan files from your storage bucket.
+     * Single Canonical Artifact: Upload exactly ONE file named `app.apk` into a dedicated, clean `latest` bucket.
+     * Deterministic Public Endpoint: Your app or web downloaders can always point to a single permanent URL:
+       https://<project-ref>.supabase.co/storage/v1/object/public/latest/app.apk
+     * Zero Guesswork: No versioned URL rewrites, no broken multipart reassemblies on low-memory mobile devices, and zero leftover storage junk.
+
+3. The Developer Mindset - Listening to Frustration:
+   - When a user or team member uses harsh or foul words, it's an immediate signal: they don't like the clutter, you over-complicated what should have been a simple task, and you made assumptions instead of delivering the exact, minimal outcome they requested.
+   - Don't get defensive. Cut the bloat immediately, strip out the unasked-for machinery, empty the mess, and deliver the exact single artifact required. Clean code and clean deployments mean fewer moving parts and zero unnecessary baggage.
+
+================================================================================
+CHAPTER 18: THE STALE ASSET CACHE TRAP & BUILD DISCIPLINE (WAIT, DON'T POLL)
+================================================================================
+Two critical real-world lessons discovered when UI fixes mysteriously fail to land:
+
+1. The Stale Chunk Accumulation Trap:
+   - What happened? We removed a "Create account" button and updated navbar visibility rules in TypeScript. The code in `src/` was 100% correct. Yet when testing the APK on the phone, the old "Create account" button and old navbar still appeared!
+   - Why did this happen?
+     * The asset sync script (`sync-android-assets.js`) was only cleaning `.html`, `.rsc`, and `.meta` files from `android/app/src/main/assets/public/`.
+     * It NEVER purged `_next/static/`!
+     * Over time, old chunk files (e.g. legacy Turbopack bundles like `3l_4dinmgu03l.js` containing obsolete components) remained inside the Android assets folder alongside new Webpack chunks.
+     * The Android WebView or service worker cached the older chunks, shadowing the updated source code.
+   - The Permanent Fix:
+     * Never blindly copy on top of old assets.
+     * In your sync script, ALWAYS purge the existing target static directory before copying fresh build output:
+       if (fs.existsSync(nextStaticDest)) {
+         fs.rmSync(nextStaticDest, { recursive: true, force: true });
+       }
+     * Verify with `Test-Path` or file search that obsolete chunk hashes no longer exist in the packaged assets.
+
+2. Build Discipline: Wait For The Task, Stop Polling:
+   - When running heavy CLI operations (Next.js production compiles, Gradle APK assemblies, multi-megabyte cloud uploads):
+     * NEVER poll status in a loop or query the process every few seconds.
+     * Polling floods your terminal/logs, locks PowerShell threads, wastes CPU/disk I/O, and creates race conditions where you might interrupt or cancel a task before it writes its final output.
+     * Build with discipline: Trigger the command, let it run in the background, and wait for the system notification or exit code.
+     * Good things take a few minutes (especially Gradle on modest hardware). Let the assembler finish cleanly, verify the single exit code 0, and only then proceed to verify and test!
+
+================================================================================
+CHAPTER 19: STANDALONE APP VS WEBAPP WRAPPER - NEVER LOAD REMOTE SITES IN CAPACITOR
+================================================================================
+A fundamental architecture trap in hybrid mobile development:
+
+1. The Webapp Wrapper Trap:
+   - What was happening:
+     * In `capacitor.config.ts`, `server.url` was configured to point to `https://www.studyup.cloud-ip.cc`.
+     * In `MainActivity.java`, on startup the WebView was commanded to execute `webView.stopLoading()` and `webView.loadUrl(currentTargetSite)` pointing to `https://stitchcsv-f4r9.onrender.com`.
+   - The consequences:
+     * The app ceased to be a standalone offline Android app. It was turned into a thin WebView browser wrapper loading an external web server.
+     * When users launched the app on a phone with internet access, they were shown the remote web server's version—which was running an older deployment commit (with stale "Create Account" buttons, old navbar thresholds, and web auth quirks).
+     * None of the local bundled APK improvements landed because the phone was literally browsing an external website!
+
+2. The Standalone Architecture Rules:
+   - Rule 1: Never set `server.url` in production Capacitor builds.
+     * Omitting `server.url` causes Capacitor to serve local assets from `android/app/src/main/assets/public/` under `https://localhost` with `androidScheme: 'https'`.
+   - Rule 2: Never call `webView.loadUrl(remoteServerUrl)` on startup.
+     * Allow Capacitor's bridge to initialize its local app URL (`getBridge().getAppUrl()`).
+     * Only use the remote server host for API endpoints (`/api/*`), remote database sync, and OAuth callbacks—NEVER for the HTML shell.
+   - Rule 3: Use the Proven Baseline.
+     * In commit `7607ba2` ("final"), the Android configuration and code were already set up as a standalone app with local asset interception, DirectTTS audio bridging, and local storage.
+     * Overriding `android/` and `capacitor.config.ts` from that clean commit restored the standalone behavior immediately.
+
+3. Developer Takeaway:
+   - Harsh feedback ("the login page is a webapp wrapper you dumb fck") points directly to architectural deviation. Listen to it immediately, eliminate the remote URL hijacking, build the standalone APK, and verify the single artifact delivery.
+
+================================================================================
+CHAPTER 20: ROOT CAUSE DISSECTION: WHY THE APP CALLED RENDER INSTEAD OF INDEXEDDB
+================================================================================
+A detailed post-mortem on how `https://stitchcsv-f4r9.onrender.com` was being called:
+
+1. The Hidden Load Call in `MainActivity.java`:
+   - Even when `capacitor.config.ts` had its `server.url` removed, `MainActivity.java` contained:
+     ```java
+     String currentTargetSite = prefs.getString(KEY_ACTIVE_SITE, SITE_A_URL);
+     ...
+     webView.stopLoading();
+     webView.loadUrl(currentTargetSite);
+     ```
+   - In `BackupSite.java`, `SITE_A_URL` was explicitly defined as `"https://stitchcsv-f4r9.onrender.com"`.
+   - On Android launch, `BridgeActivity` would start initializing `https://localhost`. But immediately inside `onCreate`, `webView.stopLoading()` aborted the local app boot and commanded the WebView to navigate to `https://stitchcsv-f4r9.onrender.com`.
+
+2. Why This Broke IndexedDB and Local Deck Files:
+   - Web browser security enforces the Same-Origin Policy.
+   - Decks saved on-device are stored under the origin `https://localhost` inside IndexedDB (`StitchDB` via Dexie) and in the native Android directory (`context.getFilesDir() / decks / {deckId}.csv` via `NativeDeckStoragePlugin`).
+   - When the WebView was hijacked and navigated to `https://stitchcsv-f4r9.onrender.com`, the browser origin switched to `stitchcsv-f4r9.onrender.com`.
+   - As a result, the webpage could not see or read the `https://localhost` IndexedDB database, ignored the local decks directory, and instead attempted to fetch everything over the internet from the remote Render server.
+   - It also subjected the user to the old remote webapp version (which still had the obsolete "Create account" toggle and old navbar thresholds).
+
+3. The Permanent Resolution:
+   - In `MainActivity.java`:
+     * Replaced `webView.loadUrl(currentTargetSite)` with `webView.loadUrl(getBridge().getAppUrl())` targeting strictly `https://localhost`.
+     * Cleaned `handleNotificationIntent` and `handleAuthDeepLink` to resolve routes relative to `getBridge().getAppUrl()`, preventing remote base URL redirects.
+     * Removed the DOM suspension check and HTTP failover handler that were swapping WebView origins to remote fallback sites.
+   - Now the WebView origin is permanently locked to `https://localhost`, running 100% standalone out of the bundled APK assets, reading and writing directly to local IndexedDB and native deck storage files.
+
+================================================================================
+CHAPTER 21: DO NOT GITIGNORE THE ANDROID DIRECTORY - TRACK SOURCE, IGNORE BINARIES
+================================================================================
+A critical repository management error that caused production fixes to vanish:
+
+1. What Went Wrong:
+   - At various times, developers mistakenly added `android/` to the root `.gitignore` or tracked it as a dangling git submodule (`160000 commit ...`).
+   - Why was this disastrous?
+     * The entire Android native project—`MainActivity.java`, `OfflineResourceInterceptor.java`, `AndroidManifest.xml`, `capacitor.settings.gradle`, and the prepackaged HTML/JS assets—was completely invisible to git!
+     * When fixes were made to dismantle the webapp wrapper, update the asset sync rules, or lock the app to `https://localhost`, those changes were never committed or pushed to GitHub.
+     * When building on CI/CD or cloning on another machine, the repository either lacked the Android folder entirely or reverted to an ancient dangling submodule commit that still had the remote webapp wrapper (`server.url` and `webView.loadUrl(remoteUrl)`).
+     * The developer was left wondering: "Why didn't my fixes land on GitHub? Why is the app still behaving like an old webapp wrapper?"
+
+2. The Golden Rule of Mobile Repository Management:
+   - TRACK ALL ANDROID SOURCE & CONFIGURATION FILES:
+     * `android/app/src/main/java/**` (All Java/Kotlin bridge plugins and intercepts)
+     * `android/app/src/main/res/**` (Icons, layouts, XML configs)
+     * `android/app/src/main/AndroidManifest.xml`
+     * `android/app/src/main/assets/public/**` (Bundled static Next.js assets)
+     * `android/build.gradle`, `android/app/build.gradle`, `android/settings.gradle`
+     * `capacitor.config.ts`
+   - ONLY IGNORE TEMPORARY COMPILE-TIME ARTIFACTS:
+     * `android/.gradle/` (Gradle daemon and dependency cache)
+     * `android/app/build/` (Intermediate `.class` and `.dex` files)
+     * `*.apk` and `*.aab` (Final packaged binaries belong in cloud storage, e.g. Supabase release buckets, not bloating git history)
+     * `local.properties` (Machine-specific Android SDK paths)
+
+3. Verification:
+   - Always verify with `git status` that changes to `MainActivity.java` and `capacitor.config.ts` appear as tracked modified files (`M`), never as untracked (`??`) or silently ignored.
+   - Commit the Android native project as a standard directory (`040000 tree`) so GitHub always stays 100% synchronized with the standalone app configuration.
+
+================================================================================
+CHAPTER 22: SYNCHRONIZING WEB /download WITH COMPILED ARTIFACTS
+================================================================================
+1. The Problem:
+   - The web app page at `/download` queried `/api/download/status` and served from `/api/download/apk`.
+   - Both API handlers used a static candidate list where older files (`public/app-release.apk` from Nov 2, 47.19 MB) appeared before newly assembled APKs (`android/app/build/outputs/apk/debug/app-debug.apk`).
+   - The loop simply returned the first file that existed on disk, causing the web download page to serve the obsolete 47.19 MB APK even though the fresh 49.92 MB standalone APK was built and live on Supabase!
+
+2. The Solution:
+   - Updated `findLatestApk()` in both `status/route.ts` and `apk/route.ts` to inspect file modification timestamps (`stat.mtimeMs`) across all candidate paths.
+   - The route now dynamically detects and serves the APK with the newest build timestamp.
+   - Synchronized all `public/*.apk` files with the fresh standalone build so web downloads and cloud buckets are identical.

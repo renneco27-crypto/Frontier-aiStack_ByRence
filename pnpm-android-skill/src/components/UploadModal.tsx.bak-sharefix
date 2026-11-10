@@ -1,0 +1,657 @@
+'use client'
+
+import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Upload, Loader2, Sparkles, X, CheckCircle2, XCircle, Bot, FileText, Plus, Trash2 } from 'lucide-react'
+import { handleUpload, handleMultipleUpload, UploadError } from '@/features/upload/uploadHandler'
+import { useToastStore } from '@/store/toastStore'
+import { useUIStore } from '@/store/uiStore'
+import { Capacitor } from '@capacitor/core'
+import { useRelayJobStore } from '@/store/relayJobStore'
+import { createBrowserSupabase } from '@/lib/supabase'
+import { Filesystem, Directory } from '@capacitor/filesystem'
+
+type UploadState = 'idle' | 'dragover' | 'processing' | 'success' | 'error'
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+function base64ToFile(base64: string, name: string, mimeType: string): File {
+  const byteChars = atob(base64)
+  const bytes = new Uint8Array(byteChars.length)
+  for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i)
+  return new File([bytes], name, { type: mimeType })
+}
+
+const CLAUDE_PROMPT_TEMPLATE = `Analyze the entire reference material and generate a balanced, high-yield deck.
+
+MANDATORY GENERATION ORDER & PRIORITY:
+1. MATH & CODE CHALLENGES PRIORITY (GENERATE FIRST, BEFORE ALL OTHER ROWS):
+
+MATH DIRECTIVES (if reference contains mathematics, physics, statistics, or formal notation such as functional dependencies, relational algebra, or relational calculus):
+• Generate type="math" or type="math_problem" rows FIRST, before keyword, enumeration, identification, definition, multiple_choice, or true_false rows.
+• Do not merge two distinct formulas or dependency rules into one row — one row per formula/rule/expression.
+• Populate the following columns:
+  - math_problem — the question or expression in LaTeX.
+  - math_answer — the final answer or resulting expression.
+  - math_category — the branch (e.g., Algebra, Database Theory, Probability).
+  - math_difficulty — Beginner | Intermediate | Advanced.
+  - math_steps — pipe-delimited tuples in the form latex|explanation|operationType|badge ; ... where operationType is one of start | step | final and badge is a short label such as Start, Step 1, Answer.
+• Minimum target: one math row per distinct formula, dependency, or inference rule found in the source.
+• If a source only names a rule without an expression, create a row with the rule stated in LaTeX and mark "rule stated, no worked example in source" in explanation.
+
+CODING & SQL DIRECTIVES (if reference contains programming, Computer Science, SQL, or command-line usage):
+• Generate type="code" or type="code_challenge" rows FIRST, before keyword, enumeration, identification, definition, multiple_choice, or true_false rows.
+• For EVERY distinct code snippet, command, or SQL statement in the reference material, generate ONE row. Do not merge snippets. Do not summarize.
+• If a slide shows multiple variants of the same command (e.g., three ALTER TABLE examples — ADD, DROP, MODIFY), each variant gets its OWN row.
+• If a slide shows a function (COUNT, SUM, AVG, UPPER, ROUND, NOW, DATEDIFF, CONCAT, etc.), each function gets its OWN row with a runnable example.
+• If a slide shows a command-line example (mysql connect, mysqldump backup/restore, MySQL Shell \\connect), each gets its OWN row.
+• Reproduce raw OCR text faithfully in code_solution even if it contains typos from the source — do NOT silently fix it. Note corrections in explanation.
+• If the source only names a command without a full snippet, still create a row with a minimal working example in code_solution and mark "example reconstructed — source named only" in explanation.
+• Do not skip any command family: SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, ALTER TABLE, DROP, TRUNCATE, RENAME, GRANT, REVOKE, COMMIT, ROLLBACK, SAVEPOINT, SET TRANSACTION, START TRANSACTION, CREATE VIEW, CREATE OR REPLACE VIEW, DROP VIEW, CREATE INDEX, DROP INDEX, SHOW, DESCRIBE, USE, EXPLAIN, CREATE DATABASE, DROP DATABASE, BACKUP DATABASE, RESTORE DATABASE, FLUSH PRIVILEGES, SHOW GRANTS, CREATE USER.
+• Populate the following columns:
+  - code_language — one of java | python | sql | javascript (use sql for all SQL/MySQL/command-line DB commands).
+  - code_starter — a stub or scaffold the learner sees first (or -- Write your query here for SQL).
+  - code_keywords — semicolon-separated list of the key tokens/commands used (e.g., SELECT;FROM;WHERE).
+  - code_solution — the full working solution or raw snippet from the source.
+  - code_output — the expected result, success message, or "Query OK, N rows affected" style output.
+• Minimum target: one code row per code snippet shown. For an 8-deck SQL course, expect 30–60 code rows, not 3–4.
+
+ENFORCEMENT:
+Math and code rows MUST appear at the top of the output, before any keyword, enumeration, identification, definition, multiple_choice, or true_false rows.
+
+2. EXTRACT ALL STUDY NOTES (KEYWORD ROWS FOR NOTES TAB):
+   • Next, create comprehensive "keyword" rows for the Notes tab.
+   • Identify every single distinct topic, definition, formula, theory, process, and key concept.
+   • BOLDING RULE: Bold ONLY the key term/label at the start of each bullet point (e.g., "• **Accessibility** – usable by everyone..."). DO NOT bold inside the body sentences.
+   • TABLES DIRECTIVE: Tables, comparison matrices, and tabular datasets MUST ONLY go into "keyword" rows for the Notes tab using &[TABLE: Header 1, Header 2 | Row 1 Col 1, Row 1 Col 2]. NEVER place tables into flashcards.
+
+3. ENUMERATION & IDENTIFICATION:
+   • Generate type="enumeration" (semicolon-separated enum_items with 2+ items).
+   • Generate type="identification" (id_answer and semicolon-separated id_variants).
+
+4. ACTIVE-RECALL FLASHCARDS & QUIZZES (1-TO-1 PAIRING):
+   • For note concepts, generate matching type="definition" active-recall cards.
+   • Generate type="multiple_choice" (mc_correct + 3 distractors) and type="true_false" (tf_answer + explanation, leave back EMPTY).
+
+5. CARD LIMIT (STRICT RULE — MAXIMUM 130 CARDS TOTAL):
+• The entire generated deck across all types (math, code, keyword notes, flashcards, quiz questions) MUST NOT exceed 130 cards total.
+• Focus on the highest-yield, most examinable facts. If more concepts exist, condense and group them rather than generating beyond 130 total cards.
+
+6. UNIFIED 25-COLUMN CSV SCHEMA
+The header must be exactly this, word for word, no substitutions:
+front,back,chapter,subject,lesson,type,mc_correct,mc_distractor1,mc_distractor2,mc_distractor3,tf_answer,explanation,enum_items,id_answer,id_variants,code_language,code_starter,code_keywords,code_solution,code_output,math_problem,math_answer,math_category,math_difficulty,math_steps
+
+Format rows in this strict order:
+• math / math_problem (PRIORITY #1): "Topic Title","Description","Chapter","Subject","Lesson",math,,,,,,,,,,,,,,, "3x + 9 = 24","x = 5","Algebra","Intermediate","3x + 9 = 24|Given equation.|start|Start ; x = 5|Divide by 3.|final|Answer: x = 5"
+• code / code_challenge (PRIORITY #1): "Challenge Title","Description / Prompt","Chapter","Subject","Lesson",code,,,,,,,,,,,java,"// starter","key1;key2","// solution","Success output",,,,,
+• keyword (PRIORITY #2 - Notes / Tables): "<topic name>","• **Born**: <birth date> | **Died**: <death date>\n• **Role**: <role>","Chapter","Subject","Lesson",keyword,,,,,,,,,,,,,,,,,,,
+• enumeration (PRIORITY #3): "Topic / Category","","Chapter","Subject","Lesson",enumeration,,,,,,,"item1;item2;item3",,,,,,,,,,,,,,
+• identification (PRIORITY #3): "Clue","","Chapter","Subject","Lesson",identification,,,,,,,,,"Answer","variant1;variant2",,,,,,,,,,,
+• definition (PRIORITY #4 - 1:1 paired card): "Person known for <notable achievement>","<topic name>","Chapter","Subject","Lesson",definition,,,,,,,,,,,,,,,,,,,
+• multiple_choice (PRIORITY #4): "Question","","Chapter","Subject","Lesson",multiple_choice,Correct,D1,D2,D3,,,,,,,,,,,,,,,,
+• true_false (PRIORITY #4 - QUIZ ONLY - leave back empty): "Statement","","Chapter","Subject","Lesson",true_false,,,,,true,"Explanation",,,,,,,,,,,,,,,
+
+7. OUTPUT & CONTINUATION RULES (CRITICAL):
+• Output the raw plain-text CSV directly in your message response. Do NOT wrap or put the CSV inside markdown code blocks or code fences (do NOT use triple-backtick blocks).
+• If output reaches length limits or pauses, output: CONTINUE_FROM_NEXT_ROW (or present the continue button/div). When I reply with "Continue", resume immediately from the next unfinished row.
+
+TOPIC: [INSERT TOPIC]
+CHAPTER: [INSERT CHAPTER]
+SUBJECT: [INSERT SUBJECT]
+LESSON: [INSERT LESSON]
+REFERENCE STUDY NOTES: [PASTE YOUR STUDY NOTES HERE]`
+
+const CLAUDE_NOTES_PROMPT_TEMPLATE = `Analyze the entire reference material and extract ALL information into structured, comprehensive STUDY NOTES ONLY (Keyword cards for the Notes tab).
+
+1. EXTRACTION RULES
+• Identify every distinct topic, section, person, theory, concept, formula, process, and key term.
+• Do NOT generate quiz questions, multiple choice, or true/false questions.
+• Generate EXCLUSIVELY "keyword" type rows for study notes.
+• The "front" MUST be the Topic / Keyword / Person / Concept / Section title.
+• The "back" MUST be rich, detailed, structured study notes, key dates, bullet points, definitions, formulas, or summaries. Use "\n• " for bullet points.
+• TABLES DIRECTIVE: If tables, comparison matrixes, or tabular summaries exist in the reference notes, format them in the back column using: &[TABLE: Header 1, Header 2 | Row 1 Col 1, Row 1 Col 2].
+• MANDATORY DIRECTIVE FOR BOLDING KEYWORDS (STRICT RULE):
+  - Bold ONLY the definition / term / concept / label name itself at the start of each bullet point (e.g., "• **Accessibility** – usable by everyone...", "• **Born**: <birth date> | **Died**: <death date>").
+  - DO NOT bold words inside the explanation or sentence body (e.g., NEVER bold random words like "usable by **everyone** including people with **disabilities**"). THIS IS NOT A FILL-IN-THE-BLANKS QUIZ.
+  - The explanation body must remain plain text so the student can read the entire clue while the term name is masked.
+• Never omit important details, examples, or conditions.
+
+2. CARD LIMIT (STRICT RULE — MAXIMUM 130 CARDS):
+• Generate up to a maximum of 130 keyword note cards total. Do NOT exceed 130 cards.
+
+3. UNIFIED 25-COLUMN CSV SCHEMA
+The header must be exactly this, word for word, no substitutions:
+front,back,chapter,subject,lesson,type,mc_correct,mc_distractor1,mc_distractor2,mc_distractor3,tf_answer,explanation,enum_items,id_answer,id_variants,code_language,code_starter,code_keywords,code_solution,code_output,math_problem,math_answer,math_category,math_difficulty,math_steps
+
+Every single row must have exactly 25 comma-separated values with type="keyword":
+"Topic / Concept / Keyword","• **Key Term 1** – Definition and explanation in plain text\n• **Key Term 2**: Detailed notes in plain text\n• **Date**: <birth date>","Chapter","Subject","Lesson",keyword,,,,,,,,,,,,,,,,,,,
+
+4. SYNTAX & FORMATTING CONSTRAINTS
+• Output ONLY the raw plain-text CSV. Do NOT output Markdown code blocks or code fences (do NOT use triple-backtick blocks), do not explain anything, and do not number the rows.
+• Wrap any field containing spaces, commas, newlines, punctuation, or quotes inside double quotes.
+
+5. COMPLETION DIRECTIVE:
+• When you are done generating all study notes, output ONLY the completed raw plain-text CSV directly in your message response. Do NOT ask to continue, do NOT output or give a continue button/prompt, and do NOT include any conversational follow-up text when finished.
+
+TOPIC: [INSERT TOPIC]
+CHAPTER: [INSERT CHAPTER]
+SUBJECT: [INSERT SUBJECT]
+LESSON: [INSERT LESSON]
+REFERENCE STUDY NOTES: [PASTE YOUR STUDY NOTES HERE]`
+
+export default function UploadModal() {
+  const router = useRouter()
+  const isOpen = useUIStore((s) => s.isUploadModalOpen)
+  const tab = useUIStore((s) => s.uploadModalTab)
+  const setTab = useUIStore((s) => s.setUploadModalTab)
+  const closeUploadModal = useUIStore((s) => s.closeUploadModal)
+  const addToast = useToastStore((s) => s.addToast)
+
+  const checkAuth = async (): Promise<boolean> => {
+    try {
+      const supabase = createBrowserSupabase()
+      const { data } = await supabase.auth.getSession()
+      if (!data?.session && typeof window !== 'undefined' && !localStorage.getItem('studyup_cached_session')) {
+        addToast('Please sign in to create decks, upload files, or generate study notes.', 'error')
+        closeUploadModal()
+        reset()
+        router.push('/')
+        return false
+      }
+      return true
+    } catch {
+      return true
+    }
+  }
+
+  useEffect(() => {
+    if (!isOpen) return
+    checkAuth()
+    const pending = sessionStorage.getItem('pendingSharedFiles')
+    if (!pending) return
+    sessionStorage.removeItem('pendingSharedFiles')
+
+    try {
+      const uris: string[] = JSON.parse(pending)
+      Promise.all(
+        uris.map(async (entry: any) => {
+          const { data } = await Filesystem.readFile({
+            path: entry.path,
+            directory: Directory.Cache,
+          })
+          return base64ToFile(data as string, entry.name, entry.mimeType)
+        })
+      )
+        .then((files) => {
+          if (!files.length) return
+          setSelectedFiles(files)
+          setState('processing')
+          const addJob = useRelayJobStore.getState().addJob
+          handleMultipleUpload(files, setProgress, deckName, (jobId, deckId, topic) => {
+            // Hand off to global watcher — relay will finish even if modal closes
+            addJob({ jobId, deckId, topic })
+            addToast(`⚡ "${topic}" sent to relay — processing in background…`, 'success')
+            closeUploadModal()
+          })
+            .then((id) => {
+              if (id) {
+                setState('success')
+                closeUploadModal()
+                router.push(`/study/${id}`)
+              }
+            })
+            .catch((err) => {
+              setError(err instanceof Error ? err.message : 'Upload failed')
+              setState('error')
+            })
+        })
+        .catch((err) => {
+          console.error('[ShareReceiver] failed to load shared files', err)
+          setError('Could not read shared file')
+          setState('error')
+        })
+    } catch (err) {
+      console.error('[ShareReceiver] bad pending payload', err)
+    }
+  }, [isOpen])
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [deckName, setDeckName] = useState('')
+  const [state, setState] = useState<UploadState>('idle')
+  const [progress, setProgress] = useState('')
+  const [error, setError] = useState('')
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [pasteText, setPasteText] = useState('')
+  const [textLoading, setTextLoading] = useState(false)
+  const [textProgress, setTextProgress] = useState('')
+
+  const reset = () => {
+    setDeckName('')
+    setState('idle')
+    setProgress('')
+    setError('')
+    setSelectedFiles([])
+    setPasteText('')
+    setTextLoading(false)
+    setTextProgress('')
+  }
+
+  const handleClose = () => {
+    closeUploadModal()
+    reset()
+  }
+
+  if (!isOpen) return null
+
+  const MAX_FILES = 4
+  const MAX_FILE_SIZE = 1 * 1024 * 1024 // 1MB
+
+  const handleFilesAdded = (newFiles: FileList | File[]) => {
+    const arr = Array.from(newFiles)
+    const oversized = arr.find((f) => f.size > MAX_FILE_SIZE)
+    if (oversized) {
+      setError(`File "${oversized.name}" exceeds the 1MB limit. Each file must be 1MB or less.`)
+      setState('error')
+      return
+    }
+
+    let hitLimit = false
+    setSelectedFiles((prev) => {
+      const existingKeys = new Set(prev.map((f) => `${f.name}_${f.size}`))
+      const toAdd = arr.filter((f) => !existingKeys.has(`${f.name}_${f.size}`))
+      if (prev.length + toAdd.length > MAX_FILES) {
+        hitLimit = true
+        const allowedSpace = Math.max(0, MAX_FILES - prev.length)
+        return [...prev, ...toAdd.slice(0, allowedSpace)]
+      }
+      return [...prev, ...toAdd]
+    })
+
+    if (hitLimit) {
+      setError(`Maximum ${MAX_FILES} files allowed per upload. Extra files were omitted.`)
+      setState('error')
+    } else {
+      setError('')
+      setState('idle')
+    }
+  }
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+    setError('')
+    setState('idle')
+  }
+
+  const processSelectedFiles = async () => {
+    if (!(await checkAuth())) return
+    if (selectedFiles.length === 0) return
+    const name = deckName.trim()
+
+    if (selectedFiles.length > MAX_FILES) {
+      setState('error')
+      setError(`Maximum ${MAX_FILES} files allowed per upload`)
+      return
+    }
+
+    const tooLarge = selectedFiles.find((f) => f.size > MAX_FILE_SIZE)
+    if (tooLarge) {
+      setState('error')
+      setError(`File "${tooLarge.name}" exceeds 1MB limit`)
+      return
+    }
+
+    setState('processing')
+    setProgress('')
+    setError('')
+
+    try {
+      const addJob = useRelayJobStore.getState().addJob
+      const id = await handleMultipleUpload(selectedFiles, setProgress, name, (jobId, deckId, topic) => {
+        addJob({ jobId, deckId, topic })
+        addToast(`⚡ "${topic}" sent to relay — processing in background…`, 'success')
+        handleClose()
+      })
+      // If onEnqueued fired, handleClose() already ran — id may be a sentinel deckId
+      // Only navigate/toast if we got a real deck back synchronously
+      const wasEnqueued = useRelayJobStore.getState().jobs.some(j => j.deckId === id)
+      if (!wasEnqueued) {
+        addToast('Deck created successfully!', 'success')
+        handleClose()
+        router.push('/study/' + id)
+      }
+    } catch (err) {
+      const message = err instanceof UploadError ? err.message : 'Upload failed'
+      setState('error')
+      setError(message)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setState('idle')
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFilesAdded(e.dataTransfer.files)
+    }
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFilesAdded(e.target.files)
+      e.target.value = '' // Reset input so re-selecting same files works
+    }
+  }
+
+  const handleRetry = () => {
+    if (selectedFiles.length > 0) {
+      processSelectedFiles()
+    } else {
+      setState('idle')
+    }
+  }
+
+  const handleGenerate = async () => {
+    if (!(await checkAuth())) return
+    let cleanText = pasteText.trim()
+    if (!cleanText) return
+
+    // Strip markdown code fences if user copied ```csv ... ``` from Gemini/Claude
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(?:csv)?\s*/i, '').replace(/\s*```$/, '').trim()
+    }
+
+    const lines = cleanText.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+    const rawFirstLine = lines[0] ?? ''
+    const cleanFirstLine = rawFirstLine.replace(/^[#•\-\*]+\s*/, '').trim()
+    const isCsv = /^front[,\t]/i.test(rawFirstLine)
+    
+    const name = deckName.trim()
+    setTextLoading(true)
+    setTextProgress(isCsv ? '⚡ Parsing CSV deck…' : '🤖 Sending to Gemini Flash Relay…')
+    try {
+      const file = new File([cleanText], isCsv ? 'deck.csv' : 'notes.txt', { type: isCsv ? 'text/csv' : 'text/plain' })
+      const addJob = useRelayJobStore.getState().addJob
+      let enqueued = false
+      const id = await handleUpload(file, (step) => {
+        setTextProgress(step)
+      }, name, (jobId, deckId, topic) => {
+        enqueued = true
+        addJob({ jobId, deckId, topic })
+        addToast(`⚡ "${topic}" sent to relay — processing in background…`, 'success')
+        handleClose()
+      })
+      if (!enqueued) {
+        addToast('Deck created successfully!', 'success')
+        handleClose()
+        router.push('/study/' + id)
+      }
+    } catch (err) {
+      const message = err instanceof UploadError ? err.message : 'Failed to generate deck'
+      addToast(message, 'error')
+    } finally {
+      setTextLoading(false)
+      setTextProgress('')
+    }
+  }
+
+  const handleCopyToClaude = async () => {
+    if (!(await checkAuth())) return
+    const prompt = CLAUDE_PROMPT_TEMPLATE
+      .replace('[INSERT TOPIC]', deckName.trim() || '[INSERT TOPIC]')
+    try {
+      await navigator.clipboard.writeText(prompt)
+      addToast('Full Deck Prompt copied — paste it in Claude', 'success')
+      window.open('https://claude.ai/', '_blank', 'noopener,noreferrer')
+    } catch (err) {
+      addToast('Failed to copy prompt', 'error')
+    }
+  }
+
+  const handleCopyNotesToClaude = async () => {
+    if (!(await checkAuth())) return
+    const prompt = CLAUDE_NOTES_PROMPT_TEMPLATE
+      .replace('[INSERT TOPIC]', deckName.trim() || '[INSERT TOPIC]')
+    try {
+      await navigator.clipboard.writeText(prompt)
+      addToast('Notes Only Prompt copied — paste it in Claude', 'success')
+      window.open('https://claude.ai/', '_blank', 'noopener,noreferrer')
+    } catch (err) {
+      addToast('Failed to copy prompt', 'error')
+    }
+  }
+
+  const tabButton = (t: 'file' | 'text' | 'notes', label: string) => (
+    <button
+      onClick={() => setTab(t)}
+      className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-colors squishy-btn shrink-0 ${
+        tab === t
+          ? 'bg-[var(--color-accent)] text-white cyber-glow'
+          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
+      }`}
+    >
+      {label}
+    </button>
+  )
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={handleClose}
+    >
+      <div
+        className="glass-panel rounded-2xl border border-[var(--color-border)] w-full max-w-lg cyber-border flex flex-col max-h-[85vh] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+          <h2 className="text-lg font-['Playfair_Display'] font-bold text-[var(--color-text-primary)]">
+            Create Deck
+          </h2>
+          <button
+            onClick={handleClose}
+            className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] transition-colors"
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="flex gap-1 px-4 pt-3 overflow-x-auto no-scrollbar">
+          {tabButton('text', 'Paste Text')}
+          {tabButton('notes', 'Notes Only (Claude)')}
+          {tabButton('file', 'Upload Files')}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          <input
+            type="text"
+            value={deckName}
+            onChange={(e) => setDeckName(e.target.value)}
+            placeholder="Deck name (optional — auto-generated from files)"
+            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:shadow-[0_0_10px_rgba(255,45,133,0.18)] transition-shadow"
+          />
+
+          {tab === 'file' ? (
+            <div className="mt-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".csv,.docx,.txt,.pdf,.ppt,.pptx"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+
+              {state === 'processing' ? (
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-8 text-center flex flex-col items-center gap-3">
+                  <Loader2 size={32} className="animate-spin text-[var(--color-accent)]" />
+                  <p className="text-sm font-medium text-[var(--color-text-primary)] animate-pulse">{progress || 'Processing files…'}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">Extracting text, diagrams &amp; synthesizing into one deck</p>
+                </div>
+              ) : state === 'error' ? (
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-6 text-center">
+                  <XCircle size={40} className="mx-auto text-[var(--color-dontknow)]" />
+                  <p className="text-sm text-[var(--color-dontknow)] mt-3">{error}</p>
+                  <button
+                    onClick={handleRetry}
+                    className="bg-[var(--color-accent)] text-white px-5 py-2.5 rounded-xl font-medium mt-4 hover:opacity-90 transition-opacity squishy-btn cyber-glow-hover"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Dropzone Area */}
+                  <div
+                    onDrop={handleDrop}
+                    onDragOver={(e) => { e.preventDefault(); setState('dragover') }}
+                    onDragLeave={() => setState('idle')}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`rounded-2xl border-2 border-dashed p-6 text-center transition-all duration-200 cursor-pointer ${
+                      state === 'dragover'
+                        ? 'border-[var(--color-border-neon)] bg-[var(--color-accent-soft)] cyber-glow'
+                        : 'border-[var(--color-border-strong)] hover:border-[var(--color-accent)] bg-[var(--color-surface-2)]/50'
+                    }`}
+                  >
+                    <Upload size={36} className="mx-auto text-[var(--color-accent)]" />
+                    <p className="text-sm font-medium mt-2 text-[var(--color-text-primary)]">
+                      {state === 'dragover' ? 'Drop files here' : 'Drop multiple files here or click to browse'}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                      PDF, PPTX, DOCX, TXT, CSV — Max 4 files, up to 1MB each
+                    </p>
+                  </div>
+
+                  {/* Queued / Staged Files List */}
+                  {selectedFiles.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                          Selected Files ({selectedFiles.length})
+                        </span>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-xs text-[var(--color-accent)] hover:underline flex items-center gap-1 font-medium"
+                        >
+                          <Plus size={14} /> Add more files
+                        </button>
+                      </div>
+
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {selectedFiles.map((file, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)]"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <FileText size={18} className="text-[var(--color-accent)] shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-[var(--color-text-primary)] truncate max-w-[280px]">
+                                  {file.name}
+                                </p>
+                                <p className="text-[10px] text-[var(--color-text-muted)]">
+                                  {formatFileSize(file.size)}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveFile(idx)}
+                              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-dontknow)] hover:bg-[var(--color-surface-3)] transition-colors"
+                              title="Remove file"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Manual Convert & Generate Deck Button */}
+                      <button
+                        onClick={processSelectedFiles}
+                        className="mt-3 w-full flex items-center justify-center gap-2 bg-[var(--color-accent)] text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity squishy-btn cyber-glow-hover shadow-lg"
+                      >
+                        <Sparkles size={18} />
+                        Generate Unified Deck ({selectedFiles.length} {selectedFiles.length === 1 ? 'file' : 'files'})
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ) : tab === 'notes' ? (
+            <div className="mt-4">
+              <p className="text-xs text-[var(--color-text-muted)] mb-2">
+                1. Click below to copy the <strong className="text-[var(--color-text-primary)]">Notes-Only Prompt</strong> to Claude.
+                <br />
+                2. Paste your reference material in Claude to generate keyword cards.
+                <br />
+                3. Paste the output CSV below to create your notes deck.
+              </p>
+              <textarea
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                placeholder="Paste generated Notes CSV here..."
+                rows={7}
+                className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:shadow-[0_0_10px_rgba(255,45,133,0.18)] transition-shadow resize-none"
+              />
+              <button
+                onClick={handleCopyNotesToClaude}
+                className="mt-3 flex items-center gap-2 bg-[var(--color-surface-2)] text-[var(--color-text-primary)] px-6 py-3 rounded-xl font-medium border border-[var(--color-border)] hover:border-[var(--color-border-neon)] transition-colors w-full justify-center squishy-btn"
+              >
+                <Bot size={16} />
+                Copy Notes Prompt to Claude
+              </button>
+              <button
+                onClick={handleGenerate}
+                disabled={textLoading || !pasteText.trim()}
+                className="mt-3 flex items-center gap-2 bg-[var(--color-accent)] text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 disabled:opacity-50 transition-opacity w-full justify-center squishy-btn cyber-glow-hover"
+              >
+                {textLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                {textLoading ? 'Creating Notes Deck…' : 'Create Notes Deck'}
+              </button>
+              {textLoading && textProgress && (
+                <div className="mt-2.5 p-2.5 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border-neon)] text-xs text-[var(--color-text-secondary)] text-center animate-pulse flex items-center justify-center gap-2">
+                  <Loader2 size={14} className="animate-spin text-[var(--color-accent)]" />
+                  <span>{textProgress}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-4">
+              <textarea
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                placeholder="Paste study notes or full CSV here after sending to ai."
+                rows={7}
+                className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:shadow-[0_0_10px_rgba(255,45,133,0.18)] transition-shadow resize-none"
+              />
+              <button
+                onClick={handleCopyToClaude}
+                className="mt-3 flex items-center gap-2 bg-[var(--color-surface-2)] text-[var(--color-text-primary)] px-6 py-3 rounded-xl font-medium border border-[var(--color-border)] hover:border-[var(--color-border-neon)] transition-colors w-full justify-center squishy-btn"
+              >
+                <Bot size={16} />
+                Copy Full Deck Prompt to Claude
+              </button>
+              <button
+                onClick={handleGenerate}
+                disabled={textLoading || !pasteText.trim()}
+                className="mt-3 flex items-center gap-2 bg-[var(--color-accent)] text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 disabled:opacity-50 transition-opacity w-full justify-center squishy-btn cyber-glow-hover"
+              >
+                {textLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                {textLoading ? 'Generating deck…' : 'Generate deck'}
+              </button>
+              {textLoading && textProgress && (
+                <div className="mt-2.5 p-2.5 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border-neon)] text-xs text-[var(--color-text-secondary)] text-center animate-pulse flex items-center justify-center gap-2">
+                  <Loader2 size={14} className="animate-spin text-[var(--color-accent)]" />
+                  <span>{textProgress}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

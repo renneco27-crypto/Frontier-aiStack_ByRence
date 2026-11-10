@@ -1,0 +1,42 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#180b2a" />
+      <stop offset="50%" stop-color="#0a0514" />
+      <stop offset="100%" stop-color="#05020a" />
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c084fc" />
+      <stop offset="50%" stop-color="#9333ea" />
+      <stop offset="100%" stop-color="#6b21a8" />
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="100" y1="100" x2="412" y2="412" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f0abfc" />
+      <stop offset="100%" stop-color="#a855f7" />
+    </linearGradient>
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="boxGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="24" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+
+  <!-- Outer Neon Purple Glow Border -->
+  <rect x="16" y="16" width="480" height="480" rx="112" stroke="url(#purpleGrad)" stroke-width="8" stroke-opacity="0.8" />
+
+  <!-- Inner Cyber Badge -->
+  <rect x="76" y="76" width="360" height="360" rx="80" fill="url(#purpleGrad)" filter="url(#boxGlow)" fill-opacity="0.85" />
+  <rect x="80" y="80" width="352" height="352" rx="76" stroke="#f5d0fe" stroke-width="4" stroke-opacity="0.4" />
+
+  <!-- Letter S for StudyUp -->
+  <path d="M 310 185 C 310 160 285 145 256 145 C 220 145 195 165 195 195 C 195 245 320 235 320 300 C 320 345 285 367 252 367 C 210 367 182 340 182 300 L 222 300 C 222 322 238 335 254 335 C 274 335 282 322 282 305 C 282 260 157 265 157 200 C 157 155 195 115 256 115 C 312 115 348 145 348 185 Z" fill="white" filter="url(#neonGlow)" />
+  
+  <!-- Subtle accent spark -->
+  <circle cx="350" cy="150" r="10" fill="#f5d0fe" filter="url(#neonGlow)" />
+</svg>

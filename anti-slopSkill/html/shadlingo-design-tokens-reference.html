@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShadLingo (fork) — Official Component Library & Design Tokens</title>
+  
+  <!-- Official Fonts from ShadLingo preset: Nunito + Inter + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Nunito', 'sans-serif'],
+            heading: ['Nunito', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            background: 'var(--background)',
+            foreground: 'var(--foreground)',
+            card: {
+              DEFAULT: 'var(--card)',
+              foreground: 'var(--card-foreground)',
+            },
+            popover: {
+              DEFAULT: 'var(--popover)',
+              foreground: 'var(--popover-foreground)',
+            },
+            primary: {
+              DEFAULT: 'var(--primary)',
+              foreground: 'var(--primary-foreground)',
+            },
+            secondary: {
+              DEFAULT: 'var(--secondary)',
+              foreground: 'var(--secondary-foreground)',
+            },
+            muted: {
+              DEFAULT: 'var(--muted)',
+              foreground: 'var(--muted-foreground)',
+            },
+            accent: {
+              DEFAULT: 'var(--accent)',
+              foreground: 'var(--accent-foreground)',
+            },
+            destructive: {
+              DEFAULT: 'var(--destructive)',
+              foreground: 'var(--destructive-foreground)',
+            },
+            border: 'var(--border)',
+            input: 'var(--input)',
+            ring: 'var(--ring)',
+            'spark-blue': 'var(--spark-blue)',
+            'eager-green': 'var(--eager-green)',
+            'streak-gold': 'var(--streak-gold)',
+          },
+          borderRadius: {
+            '4xl': 'calc(var(--radius) * 2.6)',
+            '3xl': 'calc(var(--radius) * 2.2)',
+            '2xl': 'calc(var(--radius) * 1.8)',
+            'xl': 'calc(var(--radius) * 1.4)',
+            'lg': 'var(--radius)',
+            'md': 'calc(var(--radius) * 0.8)',
+            'sm': 'calc(var(--radius) * 0.6)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* ==========================================================================
+       ACTUAL SHADLINGO CSS VARIABLES & TOKENS (PRESET: MAIA STYLE)
+       Mapped to index.html Color Palette (Obsidian Base & Brand Violet)
+       ========================================================================== */
+    :root {
+      --radius: 0.625rem; /* 10px */
+      --spacing: 0.25rem;
+      --font-sans: 'Nunito', sans-serif;
+      --font-heading: 'Nunito', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      /* LIGHT PALETTE (Mapped from index.html white theme) */
+      --background: #fafafe;
+      --foreground: #141124;
+      --card: #ffffff;
+      --card-foreground: #141124;
+      --popover: #ffffff;
+      --popover-foreground: #141124;
+      
+      --primary: #6226c9;
+      --primary-foreground: #ffffff;
+      --primary-shadow: #4a189f;
+
+      --secondary: #f1ebff;
+      --secondary-foreground: #6226c9;
+      --secondary-shadow: #d8c7ff;
+
+      --muted: #f4f3f9;
+      --muted-foreground: #5e5975;
+
+      --accent: #f5f0ff;
+      --accent-foreground: #6226c9;
+
+      --destructive: #ef4444;
+      --destructive-foreground: #ffffff;
+      --destructive-shadow: #b91c1c;
+
+      --border: #eceaf4;
+      --border-shadow: #d8d4e5;
+      --input: #eceaf4;
+      --ring: #6226c9;
+
+      --spark-blue: #6226c9;
+      --eager-green: #10b981;
+      --streak-gold: #f59e0b;
+      --streak-gold-shadow: #b45309;
+
+      /* 3D Duolingo / Maia Button Extrusion Shadows */
+      --shadow-card: 0px 6px 0px 0px var(--border-shadow);
+      --shadow-btn-primary: 0px 4px 0px 0px var(--primary-shadow);
+      --shadow-btn-secondary: 0px 4px 0px 0px var(--secondary-shadow);
+      --shadow-btn-outline: 0px 4px 0px 0px var(--border-shadow);
+      --shadow-btn-destructive: 0px 4px 0px 0px var(--destructive-shadow);
+      --shadow-btn-gold: 0px 4px 0px 0px var(--streak-gold-shadow);
+    }
+
+    /* DARK OBSIDIAN PALETTE (Default in index.html) */
+    .dark {
+      --background: #0b0c14;
+      --foreground: #ffffff;
+      --card: #151722;
+      --card-foreground: #ffffff;
+      --popover: #151722;
+      --popover-foreground: #ffffff;
+
+      --primary: #9333ea;
+      --primary-foreground: #ffffff;
+      --primary-shadow: #6b21a8;
+
+      --secondary: #1c1f2e;
+      --secondary-foreground: #ffffff;
+      --secondary-shadow: #121420;
+
+      --muted: #1a1c29;
+      --muted-foreground: #8e92a8;
+
+      --accent: #201833;
+      --accent-foreground: #c084fc;
+
+      --destructive: #ef4444;
+      --destructive-foreground: #ffffff;
+      --destructive-shadow: #991b1b;
+
+      --border: #222536;
+      --border-shadow: #141622;
+      --input: #222536;
+      --ring: #9333ea;
+
+      --spark-blue: #a855f7;
+      --eager-green: #10b981;
+      --streak-gold: #f59e0b;
+      --streak-gold-shadow: #b45309;
+
+      /* 3D Duolingo / Maia Button Extrusion Shadows in Dark */
+      --shadow-card: 0px 6px 0px 0px #141622;
+      --shadow-btn-primary: 0px 4px 0px 0px #6b21a8;
+      --shadow-btn-secondary: 0px 4px 0px 0px #121420;
+      --shadow-btn-outline: 0px 4px 0px 0px #1c1f2e;
+      --shadow-btn-destructive: 0px 4px 0px 0px #991b1b;
+      --shadow-btn-gold: 0px 4px 0px 0px #b45309;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* Tactile 3D Button Press Animation (Official ShadLingo Maia behavior) */
+    .tactile-btn {
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    .tactile-btn:active {
+      transform: translateY(3px) !important;
+      box-shadow: 0px 1px 0px 0px transparent !important;
+    }
+
+    /* Custom Code Inspector Box */
+    .code-box {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      line-height: 1.5;
+      background: #08090f;
+      border: 1px solid #1e2235;
+      color: #c084fc;
+      border-radius: 12px;
+      padding: 12px 14px;
+      overflow-x: auto;
+    }
+
+    /* Leaderboard pointed banner */
+    .shield-banner-clip {
+      clip-path: polygon(0 0, 100% 0, 100% calc(100% - 26px), 50% 100%, 0 calc(100% - 26px));
+    }
+  </style>
+</head>
+<body class="min-h-screen text-foreground antialiased selection:bg-purple-600 selection:text-white pb-24">
+
+  <!-- ==================== HEADER BAR ==================== -->
+  <header class="sticky top-0 z-50 backdrop-blur-md border-b bg-background/85 border-border">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand & Preset Info -->
+      <div class="flex items-center gap-3">
+        <a href="./index.html" class="flex items-center gap-1.5 font-bold text-sm text-primary hover:opacity-80 transition" title="Return to index.html">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <span>index.html</span>
+        </a>
+        <span class="text-muted-foreground/40">/</span>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base sm:text-lg font-black tracking-tight flex items-center gap-2">
+            ShadLingo <span class="text-xs px-2.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 font-mono font-bold">Maia Preset</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Controls & Source Preset Command -->
+      <div class="flex items-center gap-3">
+        <!-- Preset Badge -->
+        <span class="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted border border-border text-[11px] font-mono text-muted-foreground">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          shadlingo.json
+        </span>
+
+        <!-- Dark / Light Mode Switcher -->
+        <button onclick="toggleTheme()" id="themeToggleBtn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-[12px] border-2 border-border bg-card text-foreground font-extrabold text-xs shadow-[0px_3px_0px_0px_var(--border-shadow)] tactile-btn" title="Toggle Theme">
+          <span id="themeIcon">☀️</span>
+          <span id="themeLabel" class="hidden sm:inline">Light Mode</span>
+        </button>
+
+        <!-- Back to App Button -->
+        <a href="./index.html" class="px-4 py-2 rounded-[14px] bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider shadow-[0px_4px_0px_0px_var(--primary-shadow)] tactile-btn border-2 border-primary">
+          Back to App →
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Navigation Anchor Strip -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto no-scrollbar flex items-center gap-2 text-xs border-t border-border">
+      <span class="text-muted-foreground font-extrabold uppercase text-[10px] tracking-wider shrink-0 mr-1">Components:</span>
+      <a href="#buttons" class="px-3 py-1 rounded-full hover:bg-muted font-bold text-muted-foreground hover:text-foreground transition shrink-0">1. Buttons (3D Maia)</a>
+      <a href="#cards" class="px-3 py-1 rounded-full hover:bg-muted font-bold text-muted-foreground hover:text-foreground transition shrink-0">2. Cards & Containers</a>
+      <a href="#badges" class="px-3 py-1 rounded-full hover:bg-muted font-bold text-muted-foreground hover:text-foreground transition shrink-0">3. Badges & Chips</a>
+      <a href="#inputs" class="px-3 py-1 rounded-full hover:bg-muted font-bold text-muted-foreground hover:text-foreground transition shrink-0">4. Inputs & Toggles</a>
+      <a href="#tabs" class="px-3 py-1 rounded-full hover:bg-muted font-bold text-muted-foreground hover:text-foreground transition shrink-0">5. Tabs & Segmented</a>
+      <a href="#alerts" class="px-3 py-1 rounded-full hover:bg-muted font-bold text-muted-foreground hover:text-foreground transition shrink-0">6. Alerts & Feedback</a>
+      <a href="#leaderboard-top" class="px-3 py-1 rounded-full hover:bg-muted font-bold text-muted-foreground hover:text-foreground transition shrink-0">7. Leaderboard Top & Podium</a>
+      <a href="#preset-code" class="px-3 py-1 rounded-full bg-primary/10 text-primary font-bold transition shrink-0">Preset Command</a>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
+
+    <!-- PRESET HERO BANNER -->
+    <div class="relative overflow-hidden rounded-2xl p-6 sm:p-8 border-2 border-primary/30 bg-card shadow-[0px_8px_0px_0px_var(--border-shadow)]">
+      <div class="space-y-3">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-primary text-xs font-black uppercase tracking-wider">
+          Official ShadLingo Component Registry (Maia Style)
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+          Tactile 3D Maia Design System × StudyUp Palette
+        </h2>
+        <p class="text-sm text-muted-foreground max-w-3xl leading-relaxed">
+          This library reflects the <strong>authentic ShadLingo preset</strong> (<code class="font-mono text-primary font-bold">shadlingo.json</code>), featuring Maia's signature <strong>tactile 3D bottom-extrusion shadows</strong>, <strong>16px radii</strong>, <strong>bold uppercase typography</strong>, and <strong>active press physics</strong>, perfectly mapped to the obsidian and brand-purple palette of <a href="./index.html" class="underline text-primary font-bold">index.html</a>.
+        </p>
+
+        <!-- Command snippet box -->
+        <div id="preset-code" class="pt-2">
+          <div class="text-xs font-mono font-bold text-muted-foreground mb-1 uppercase tracking-wider">Official CLI Preset Installation:</div>
+          <div class="code-box flex items-center justify-between gap-4">
+            <code>pnpm dlx shadcn@latest init --preset https://manager.shadcndesign.com/u/wUM7bJbloroqpWSoXYQdcRui5wsYfXaW/r/shadlingo/shadlingo.json --force --no-reinstall</code>
+            <button onclick="navigator.clipboard.writeText('pnpm dlx shadcn@latest init --preset https://manager.shadcndesign.com/u/wUM7bJbloroqpWSoXYQdcRui5wsYfXaW/r/shadlingo/shadlingo.json --force --no-reinstall')" class="px-2 py-1 rounded bg-muted hover:bg-muted/80 text-foreground font-mono text-[11px] font-bold border border-border shrink-0">
+              Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- SECTION 1: BUTTONS (THE OFFICIAL SHADLINGO BUTTON VARIANTS)   -->
+    <!-- ============================================================== -->
+    <section id="buttons" class="space-y-6">
+      <div class="flex items-center justify-between border-b-2 border-border pb-3">
+        <div>
+          <h2 class="text-2xl font-black tracking-tight flex items-center gap-2">
+            <span>1. Buttons</span>
+            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary">ui/button.tsx</span>
+          </h2>
+          <p class="text-xs text-muted-foreground mt-1">Official ShadLingo 3D button variants with <code class="font-mono">shadow-[0px_4px_0px_0px_...]</code>, <code class="font-mono">rounded-[16px]</code>, and tactile press.</p>
+        </div>
+        <span class="text-xs font-mono text-muted-foreground hidden sm:block">data-slot="button"</span>
+      </div>
+
+      <!-- Button Showcase Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Default Variant (Primary Brand Purple) -->
+        <div class="rounded-2xl border-2 border-border bg-card p-6 shadow-[0px_6px_0px_0px_var(--border-shadow)] space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-primary">Variant: Default (Primary)</span>
+            <span class="text-[11px] font-mono text-muted-foreground">3D Purple Extrusion</span>
+          </div>
+
+          <div class="py-2 flex flex-col items-center justify-center gap-3">
+            <!-- The Official ShadLingo Button Code -->
+            <button data-slot="button" class="w-full h-12 px-5 rounded-[16px] border-2 border-primary bg-primary text-primary-foreground font-extrabold text-[15px] uppercase tracking-wide shadow-[0px_4px_0px_0px_var(--primary-shadow)] hover:opacity-95 tactile-btn flex items-center justify-center gap-2">
+              <span>Start Practice</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+            </button>
+          </div>
+
+          <div class="code-box">
+&lt;button class="h-12 px-5 rounded-[16px] border-2 border-primary bg-primary text-primary-foreground font-extrabold text-[15px] uppercase tracking-wide shadow-[0px_4px_0px_0px_var(--primary-shadow)] active:translate-y-px active:shadow-none"&gt;
+  Start Practice
+&lt;/button&gt;
+          </div>
+        </div>
+
+        <!-- Secondary Variant (Slate / Deep Surface) -->
+        <div class="rounded-2xl border-2 border-border bg-card p-6 shadow-[0px_6px_0px_0px_var(--border-shadow)] space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-foreground">Variant: Secondary (Obsidian)</span>
+            <span class="text-[11px] font-mono text-muted-foreground">3D Slate Extrusion</span>
+          </div>
+
+          <div class="py-2 flex flex-col items-center justify-center gap-3">
+            <button data-slot="button" class="w-full h-12 px-5 rounded-[16px] border-2 border-border bg-secondary text-secondary-foreground font-extrabold text-[15px] uppercase tracking-wide shadow-[0px_4px_0px_0px_var(--secondary-shadow)] hover:opacity-90 tactile-btn flex items-center justify-center gap-2">
+              <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span>Save to Library</span>
+            </button>
+          </div>
+
+          <div class="code-box">
+&lt;button class="h-12 px-5 rounded-[16px] border-2 border-border bg-secondary text-secondary-foreground font-extrabold text-[15px] uppercase tracking-wide shadow-[0px_4px_0px_0px_var(--secondary-shadow)] active:translate-y-px active:shadow-none"&gt;
+  Save to Library
+&lt;/button&gt;
+          </div>
+        </div>
+
+        <!-- Streak Gold Variant -->
+        <div class="rounded-2xl border-2 border-border bg-card p-6 shadow-[0px_6px_0px_0px_var(--border-shadow)] space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-amber-500">Variant: Streak Booster</span>
+            <span class="text-[11px] font-mono text-muted-foreground">3D Gold Extrusion</span>
+          </div>
+
+          <div class="py-2 flex flex-col items-center justify-center gap-3">
+            <button data-slot="button" class="w-full h-12 px-5 rounded-[16px] border-2 border-amber-500 bg-amber-500 text-black font-black text-[15px] uppercase tracking-wide shadow-[0px_4px_0px_0px_var(--streak-gold-shadow)] hover:opacity-95 tactile-btn flex items-center justify-center gap-2">
+              <span>🔥 2-Day Streak Active</span>
+            </button>
+          </div>
+
+          <div class="code-box">
+&lt;button class="h-12 px-5 rounded-[16px] border-2 border-amber-500 bg-amber-500 text-black font-black text-[15px] uppercase tracking-wide shadow-[0px_4px_0px_0px_var(--streak-gold-shadow)] active:translate-y-px active:shadow-none"&gt;
+  🔥 2-Day Streak Active
+&lt;/button&gt;
+          </div>
+        </div>
+
+        <!-- Outline Variant -->
+        <div class="rounded-2xl border-2 border-border bg-card p-6 shadow-[0px_6px_0px_0px_var(--border-shadow)] space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-muted-foreground">Variant: Outline</span>
+            <span class="text-[11px] font-mono text-muted-foreground">Border 3D Extrusion</span>
+          </div>
+
+          <div class="py-2 flex flex-col items-center justify-center gap-3">
+            <button data-slot="button" class="w-full h-12 px-5 rounded-[16px] border-2 border-border bg-background text-primary font-extrabold text-[15px] uppercase tracking-wide shadow-[0px_4px_0px_0px_var(--border-shadow)] hover:bg-muted tactile-btn flex items-center justify-center gap-2">
+              <span>Inspect Analytics</span>
+            </button>
+          </div>
+
+          <div class="code-box">
+&lt;button class="h-12 px-5 rounded-[16px] border-2 border-border bg-background text-primary font-extrabold text-[15px] uppercase tracking-wide shadow-[0px_4px_0px_0px_var(--border-shadow)] active:translate-y-px active:shadow-none"&gt;
+  Inspect Analytics
+&lt;/button&gt;
+          </div>
+        </div>
+
+        <!-- Destructive Variant -->
+        <div class="rounded-2xl border-2 border-border bg-card p-6 shadow-[0px_6px_0px_0px_var(--border-shadow)] space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-destructive">Variant: Destructive</span>
+            <span class="text-[11px] font-mono text-muted-foreground">3D Red Extrusion</span>
+          </div>
+
+          <div class="py-2 flex flex-col items-center justify-center gap-3">
+            <button data-slot="button" class="w-full h-12 px-5 rounded-[16px] border-2 border-destructive bg-destructive text-destructive-foreground font-extrabold text-[15px] uppercase tracking-wide shadow-[0px_4px_0px_0px_var(--destructive-shadow)] hover:opacity-90 tactile-btn flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Reset Deck</span>
+            </button>
+          </div>
+
+          <div class="code-box">
+&lt;button class="h-12 px-5 rounded-[16px] border-2 border-destructive bg-destructive text-destructive-foreground font-extrabold text-[15px] uppercase tracking-wide shadow-[0px_4px_0px_0px_var(--destructive-shadow)]"&gt;
+  Reset Deck
+&lt;/button&gt;
+          </div>
+        </div>
+
+        <!-- Ghost / Link Variant -->
+        <div class="rounded-2xl border-2 border-border bg-card p-6 shadow-[0px_6px_0px_0px_var(--border-shadow)] space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-muted-foreground">Variant: Ghost & Link</span>
+            <span class="text-[11px] font-mono text-muted-foreground">Flat / Text</span>
+          </div>
+
+          <div class="py-2 flex flex-col items-center justify-center gap-3">
+            <button data-slot="button" class="w-full h-12 px-5 rounded-[16px] text-muted-foreground hover:text-foreground hover:bg-muted font-extrabold text-[15px] uppercase tracking-wide transition flex items-center justify-center gap-2">
+              <span>Dismiss Option</span>
+            </button>
+          </div>
+
+          <div class="code-box">
+&lt;button class="h-12 px-5 rounded-[16px] text-muted-foreground hover:text-foreground hover:bg-muted font-extrabold text-[15px] uppercase tracking-wide"&gt;
+  Dismiss Option
+&lt;/button&gt;
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Button Sizes Showcase (XS, SM, Default, LG, Icon) -->
+      <div class="rounded-2xl border-2 border-border bg-card p-6 shadow-[0px_6px_0px_0px_var(--border-shadow)] space-y-4">
+        <h3 class="text-xs font-black uppercase tracking-wider text-primary">Official Button Sizes (<code class="font-mono text-foreground">ui/button.tsx</code>)</h3>
+        
+        <div class="flex flex-wrap items-center gap-4">
+          <!-- Size XS (h-9 rounded-[16px]) -->
+          <button data-slot="button" class="h-9 px-3.5 rounded-[16px] border-2 border-primary bg-primary text-primary-foreground font-extrabold text-xs uppercase tracking-wide shadow-[0px_3px_0px_0px_var(--primary-shadow)] tactile-btn">
+            Size XS (h-9)
+          </button>
+
+          <!-- Size SM (h-10 rounded-[16px]) -->
+          <button data-slot="button" class="h-10 px-4 rounded-[16px] border-2 border-primary bg-primary text-primary-foreground font-extrabold text-xs uppercase tracking-wide shadow-[0px_3px_0px_0px_var(--primary-shadow)] tactile-btn">
+            Size SM (h-10)
+          </button>
+
+          <!-- Size Default (h-12 rounded-[16px]) -->
+          <button data-slot="button" class="h-12 px-5 rounded-[16px] border-2 border-primary bg-primary text-primary-foreground font-extrabold text-[15px] uppercase tracking-wide shadow-[0px_4px_0px_0px_var(--primary-shadow)] tactile-btn">
+            Size Default (h-12)
+          </button>
+
+          <!-- Size LG (h-14 rounded-[16px]) -->
+          <button data-slot="button" class="h-14 px-8 rounded-[16px] border-2 border-primary bg-primary text-primary-foreground font-black text-base uppercase tracking-wide shadow-[0px_5px_0px_0px_var(--primary-shadow)] tactile-btn">
+            Size LG (h-14)
+          </button>
+
+          <!-- Icon XS (size-9) -->
+          <button data-slot="button" class="w-9 h-9 rounded-[14px] border-2 border-border bg-secondary text-foreground flex items-center justify-center shadow-[0px_3px_0px_0px_var(--secondary-shadow)] tactile-btn" title="Back">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+
+          <!-- Icon Default (size-12) -->
+          <button data-slot="button" class="w-12 h-12 rounded-[16px] border-2 border-primary bg-primary text-primary-foreground flex items-center justify-center shadow-[0px_4px_0px_0px_var(--primary-shadow)] tactile-btn" title="Play">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- SECTION 2: CARDS & CONTAINERS                                 -->
+    <!-- ============================================================== -->
+    <section id="cards" class="space-y-6">
+      <div class="flex items-center justify-between border-b-2 border-border pb-3">
+        <div>
+          <h2 class="text-2xl font-black tracking-tight flex items-center gap-2">
+            <span>2. Cards & Containers</span>
+            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary">ui/card.tsx</span>
+          </h2>
+          <p class="text-xs text-muted-foreground mt-1">Official ShadLingo Card structure with <code class="font-mono">shadow-[0px_6px_0px_0px_var(--border)] border-2 border-border rounded-2xl</code>.</p>
+        </div>
+        <span class="text-xs font-mono text-muted-foreground hidden sm:block">data-slot="card"</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Standard ShadLingo Card -->
+        <div data-slot="card" class="bg-card text-card-foreground overflow-hidden rounded-2xl py-6 text-sm shadow-[0px_6px_0px_0px_var(--border-shadow)] border-2 border-border flex flex-col gap-4">
+          <!-- CardHeader -->
+          <div data-slot="card-header" class="px-6 flex flex-col gap-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-black uppercase tracking-wider text-primary">Deck Component</span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            </div>
+            <h3 data-slot="card-title" class="text-2xl font-black tracking-tight text-foreground">
+              Colloquial French
+            </h3>
+            <p data-slot="card-description" class="text-muted-foreground text-sm">
+              34 cards · Intermediate level · A2 to B1
+            </p>
+          </div>
+
+          <!-- CardContent -->
+          <div data-slot="card-content" class="px-6">
+            <div class="p-3.5 rounded-xl bg-muted border border-border text-xs text-muted-foreground space-y-2">
+              <div class="flex justify-between font-bold text-foreground">
+                <span>Progress</span>
+                <span class="text-emerald-500 font-mono">75%</span>
+              </div>
+              <div class="w-full h-2.5 rounded-full bg-background border border-border overflow-hidden">
+                <div class="h-full rounded-full bg-primary" style="width: 75%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CardFooter -->
+          <div data-slot="card-footer" class="px-6 flex items-center justify-between pt-2 border-t border-border/80">
+            <span class="text-xs text-muted-foreground font-semibold">12 mins remaining</span>
+            <button data-slot="button" class="h-9 px-4 rounded-[12px] border-2 border-primary bg-primary text-primary-foreground font-extrabold text-xs uppercase tracking-wide shadow-[0px_3px_0px_0px_var(--primary-shadow)] tactile-btn">
+              Continue
+            </button>
+          </div>
+        </div>
+
+        <!-- Public Feed / StudyUp Syllabus Card (Using ShadLingo Card Markup) -->
+        <div data-slot="card" class="bg-card text-card-foreground overflow-hidden rounded-2xl py-6 text-sm shadow-[0px_6px_0px_0px_var(--border-shadow)] border-2 border-border flex flex-col gap-4">
+          <div data-slot="card-header" class="px-6 flex flex-col gap-1.5">
+            <div class="flex items-center justify-between">
+              <span class="h-6 gap-1 rounded-4xl border-2 border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wide text-primary inline-flex items-center">
+                Grammar Deck
+              </span>
+              <span class="text-xs font-bold text-amber-500 flex items-center gap-1">★ 4.9</span>
+            </div>
+            <h3 data-slot="card-title" class="text-2xl font-black tracking-tight text-foreground">
+              Japanese Kanji N3
+            </h3>
+            <p data-slot="card-description" class="text-muted-foreground text-sm">
+              Onyomi & Kunyomi compound readings with stroke guides
+            </p>
+          </div>
+
+          <div data-slot="card-content" class="px-6">
+            <div class="flex items-center gap-2 text-xs text-muted-foreground">
+              <div class="flex -space-x-2">
+                <img src="./assets/avatars/01.png" class="w-7 h-7 rounded-full border-2 border-card object-cover" alt="User">
+                <img src="./assets/avatars/02.png" class="w-7 h-7 rounded-full border-2 border-card object-cover" alt="User">
+                <img src="./assets/avatars/03.png" class="w-7 h-7 rounded-full border-2 border-card object-cover" alt="User">
+              </div>
+              <span class="font-bold text-foreground">David, John, Merry</span>
+              <span>study this</span>
+            </div>
+          </div>
+
+          <div data-slot="card-footer" class="px-6 flex items-center justify-between pt-2 border-t border-border/80">
+            <span class="text-xs font-mono font-bold text-primary">120 CARDS</span>
+            <button data-slot="button" class="h-9 px-4 rounded-[12px] border-2 border-border bg-secondary text-secondary-foreground font-extrabold text-xs uppercase tracking-wide shadow-[0px_3px_0px_0px_var(--secondary-shadow)] tactile-btn">
+              Add to Library
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Streak Card -->
+        <div data-slot="card" class="bg-card text-card-foreground overflow-hidden rounded-2xl py-6 text-sm shadow-[0px_6px_0px_0px_var(--border-shadow)] border-2 border-border flex flex-col gap-4">
+          <div data-slot="card-header" class="px-6 flex flex-col gap-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black uppercase tracking-wider text-amber-500">Study Streak</span>
+              <span class="text-2xl">🔥</span>
+            </div>
+            <div class="flex items-baseline gap-2 pt-1">
+              <span class="text-4xl font-black text-foreground">2</span>
+              <span class="text-sm font-bold text-muted-foreground">Days in a Row</span>
+            </div>
+          </div>
+
+          <div data-slot="card-content" class="px-6 space-y-3">
+            <p class="text-xs text-muted-foreground">
+              Complete your daily review before midnight to extend your streak to Day 3.
+            </p>
+            <div class="grid grid-cols-7 gap-1.5 text-center font-bold text-xs">
+              <div class="h-8 rounded-lg flex items-center justify-center bg-amber-500 text-black shadow-[0px_2px_0px_0px_var(--streak-gold-shadow)]">M</div>
+              <div class="h-8 rounded-lg flex items-center justify-center bg-amber-500 text-black shadow-[0px_2px_0px_0px_var(--streak-gold-shadow)]">T</div>
+              <div class="h-8 rounded-lg flex items-center justify-center bg-muted text-muted-foreground border border-border">W</div>
+              <div class="h-8 rounded-lg flex items-center justify-center bg-muted text-muted-foreground border border-border">T</div>
+              <div class="h-8 rounded-lg flex items-center justify-center bg-muted text-muted-foreground border border-border">F</div>
+              <div class="h-8 rounded-lg flex items-center justify-center bg-muted text-muted-foreground border border-border">S</div>
+              <div class="h-8 rounded-lg flex items-center justify-center bg-muted text-muted-foreground border border-border">S</div>
+            </div>
+          </div>
+
+          <div data-slot="card-footer" class="px-6 pt-2 border-t border-border/80">
+            <span class="text-[11px] font-bold text-emerald-500">Next milestone: 7 Days (XP Boost ×2)</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- SECTION 3: BADGES (ui/badge.tsx)                               -->
+    <!-- ============================================================== -->
+    <section id="badges" class="space-y-6">
+      <div class="flex items-center justify-between border-b-2 border-border pb-3">
+        <div>
+          <h2 class="text-2xl font-black tracking-tight flex items-center gap-2">
+            <span>3. Badges</span>
+            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary">ui/badge.tsx</span>
+          </h2>
+          <p class="text-xs text-muted-foreground mt-1">ShadLingo badge specs: <code class="font-mono">h-6 rounded-4xl border-2 font-extrabold uppercase tracking-wide</code>.</p>
+        </div>
+        <span class="text-xs font-mono text-muted-foreground hidden sm:block">data-slot="badge"</span>
+      </div>
+
+      <div class="rounded-2xl border-2 border-border bg-card p-6 shadow-[0px_6px_0px_0px_var(--border-shadow)] space-y-6">
+        
+        <div class="space-y-3">
+          <div class="text-xs font-black uppercase tracking-wider text-primary">Variants from preset</div>
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Default -->
+            <span data-slot="badge" class="h-6 gap-1 rounded-4xl border-2 border-primary bg-primary text-primary-foreground px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wide inline-flex items-center">
+              Primary Badge
+            </span>
+
+            <!-- Secondary -->
+            <span data-slot="badge" class="h-6 gap-1 rounded-4xl border-2 border-border bg-secondary text-secondary-foreground px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wide inline-flex items-center">
+              Secondary Slate
+            </span>
+
+            <!-- Outline -->
+            <span data-slot="badge" class="h-6 gap-1 rounded-4xl border-2 border-border bg-background text-foreground px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wide inline-flex items-center">
+              Outline Badge
+            </span>
+
+            <!-- Destructive -->
+            <span data-slot="badge" class="h-6 gap-1 rounded-4xl border-2 border-destructive bg-destructive text-destructive-foreground px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wide inline-flex items-center">
+              Failed Deck
+            </span>
+
+            <!-- Streak Gold -->
+            <span data-slot="badge" class="h-6 gap-1 rounded-4xl border-2 border-amber-500 bg-amber-500 text-black px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wide inline-flex items-center">
+              🔥 2 Streak
+            </span>
+
+            <!-- Emerald Success -->
+            <span data-slot="badge" class="h-6 gap-1 rounded-4xl border-2 border-emerald-500 bg-emerald-500 text-black px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wide inline-flex items-center">
+              Completed
+            </span>
+          </div>
+        </div>
+
+        <!-- Leaderboard Podium Rank Badges -->
+        <div class="space-y-3 pt-2 border-t border-border">
+          <div class="text-xs font-black uppercase tracking-wider text-muted-foreground">Podium Rank Badges (Leaderboard Top 3)</div>
+          <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-full bg-white text-black font-black text-xs flex items-center justify-center shadow-md">1</div>
+              <span class="text-xs font-bold text-foreground">Rank 1 (David - Center)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-white text-black font-black text-[11px] flex items-center justify-center shadow-md">2</div>
+              <span class="text-xs font-bold text-muted-foreground">Rank 2 (John - Left)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-white text-black font-black text-[11px] flex items-center justify-center shadow-md">3</div>
+              <span class="text-xs font-bold text-muted-foreground">Rank 3 (Merry - Right)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- SECTION 4: FORM CONTROLS & INPUTS (ui/input.tsx, switch, etc)   -->
+    <!-- ============================================================== -->
+    <section id="inputs" class="space-y-6">
+      <div class="flex items-center justify-between border-b-2 border-border pb-3">
+        <div>
+          <h2 class="text-2xl font-black tracking-tight flex items-center gap-2">
+            <span>4. Form Controls & Inputs</span>
+            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary">ui/input.tsx</span>
+          </h2>
+          <p class="text-xs text-muted-foreground mt-1">Official ShadLingo Input specs: <code class="font-mono">h-12 rounded-[16px] border-2 bg-muted border-input</code>.</p>
+        </div>
+        <span class="text-xs font-mono text-muted-foreground hidden sm:block">data-slot="input"</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Inputs Card -->
+        <div class="rounded-2xl border-2 border-border bg-card p-6 shadow-[0px_6px_0px_0px_var(--border-shadow)] space-y-4">
+          <h3 class="text-xs font-black uppercase tracking-wider text-primary">Input & Search</h3>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-black uppercase tracking-wider text-foreground">Deck Title</label>
+            <input type="text" data-slot="input" value="Advanced Spanish Conjugations" class="h-12 w-full rounded-[16px] border-2 border-input bg-muted px-4 py-1 text-base text-foreground focus:outline-none focus:border-primary transition" />
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-black uppercase tracking-wider text-foreground">Search Library</label>
+            <div class="relative">
+              <input type="text" data-slot="input" placeholder="Search cards, verbs, lessons..." class="h-12 w-full rounded-[16px] border-2 border-input bg-muted pl-4 pr-12 py-1 text-base text-foreground focus:outline-none focus:border-primary transition" />
+              <span class="absolute right-3.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-card border border-border text-[10px] font-mono font-bold text-muted-foreground">⌘K</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Switches & Sliders -->
+        <div class="rounded-2xl border-2 border-border bg-card p-6 shadow-[0px_6px_0px_0px_var(--border-shadow)] space-y-4">
+          <h3 class="text-xs font-black uppercase tracking-wider text-primary">Switch & Slider (<code class="font-mono text-foreground">ui/switch.tsx</code>)</h3>
+
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-muted border border-border">
+            <div>
+              <div class="text-xs font-bold text-foreground">Daily Streak Reminders</div>
+              <div class="text-[11px] text-muted-foreground">Send push notifications at 8:00 PM</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-12 h-7 bg-input peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+            </label>
+          </div>
+
+          <div class="space-y-2 pt-1">
+            <div class="flex justify-between text-xs font-bold text-foreground">
+              <span>Card Audio Playback Volume</span>
+              <span class="text-primary font-mono font-bold">85%</span>
+            </div>
+            <input type="range" min="0" max="100" value="85" class="w-full accent-primary cursor-pointer" />
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- SECTION 5: TABS (ui/tabs.tsx)                                  -->
+    <!-- ============================================================== -->
+    <section id="tabs" class="space-y-6">
+      <div class="flex items-center justify-between border-b-2 border-border pb-3">
+        <div>
+          <h2 class="text-2xl font-black tracking-tight flex items-center gap-2">
+            <span>5. Tabs</span>
+            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary">ui/tabs.tsx</span>
+          </h2>
+          <p class="text-xs text-muted-foreground mt-1">ShadLingo Tabs specs: <code class="font-mono">rounded-4xl p-[3px] border-2 border-border</code>.</p>
+        </div>
+        <span class="text-xs font-mono text-muted-foreground hidden sm:block">data-slot="tabs"</span>
+      </div>
+
+      <div class="rounded-2xl border-2 border-border bg-card p-6 shadow-[0px_6px_0px_0px_var(--border-shadow)] space-y-4">
+        <h3 class="text-xs font-black uppercase tracking-wider text-primary">Pill Tab Switcher</h3>
+
+        <div class="p-1 rounded-4xl bg-muted border-2 border-border flex items-center gap-1 max-w-md">
+          <button class="flex-1 py-2 rounded-3xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider shadow-[0px_3px_0px_0px_var(--primary-shadow)] tactile-btn">
+            My Library
+          </button>
+          <button class="flex-1 py-2 rounded-3xl text-muted-foreground hover:text-foreground font-bold text-xs uppercase tracking-wider transition">
+            Public Feed
+          </button>
+          <button class="flex-1 py-2 rounded-3xl text-muted-foreground hover:text-foreground font-bold text-xs uppercase tracking-wider transition">
+            Leaderboard
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- SECTION 6: ALERTS (ui/alert.tsx)                               -->
+    <!-- ============================================================== -->
+    <section id="alerts" class="space-y-6">
+      <div class="flex items-center justify-between border-b-2 border-border pb-3">
+        <div>
+          <h2 class="text-2xl font-black tracking-tight flex items-center gap-2">
+            <span>6. Alerts</span>
+            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary">ui/alert.tsx</span>
+          </h2>
+          <p class="text-xs text-muted-foreground mt-1">ShadLingo Alert specs: <code class="font-mono">rounded-2xl border-2 p-5 shadow-[0px_6px_0px_0px_var(--border)]</code>.</p>
+        </div>
+        <span class="text-xs font-mono text-muted-foreground hidden sm:block">data-slot="alert"</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Default Card Alert -->
+        <div data-slot="alert" class="rounded-2xl border-2 border-border bg-card p-5 shadow-[0px_6px_0px_0px_var(--border-shadow)] text-left text-sm flex items-start gap-3">
+          <div class="w-8 h-8 rounded-[12px] bg-primary/15 border-2 border-primary/30 text-primary flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </div>
+          <div>
+            <h4 data-slot="alert-title" class="font-black text-foreground text-sm uppercase tracking-wide">Daily Review Due</h4>
+            <p data-slot="alert-description" class="text-xs text-muted-foreground mt-0.5">24 Spanish vocabulary flashcards are ready for SRS review today.</p>
+          </div>
+        </div>
+
+        <!-- Destructive Alert -->
+        <div data-slot="alert" class="rounded-2xl border-2 border-destructive/60 bg-card p-5 shadow-[0px_6px_0px_0px_var(--border-shadow)] text-left text-sm flex items-start gap-3">
+          <div class="w-8 h-8 rounded-[12px] bg-destructive/15 border-2 border-destructive/30 text-destructive flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+          <div>
+            <h4 data-slot="alert-title" class="font-black text-destructive text-sm uppercase tracking-wide">Streak Expiring</h4>
+            <p data-slot="alert-description" class="text-xs text-muted-foreground mt-0.5">Only 2 hours left before your streak freezes or resets.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- SECTION 7: LEADERBOARD TOP & PODIUM                            -->
+    <!-- ============================================================== -->
+    <section id="leaderboard-top" class="space-y-6">
+      <div class="flex items-center justify-between border-b-2 border-border pb-3">
+        <div>
+          <h2 class="text-2xl font-black tracking-tight flex items-center gap-2">
+            <span>7. Leaderboard Top & Podium</span>
+            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary">Reference Component</span>
+          </h2>
+          <p class="text-xs text-muted-foreground mt-1">Pointed purple shield banner header and Top 3 podium as referenced in index.html.</p>
+        </div>
+        <span class="text-xs font-mono text-muted-foreground hidden sm:block">leaderboard-shield</span>
+      </div>
+
+      <div class="max-w-md mx-auto">
+        <div class="rounded-3xl overflow-hidden border-2 border-border bg-background shadow-[0px_8px_0px_0px_var(--border-shadow)]">
+          
+          <!-- Shield Banner Header -->
+          <div class="shield-banner-clip pt-4 pb-10 px-5 text-white select-none relative overflow-hidden" style="background: linear-gradient(155deg, #9333EA 0%, #A855F7 45%, #7E22CE 100%);">
+            
+            <!-- Top Bar -->
+            <div class="h-10 flex items-center justify-between relative z-20 mb-2">
+              <button class="w-8 h-8 rounded-[12px] bg-white/10 hover:bg-white/20 flex items-center justify-center text-white active:scale-90 transition" title="Back">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+
+              <h3 class="text-[18px] font-black text-white tracking-tight uppercase">Leader Board</h3>
+
+              <button class="w-8 h-8 rounded-[12px] bg-white/10 hover:bg-white/20 flex items-center justify-center text-white active:scale-90 transition" title="Options">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="5" r="2"></circle>
+                  <circle cx="12" cy="12" r="2"></circle>
+                  <circle cx="12" cy="19" r="2"></circle>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Top 3 Podium (John #2, David #1, Merry #3) -->
+            <div class="flex items-end justify-center gap-6 pt-2 pb-1 relative z-20">
+              
+              <!-- Rank 2: John (Left) -->
+              <div class="flex flex-col items-center">
+                <div class="relative mb-1.5">
+                  <div class="w-[66px] h-[66px] rounded-full overflow-hidden border-2 border-white/60 shadow-md">
+                    <img src="./assets/avatars/02.png" alt="John" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white text-black font-black text-[11px] flex items-center justify-center shadow-md">
+                    2
+                  </div>
+                </div>
+                <span class="text-[14px] font-black text-white tracking-tight leading-tight">John</span>
+                <span class="text-[11.5px] font-bold text-white/80 tracking-wide mt-0.5 font-mono">4235</span>
+              </div>
+
+              <!-- Rank 1: David (Center, Elevated & Larger) -->
+              <div class="flex flex-col items-center -mt-4">
+                <div class="relative mb-1.5">
+                  <div class="w-[82px] h-[82px] rounded-full overflow-hidden border-[2.5px] border-white shadow-lg ring-4 ring-white/20">
+                    <img src="./assets/avatars/01.png" alt="David" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-white text-black font-black text-[12px] flex items-center justify-center shadow-md">
+                    1
+                  </div>
+                </div>
+                <span class="text-[15.5px] font-black text-white tracking-tight leading-tight">David</span>
+                <span class="text-[12px] font-bold text-white/85 tracking-wide mt-0.5 font-mono">4578</span>
+              </div>
+
+              <!-- Rank 3: Merry (Right) -->
+              <div class="flex flex-col items-center">
+                <div class="relative mb-1.5">
+                  <div class="w-[66px] h-[66px] rounded-full overflow-hidden border-2 border-white/60 shadow-md">
+                    <img src="./assets/avatars/03.png" alt="Merry" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white text-black font-black text-[11px] flex items-center justify-center shadow-md">
+                    3
+                  </div>
+                </div>
+                <span class="text-[14px] font-black text-white tracking-tight leading-tight">Merry</span>
+                <span class="text-[11.5px] font-bold text-white/80 tracking-wide mt-0.5 font-mono">3967</span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Sample Lower Rows with ShadLingo Item Style -->
+          <div class="p-4 space-y-2.5">
+            <div class="p-3 rounded-2xl bg-card border-2 border-border flex items-center justify-between shadow-[0px_3px_0px_0px_var(--border-shadow)]">
+              <div class="flex items-center gap-3">
+                <span class="w-6 text-center font-black text-muted-foreground text-xs font-mono">4</span>
+                <img src="./assets/avatars/04.png" class="w-9 h-9 rounded-full object-cover border border-border" alt="Devon">
+                <div>
+                  <div class="text-xs font-black text-foreground">Devon Lane</div>
+                  <div class="text-[10px] text-muted-foreground font-mono">3,892 XP</div>
+                </div>
+              </div>
+              <span class="text-emerald-500 font-black text-xs font-mono">▲ +1</span>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-card border-2 border-border flex items-center justify-between shadow-[0px_3px_0px_0px_var(--border-shadow)]">
+              <div class="flex items-center gap-3">
+                <span class="w-6 text-center font-black text-muted-foreground text-xs font-mono">5</span>
+                <img src="./assets/avatars/05.png" class="w-9 h-9 rounded-full object-cover border border-border" alt="Ronald">
+                <div>
+                  <div class="text-xs font-black text-foreground">Ronald Richards</div>
+                  <div class="text-[10px] text-muted-foreground font-mono">3,640 XP</div>
+                </div>
+              </div>
+              <span class="text-destructive font-black text-xs font-mono">▼ -2</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.contains('dark');
+      if (isDark) {
+        html.classList.remove('dark');
+        document.getElementById('themeIcon').textContent = '🌙';
+        document.getElementById('themeLabel').textContent = 'Dark Mode';
+      } else {
+        html.classList.add('dark');
+        document.getElementById('themeIcon').textContent = '☀️';
+        document.getElementById('themeLabel').textContent = 'Light Mode';
+      }
+    }
+  </script>
+</body>
+</html>

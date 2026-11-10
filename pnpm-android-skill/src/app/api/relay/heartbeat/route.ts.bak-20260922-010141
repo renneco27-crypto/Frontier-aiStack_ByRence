@@ -1,0 +1,84 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { heartbeatRelayJob } from '@/lib/relayQueue'
+import { checkRateLimit } from '@/lib/rateLimiter'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-relay-sha',
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { job_id, relay_sha, progress, chars_count, worker_id } = body
+    const configuredSha = process.env.RELAY_SHA
+
+    if (configuredSha && relay_sha !== configuredSha) {
+      return NextResponse.json({ error: 'Unauthorized: Invalid relay_sha' }, { status: 401, headers: corsHeaders })
+    }
+
+    if (!job_id) {
+      return NextResponse.json({ error: 'Missing job_id' }, { status: 400, headers: corsHeaders })
+    }
+
+    // Extract client IP for rate limiting
+    const forwardedFor = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || ''
+    const clientIp = forwardedFor.split(',')[0]?.trim() || '127.0.0.1'
+
+    let rateLimitResult = { allowed: true, remaining: 999, resetAt: Date.now() + 86400000 }
+    const isWorkerExempt = Boolean(relay_sha || worker_id || !configuredSha)
+    if (!isWorkerExempt) {
+      const res = await checkRateLimit(clientIp, '/api/relay/heartbeat')
+      if (!res.allowed) {
+        return NextResponse.json(
+          { 
+            error: res.error,
+            rateLimit: {
+              remaining: res.remaining,
+              resetAt: res.resetAt
+            }
+          }, 
+          { 
+            status: 429, 
+            headers: {
+              ...corsHeaders,
+              'X-RateLimit-Remaining': String(res.remaining),
+              'X-RateLimit-Reset': String(res.resetAt),
+              'Retry-After': String(Math.ceil((res.resetAt - Date.now()) / 1000))
+            }
+          }
+        )
+      }
+      rateLimitResult = res
+    }
+
+    const progressInfo = progress ? String(progress).replace(/Scraped\s*/gi, '').trim() : (chars_count ? `${chars_count} chars` : 'Active generation')
+    const updated = heartbeatRelayJob(job_id, progressInfo, worker_id)
+
+    return NextResponse.json({
+      success: true,
+      job_id,
+      acknowledged: updated,
+      status: updated ? 'heartbeat_received' : 'job_not_found_or_finished',
+      rateLimit: {
+        remaining: rateLimitResult.remaining,
+        resetAt: rateLimitResult.resetAt
+      }
+    }, { 
+      headers: {
+        ...corsHeaders,
+        'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+        'X-RateLimit-Reset': String(rateLimitResult.resetAt)
+      }
+    })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500, headers: corsHeaders })
+  }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders })
+}
+
+export const dynamic = 'force-dynamic'
